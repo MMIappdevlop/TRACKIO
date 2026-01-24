@@ -1,0 +1,16 @@
+session,task,mode,sets,reps,weight,rest_seconds,notes
+Push Day,Bench Press,strength,4,8,60,90,Main compound lift
+Push Day,Incline Dumbbell Press,strength,3,10,25,60,Focus on stretch
+Push Day,Overhead Press,strength,3,8,40,90,Strict form
+Push Day,Lateral Raises,strength,3,15,8,45,Light and controlled
+Push Day,Tricep Pushdowns,strength,3,12,20,45,Full extension
+Pull Day,Barbell Rows,strength,4,8,60,90,Main compound lift
+Pull Day,Pull-ups,strength,3,8,,60,Bodyweight
+Pull Day,Face Pulls,strength,3,15,15,45,Rear delts
+Pull Day,Barbell Curls,strength,3,10,25,45,Bicep focus
+Pull Day,Hammer Curls,strength,3,12,12,45,Forearm engagement
+Leg Day,Squats,strength,4,6,80,120,Main compound lift
+Leg Day,Romanian Deadlifts,strength,3,10,60,90,Hamstring focus
+Leg Day,Leg Press,strength,3,12,100,90,High and wide stance
+Leg Day,Leg Curls,strength,3,12,30,45,Isolation
+Leg Day,Calf Raises,strength,4,15,40,30,Full range of motion

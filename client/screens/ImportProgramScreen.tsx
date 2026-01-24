@@ -1,21 +1,46 @@
-import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, FlatList, Alert } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, ScrollView, FlatList, Alert, Pressable, TextInput } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
 import * as XLSX from "xlsx";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
-import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
 import { programsStorage, sessionTemplatesStorage, taskTemplatesStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { TaskMode } from "@/types";
+
+const MAPPING_PRESETS_KEY = "@trakio/mapping_presets";
+
+interface ColumnMapping {
+  session: string;
+  task: string;
+  mode: string;
+  sets: string;
+  reps: string;
+  weight: string;
+  distance: string;
+  distance_unit: string;
+  duration_minutes: string;
+  work_seconds: string;
+  rest_seconds: string;
+  rounds: string;
+  notes: string;
+}
+
+interface MappingPreset {
+  id: string;
+  name: string;
+  mapping: ColumnMapping;
+}
 
 interface ParsedRow {
   session: string;
@@ -24,8 +49,63 @@ interface ParsedRow {
   sets?: number;
   reps?: number;
   weight?: number;
+  distance?: number;
+  distanceUnit?: string;
+  durationMinutes?: number;
+  workSeconds?: number;
+  restSeconds?: number;
+  rounds?: number;
+  notes?: string;
   error?: string;
+  rowNumber: number;
 }
+
+const DEFAULT_MAPPING: ColumnMapping = {
+  session: "session",
+  task: "task",
+  mode: "mode",
+  sets: "sets",
+  reps: "reps",
+  weight: "weight",
+  distance: "distance",
+  distance_unit: "distance_unit",
+  duration_minutes: "duration_minutes",
+  work_seconds: "work_seconds",
+  rest_seconds: "rest_seconds",
+  rounds: "rounds",
+  notes: "notes",
+};
+
+const TEMPLATE_INFO = [
+  { 
+    id: "strength", 
+    name: "Strength Template", 
+    description: "For weight training programs",
+    icon: "target" as const,
+    color: Colors.dark.primary,
+  },
+  { 
+    id: "endurance", 
+    name: "Endurance Template", 
+    description: "For running and cardio",
+    icon: "activity" as const,
+    color: Colors.dark.success,
+  },
+  { 
+    id: "interval", 
+    name: "Interval Template", 
+    description: "For HIIT and tabata workouts",
+    icon: "zap" as const,
+    color: Colors.dark.effort,
+  },
+  { 
+    id: "sports-drill", 
+    name: "Sports Drill Template", 
+    description: "For sport-specific training",
+    icon: "award" as const,
+    color: Colors.dark.warning,
+  },
+];
 
 export default function ImportProgramScreen() {
   const navigation = useNavigation();
@@ -33,17 +113,124 @@ export default function ImportProgramScreen() {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
 
+  const [step, setStep] = useState<"select" | "mapping" | "preview">("select");
   const [fileName, setFileName] = useState<string | null>(null);
-  const [programName, setProgramName] = useState("");
+  const [rawData, setRawData] = useState<any[]>([]);
+  const [detectedColumns, setDetectedColumns] = useState<string[]>([]);
+  const [columnMapping, setColumnMapping] = useState<ColumnMapping>(DEFAULT_MAPPING);
   const [parsedData, setParsedData] = useState<ParsedRow[]>([]);
+  const [programName, setProgramName] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
+  const [presets, setPresets] = useState<MappingPreset[]>([]);
+  const [showPresetInput, setShowPresetInput] = useState(false);
+  const [presetName, setPresetName] = useState("");
+
+  useEffect(() => {
+    loadPresets();
+  }, []);
+
+  const loadPresets = async () => {
+    try {
+      const data = await AsyncStorage.getItem(MAPPING_PRESETS_KEY);
+      if (data) {
+        setPresets(JSON.parse(data));
+      }
+    } catch (error) {
+      console.error("Failed to load presets:", error);
+    }
+  };
+
+  const savePreset = async () => {
+    if (!presetName.trim()) return;
+
+    const newPreset: MappingPreset = {
+      id: Date.now().toString(),
+      name: presetName.trim(),
+      mapping: columnMapping,
+    };
+
+    const updated = [...presets, newPreset];
+    await AsyncStorage.setItem(MAPPING_PRESETS_KEY, JSON.stringify(updated));
+    setPresets(updated);
+    setPresetName("");
+    setShowPresetInput(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const deletePreset = async (id: string) => {
+    const updated = presets.filter(p => p.id !== id);
+    await AsyncStorage.setItem(MAPPING_PRESETS_KEY, JSON.stringify(updated));
+    setPresets(updated);
+  };
+
+  const applyPreset = (preset: MappingPreset) => {
+    setColumnMapping(preset.mapping);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleDownloadTemplate = async (templateId: string) => {
+    try {
+      const templateContent = getTemplateContent(templateId);
+      const fileName = `${templateId}-template.csv`;
+      const fileUri = FileSystem.cacheDirectory + fileName;
+      
+      await FileSystem.writeAsStringAsync(fileUri, templateContent);
+      
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: "text/csv",
+          dialogTitle: "Save Template",
+        });
+      } else {
+        Alert.alert("Success", "Template saved to downloads");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Could not download template");
+    }
+  };
+
+  const getTemplateContent = (templateId: string): string => {
+    switch (templateId) {
+      case "strength":
+        return `session,task,mode,sets,reps,weight,rest_seconds,notes
+Push Day,Bench Press,strength,4,8,60,90,Main compound lift
+Push Day,Incline Dumbbell Press,strength,3,10,25,60,Focus on stretch
+Push Day,Overhead Press,strength,3,8,40,90,Strict form
+Pull Day,Barbell Rows,strength,4,8,60,90,Main compound lift
+Pull Day,Pull-ups,strength,3,8,,60,Bodyweight
+Leg Day,Squats,strength,4,6,80,120,Main compound lift
+Leg Day,Romanian Deadlifts,strength,3,10,60,90,Hamstring focus`;
+      case "endurance":
+        return `session,task,mode,distance,distance_unit,duration_minutes,notes
+Easy Run,Morning Run,distance,5,km,30,Zone 2 heart rate
+Long Run,Weekend Long Run,distance,15,km,90,Build aerobic base
+Tempo Run,Warm Up Jog,distance,2,km,12,Easy pace
+Tempo Run,Tempo Effort,distance,5,km,25,Threshold pace
+Recovery,Light Jog,distance,3,km,25,Very easy effort`;
+      case "interval":
+        return `session,task,mode,work_seconds,rest_seconds,rounds,notes
+HIIT Session,Jump Squats,interval,30,15,4,Explosive power
+HIIT Session,Burpees,interval,30,15,4,Full body cardio
+Tabata Core,Bicycle Crunches,interval,20,10,8,Classic tabata
+Sprint Intervals,Sprint,interval,30,90,6,Maximum effort`;
+      case "sports-drill":
+        return `session,task,mode,sets,reps,duration_minutes,notes
+Basketball Practice,Layup Drills,time,,,10,Alternating sides
+Basketball Practice,Free Throw Practice,strength,5,10,,50 shots total
+Soccer Training,Passing Drills,time,,,15,Short and long range
+Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
+      default:
+        return "";
+    }
+  };
 
   const handlePickFile = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: [
           "text/csv",
+          "text/plain",
           "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           "application/vnd.ms-excel",
         ],
@@ -64,41 +251,114 @@ export default function ImportProgramScreen() {
       const sheet = workbook.Sheets[sheetName];
       const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-      parseData(jsonData);
+      if (jsonData.length === 0) {
+        Alert.alert("Error", "File is empty or could not be read");
+        return;
+      }
+
+      setRawData(jsonData);
+      
+      const columns = Object.keys(jsonData[0] as object);
+      setDetectedColumns(columns);
+      
+      autoDetectMapping(columns);
+      setStep("mapping");
     } catch (error) {
       Alert.alert("Error", "Could not read the file. Please try a different format.");
     }
   };
 
-  const parseData = (data: any[]) => {
+  const autoDetectMapping = (columns: string[]) => {
+    const lowerColumns = columns.map(c => c.toLowerCase());
+    const newMapping = { ...DEFAULT_MAPPING };
+
+    const findColumn = (keywords: string[]): string => {
+      for (const col of columns) {
+        const lower = col.toLowerCase();
+        if (keywords.some(k => lower.includes(k))) {
+          return col;
+        }
+      }
+      return "";
+    };
+
+    newMapping.session = findColumn(["session", "day", "workout"]) || columns[0] || "";
+    newMapping.task = findColumn(["task", "exercise", "name", "activity"]) || columns[1] || "";
+    newMapping.mode = findColumn(["mode", "type", "category"]) || "";
+    newMapping.sets = findColumn(["sets", "set"]) || "";
+    newMapping.reps = findColumn(["reps", "rep", "repetitions"]) || "";
+    newMapping.weight = findColumn(["weight", "load", "kg", "lb"]) || "";
+    newMapping.distance = findColumn(["distance", "dist"]) || "";
+    newMapping.distance_unit = findColumn(["unit", "distance_unit"]) || "";
+    newMapping.duration_minutes = findColumn(["duration", "time", "minutes"]) || "";
+    newMapping.work_seconds = findColumn(["work", "work_seconds"]) || "";
+    newMapping.rest_seconds = findColumn(["rest", "rest_seconds"]) || "";
+    newMapping.rounds = findColumn(["rounds", "round", "cycles"]) || "";
+    newMapping.notes = findColumn(["notes", "note", "comment", "description"]) || "";
+
+    setColumnMapping(newMapping);
+  };
+
+  const handleProceedToPreview = () => {
+    parseDataWithMapping();
+    setStep("preview");
+  };
+
+  const parseDataWithMapping = () => {
     const rows: ParsedRow[] = [];
     const validationErrors: string[] = [];
 
-    data.forEach((row, index) => {
+    rawData.forEach((row, index) => {
       const rowNum = index + 2;
+      
+      const getValue = (field: keyof ColumnMapping): string => {
+        const col = columnMapping[field];
+        return col ? String(row[col] || "").trim() : "";
+      };
+
+      const session = getValue("session");
+      const task = getValue("task");
+      const modeStr = getValue("mode") || "strength";
+
       const parsed: ParsedRow = {
-        session: String(row.session || row.Session || "").trim(),
-        task: String(row.task || row.Task || row.exercise || row.Exercise || "").trim(),
-        mode: validateMode(row.mode || row.Mode || row.type || row.Type || "strength"),
-        sets: parseInt(row.sets || row.Sets || "0") || undefined,
-        reps: parseInt(row.reps || row.Reps || "0") || undefined,
-        weight: parseFloat(row.weight || row.Weight || "0") || undefined,
+        rowNumber: rowNum,
+        session,
+        task,
+        mode: validateMode(modeStr),
+        sets: parseInt(getValue("sets")) || undefined,
+        reps: parseInt(getValue("reps")) || undefined,
+        weight: parseFloat(getValue("weight")) || undefined,
+        distance: parseFloat(getValue("distance")) || undefined,
+        distanceUnit: getValue("distance_unit") || undefined,
+        durationMinutes: parseInt(getValue("duration_minutes")) || undefined,
+        workSeconds: parseInt(getValue("work_seconds")) || undefined,
+        restSeconds: parseInt(getValue("rest_seconds")) || undefined,
+        rounds: parseInt(getValue("rounds")) || undefined,
+        notes: getValue("notes") || undefined,
       };
 
       if (!parsed.session) {
-        parsed.error = `Row ${rowNum}: session is missing`;
+        parsed.error = `Row ${rowNum}: Session name is required`;
         validationErrors.push(parsed.error);
       }
 
       if (!parsed.task) {
-        parsed.error = `Row ${rowNum}: task is missing`;
+        parsed.error = `Row ${rowNum}: Task/exercise name is required`;
         validationErrors.push(parsed.error);
       }
 
-      if (!["strength", "distance", "interval", "time", "notes"].includes(parsed.mode)) {
-        parsed.error = `Row ${rowNum}: invalid mode "${parsed.mode}"`;
-        parsed.mode = "strength";
-        validationErrors.push(parsed.error);
+      if (parsed.mode === "strength" && !parsed.sets && !parsed.reps) {
+        if (!parsed.error) {
+          parsed.error = `Row ${rowNum}: Strength tasks need sets or reps`;
+          validationErrors.push(parsed.error);
+        }
+      }
+
+      if (parsed.mode === "interval" && (!parsed.workSeconds || !parsed.rounds)) {
+        if (!parsed.error) {
+          parsed.error = `Row ${rowNum}: Interval tasks need work_seconds and rounds`;
+          validationErrors.push(parsed.error);
+        }
       }
 
       rows.push(parsed);
@@ -108,8 +368,8 @@ export default function ImportProgramScreen() {
     setErrors(validationErrors);
 
     if (rows.length > 0) {
-      const sessions = [...new Set(rows.map((r) => r.session))];
-      setProgramName(`Imported Program (${sessions.length} sessions)`);
+      const sessions = [...new Set(rows.map((r) => r.session).filter(Boolean))];
+      setProgramName(`Imported (${sessions.length} sessions)`);
     }
   };
 
@@ -126,7 +386,7 @@ export default function ImportProgramScreen() {
 
     const validRows = parsedData.filter((r) => !r.error);
     if (validRows.length === 0) {
-      Alert.alert("Cannot Import", "All rows have validation errors.");
+      Alert.alert("Cannot Import", "All rows have validation errors. Please fix them first.");
       return;
     }
 
@@ -154,46 +414,29 @@ export default function ImportProgramScreen() {
             sets: row.sets,
             reps: row.reps,
             weight: row.weight,
+            targetDistance: row.distance,
+            distanceUnit: row.distanceUnit as any,
+            workSeconds: row.workSeconds,
+            restSeconds: row.restSeconds,
+            rounds: row.rounds,
           },
         });
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Import Complete", `Created "${program.name}" with ${sessions.length} sessions.`, [
-        { text: "OK", onPress: () => navigation.goBack() },
-      ]);
+      Alert.alert(
+        "Import Complete",
+        `Created "${program.name}" with ${sessions.length} sessions and ${validRows.length} tasks.`,
+        [{ text: "OK", onPress: () => navigation.goBack() }]
+      );
     } catch (error) {
-      Alert.alert("Import Failed", "Could not create the program.");
+      Alert.alert("Import Failed", "Could not create the program. Please try again.");
     } finally {
       setImporting(false);
     }
   };
 
-  const renderPreviewRow = ({ item, index }: { item: ParsedRow; index: number }) => (
-    <View
-      style={[
-        styles.previewRow,
-        { backgroundColor: item.error ? Colors.dark.error + "15" : theme.backgroundDefault },
-      ]}
-    >
-      <View style={styles.previewCell}>
-        <ThemedText type="small" numberOfLines={1}>{item.session}</ThemedText>
-      </View>
-      <View style={styles.previewCell}>
-        <ThemedText type="small" numberOfLines={1}>{item.task}</ThemedText>
-      </View>
-      <View style={styles.previewCellSmall}>
-        <ThemedText type="small">{item.mode}</ThemedText>
-      </View>
-      {item.error ? (
-        <Feather name="alert-circle" size={14} color={Colors.dark.error} />
-      ) : (
-        <Feather name="check" size={14} color={Colors.dark.success} />
-      )}
-    </View>
-  );
-
-  return (
+  const renderSelectStep = () => (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
       contentContainerStyle={[
@@ -202,74 +445,257 @@ export default function ImportProgramScreen() {
       ]}
     >
       <View style={styles.section}>
-        <ThemedText type="h2" style={styles.sectionTitle}>Import from CSV/Excel</ThemedText>
+        <ThemedText type="h2" style={styles.sectionTitle}>Example Templates</ThemedText>
         <ThemedText type="secondary" style={styles.description}>
-          Import a program from a spreadsheet file. Your file should have columns: session, task, mode, sets, reps, weight.
+          Download a template to see the expected format for your data
+        </ThemedText>
+
+        {TEMPLATE_INFO.map((template) => (
+          <Pressable
+            key={template.id}
+            style={[styles.templateCard, { backgroundColor: theme.backgroundDefault }]}
+            onPress={() => handleDownloadTemplate(template.id)}
+          >
+            <View style={[styles.templateIcon, { backgroundColor: template.color + "20" }]}>
+              <Feather name={template.icon} size={20} color={template.color} />
+            </View>
+            <View style={styles.templateInfo}>
+              <ThemedText type="body" style={{ fontWeight: "600" }}>{template.name}</ThemedText>
+              <ThemedText type="muted">{template.description}</ThemedText>
+            </View>
+            <Feather name="download" size={20} color={theme.link} />
+          </Pressable>
+        ))}
+      </View>
+
+      <View style={styles.section}>
+        <ThemedText type="h2" style={styles.sectionTitle}>Import Your File</ThemedText>
+        <ThemedText type="secondary" style={styles.description}>
+          Select a CSV or Excel file with your workout program
         </ThemedText>
 
         <Button onPress={handlePickFile} style={styles.pickButton}>
-          {fileName ? `Selected: ${fileName}` : "Choose File"}
+          Choose File
         </Button>
       </View>
-
-      {parsedData.length > 0 ? (
-        <>
-          <View style={styles.section}>
-            <ThemedText type="h2" style={styles.sectionTitle}>Preview</ThemedText>
-            <View style={[styles.previewHeader, { backgroundColor: theme.backgroundSecondary }]}>
-              <View style={styles.previewCell}>
-                <ThemedText type="small" style={{ fontWeight: "600" }}>Session</ThemedText>
-              </View>
-              <View style={styles.previewCell}>
-                <ThemedText type="small" style={{ fontWeight: "600" }}>Task</ThemedText>
-              </View>
-              <View style={styles.previewCellSmall}>
-                <ThemedText type="small" style={{ fontWeight: "600" }}>Mode</ThemedText>
-              </View>
-            </View>
-            <FlatList
-              data={parsedData.slice(0, 10)}
-              keyExtractor={(_, index) => String(index)}
-              renderItem={renderPreviewRow}
-              scrollEnabled={false}
-            />
-            {parsedData.length > 10 ? (
-              <ThemedText type="muted" style={styles.moreText}>
-                ...and {parsedData.length - 10} more rows
-              </ThemedText>
-            ) : null}
-          </View>
-
-          {errors.length > 0 ? (
-            <View style={styles.section}>
-              <ThemedText type="h4" style={{ color: Colors.dark.error }}>
-                {errors.length} Validation Error{errors.length > 1 ? "s" : ""}
-              </ThemedText>
-              {errors.slice(0, 5).map((err, i) => (
-                <ThemedText key={i} type="muted" style={styles.errorText}>
-                  {err}
-                </ThemedText>
-              ))}
-            </View>
-          ) : null}
-
-          <Button
-            onPress={handleImport}
-            disabled={importing || parsedData.filter((r) => !r.error).length === 0}
-            style={styles.importButton}
-          >
-            {importing ? "Importing..." : "Import Program"}
-          </Button>
-        </>
-      ) : (
-        <EmptyState
-          icon="file-text"
-          title="No File Selected"
-          description="Choose a CSV or Excel file to preview and import"
-        />
-      )}
     </ScrollView>
   );
+
+  const renderMappingStep = () => (
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: headerHeight + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
+      ]}
+    >
+      <View style={styles.section}>
+        <View style={styles.sectionHeaderRow}>
+          <ThemedText type="h2">Column Mapping</ThemedText>
+          <Pressable
+            onPress={() => setShowPresetInput(true)}
+            style={[styles.smallButton, { backgroundColor: theme.linkBackground }]}
+          >
+            <Feather name="save" size={16} color={theme.link} />
+            <ThemedText type="small" style={{ color: theme.link }}>Save</ThemedText>
+          </Pressable>
+        </View>
+        <ThemedText type="secondary" style={styles.description}>
+          Map your file columns to the required fields
+        </ThemedText>
+
+        {showPresetInput ? (
+          <View style={[styles.presetInput, { backgroundColor: theme.backgroundDefault }]}>
+            <TextInput
+              style={[styles.input, { color: theme.text }]}
+              value={presetName}
+              onChangeText={setPresetName}
+              placeholder="Preset name..."
+              placeholderTextColor={theme.textMuted}
+            />
+            <Pressable onPress={savePreset} style={[styles.saveBtn, { backgroundColor: Colors.dark.primary }]}>
+              <ThemedText type="small" style={{ color: "#FFF" }}>Save</ThemedText>
+            </Pressable>
+            <Pressable onPress={() => setShowPresetInput(false)}>
+              <Feather name="x" size={20} color={theme.textMuted} />
+            </Pressable>
+          </View>
+        ) : null}
+
+        {presets.length > 0 ? (
+          <View style={styles.presetsRow}>
+            {presets.map((preset) => (
+              <Pressable
+                key={preset.id}
+                onPress={() => applyPreset(preset)}
+                onLongPress={() => {
+                  Alert.alert("Delete Preset", `Delete "${preset.name}"?`, [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Delete", style: "destructive", onPress: () => deletePreset(preset.id) },
+                  ]);
+                }}
+                style={[styles.presetChip, { backgroundColor: theme.linkBackground }]}
+              >
+                <ThemedText type="small" style={{ color: theme.link }}>{preset.name}</ThemedText>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+
+        {Object.entries(columnMapping).map(([field, value]) => (
+          <View key={field} style={styles.mappingRow}>
+            <ThemedText type="body" style={styles.fieldLabel}>
+              {field.replace(/_/g, " ")}
+            </ThemedText>
+            <View style={[styles.dropdown, { backgroundColor: theme.backgroundSecondary }]}>
+              <Pressable
+                style={styles.dropdownButton}
+                onPress={() => {
+                  Alert.alert(
+                    `Select column for ${field}`,
+                    "Choose a column from your file",
+                    [
+                      { text: "(none)", onPress: () => setColumnMapping(prev => ({ ...prev, [field]: "" })) },
+                      ...detectedColumns.map((col) => ({
+                        text: col,
+                        onPress: () => setColumnMapping(prev => ({ ...prev, [field]: col })),
+                      })),
+                    ]
+                  );
+                }}
+              >
+                <ThemedText type="body" numberOfLines={1}>
+                  {value || "(not mapped)"}
+                </ThemedText>
+                <Feather name="chevron-down" size={16} color={theme.textMuted} />
+              </Pressable>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.buttonRow}>
+        <Button variant="secondary" onPress={() => setStep("select")} style={styles.flexButton}>
+          Back
+        </Button>
+        <Button onPress={handleProceedToPreview} style={styles.flexButton}>
+          Preview Import
+        </Button>
+      </View>
+    </ScrollView>
+  );
+
+  const renderPreviewStep = () => (
+    <ScrollView
+      style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: headerHeight + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
+      ]}
+    >
+      <View style={styles.section}>
+        <ThemedText type="h2" style={styles.sectionTitle}>Preview</ThemedText>
+        <ThemedText type="secondary" style={styles.description}>
+          {parsedData.length} rows found, {errors.length} with errors
+        </ThemedText>
+
+        <View style={[styles.previewHeader, { backgroundColor: theme.backgroundSecondary }]}>
+          <View style={styles.previewCell}>
+            <ThemedText type="small" style={{ fontWeight: "600" }}>Row</ThemedText>
+          </View>
+          <View style={styles.previewCellWide}>
+            <ThemedText type="small" style={{ fontWeight: "600" }}>Session</ThemedText>
+          </View>
+          <View style={styles.previewCellWide}>
+            <ThemedText type="small" style={{ fontWeight: "600" }}>Task</ThemedText>
+          </View>
+          <View style={styles.previewCell}>
+            <ThemedText type="small" style={{ fontWeight: "600" }}>Status</ThemedText>
+          </View>
+        </View>
+
+        {parsedData.slice(0, 15).map((row, index) => (
+          <View
+            key={index}
+            style={[
+              styles.previewRow,
+              { backgroundColor: row.error ? Colors.dark.error + "15" : theme.backgroundDefault },
+            ]}
+          >
+            <View style={styles.previewCell}>
+              <ThemedText type="small">{row.rowNumber}</ThemedText>
+            </View>
+            <View style={styles.previewCellWide}>
+              <ThemedText type="small" numberOfLines={1}>{row.session}</ThemedText>
+            </View>
+            <View style={styles.previewCellWide}>
+              <ThemedText type="small" numberOfLines={1}>{row.task}</ThemedText>
+            </View>
+            <View style={styles.previewCell}>
+              {row.error ? (
+                <Feather name="alert-circle" size={14} color={Colors.dark.error} />
+              ) : (
+                <Feather name="check-circle" size={14} color={Colors.dark.success} />
+              )}
+            </View>
+          </View>
+        ))}
+
+        {parsedData.length > 15 ? (
+          <ThemedText type="muted" style={styles.moreText}>
+            ...and {parsedData.length - 15} more rows
+          </ThemedText>
+        ) : null}
+      </View>
+
+      {errors.length > 0 ? (
+        <View style={[styles.errorSection, { backgroundColor: Colors.dark.error + "10" }]}>
+          <View style={styles.errorHeader}>
+            <Feather name="alert-triangle" size={18} color={Colors.dark.error} />
+            <ThemedText type="body" style={{ color: Colors.dark.error, fontWeight: "600" }}>
+              {errors.length} Error{errors.length > 1 ? "s" : ""} Found
+            </ThemedText>
+          </View>
+          {errors.slice(0, 5).map((err, i) => (
+            <ThemedText key={i} type="small" style={styles.errorText}>
+              {err}
+            </ThemedText>
+          ))}
+          {errors.length > 5 ? (
+            <ThemedText type="muted" style={{ marginTop: Spacing.sm }}>
+              ...and {errors.length - 5} more errors
+            </ThemedText>
+          ) : null}
+        </View>
+      ) : null}
+
+      <View style={styles.section}>
+        <ThemedText type="body" style={styles.fieldLabel}>Program Name</ThemedText>
+        <TextInput
+          style={[styles.programNameInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+          value={programName}
+          onChangeText={setProgramName}
+          placeholder="Enter program name"
+          placeholderTextColor={theme.textMuted}
+        />
+      </View>
+
+      <View style={styles.buttonRow}>
+        <Button variant="secondary" onPress={() => setStep("mapping")} style={styles.flexButton}>
+          Back
+        </Button>
+        <Button
+          onPress={handleImport}
+          disabled={importing || parsedData.filter((r) => !r.error).length === 0}
+          style={styles.flexButton}
+        >
+          {importing ? "Importing..." : "Import Program"}
+        </Button>
+      </View>
+    </ScrollView>
+  );
+
+  return step === "select" ? renderSelectStep() : step === "mapping" ? renderMappingStep() : renderPreviewStep();
 }
 
 const styles = StyleSheet.create({
@@ -286,11 +712,101 @@ const styles = StyleSheet.create({
   sectionTitle: {
     marginBottom: Spacing.sm,
   },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.sm,
+  },
   description: {
     marginBottom: Spacing.lg,
   },
+  templateCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.sm,
+    gap: Spacing.md,
+  },
+  templateIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  templateInfo: {
+    flex: 1,
+  },
   pickButton: {
     marginTop: 0,
+  },
+  smallButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  presetInput: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.md,
+  },
+  input: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+  },
+  saveBtn: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  presetsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  presetChip: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  mappingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: Spacing.sm,
+    gap: Spacing.md,
+  },
+  fieldLabel: {
+    width: 100,
+    textTransform: "capitalize",
+  },
+  dropdown: {
+    flex: 1,
+    borderRadius: BorderRadius.sm,
+  },
+  dropdownButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  buttonRow: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    marginTop: Spacing.lg,
+  },
+  flexButton: {
+    flex: 1,
   },
   previewHeader: {
     flexDirection: "row",
@@ -307,21 +823,36 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   previewCell: {
+    width: 40,
+    alignItems: "center",
+  },
+  previewCellWide: {
     flex: 1,
     paddingRight: Spacing.sm,
-  },
-  previewCellSmall: {
-    width: 60,
   },
   moreText: {
     textAlign: "center",
     marginTop: Spacing.sm,
   },
+  errorSection: {
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.xl,
+  },
+  errorHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
   errorText: {
-    fontSize: 12,
     marginTop: 4,
   },
-  importButton: {
-    marginTop: Spacing.lg,
+  programNameInput: {
+    height: 48,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.lg,
+    fontSize: 16,
+    fontFamily: "Inter_500Medium",
   },
 });

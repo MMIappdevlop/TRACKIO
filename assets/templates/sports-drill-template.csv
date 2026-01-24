@@ -1,0 +1,16 @@
+session,task,mode,sets,reps,duration_minutes,notes
+Basketball Practice,Layup Drills,time,,,10,Alternating sides
+Basketball Practice,Free Throw Practice,strength,5,10,,50 shots total
+Basketball Practice,Dribbling Drills,time,,,15,Figure 8 and crossovers
+Basketball Practice,Defensive Slides,interval,30,10,5,Lateral movement
+Basketball Practice,3-Point Shooting,strength,4,10,,Focus on form
+Soccer Training,Passing Drills,time,,,15,Short and long range
+Soccer Training,Dribbling Course,time,,,10,Cone weaving
+Soccer Training,Shooting Practice,strength,5,10,,On target shots
+Soccer Training,Sprint Drills,interval,20,40,8,Game simulation
+Soccer Training,Small-Sided Game,time,,,20,4v4 scrimmage
+Tennis Drills,Forehand Practice,strength,5,20,,Crosscourt shots
+Tennis Drills,Backhand Practice,strength,5,20,,Down the line
+Tennis Drills,Serve Practice,strength,4,15,,First and second serve
+Tennis Drills,Volley Drills,time,,,10,Net play
+Tennis Drills,Footwork Ladder,interval,30,15,6,Quick feet

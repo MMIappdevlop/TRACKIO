@@ -1,0 +1,13 @@
+session,task,mode,distance,distance_unit,duration_minutes,notes
+Easy Run,Morning Run,distance,5,km,30,Zone 2 heart rate
+Easy Run,Cool Down Walk,distance,1,km,15,Recovery
+Long Run,Weekend Long Run,distance,15,km,90,Build aerobic base
+Long Run,Post-Run Stretching,time,,,15,Full body mobility
+Tempo Run,Warm Up Jog,distance,2,km,12,Easy pace
+Tempo Run,Tempo Effort,distance,5,km,25,Threshold pace
+Tempo Run,Cool Down,distance,1,km,8,Easy recovery
+Recovery,Light Jog,distance,3,km,25,Very easy effort
+Recovery,Mobility Work,time,,,20,Dynamic stretching
+Interval Day,Warm Up,distance,1.5,km,10,Easy build up
+Interval Day,Speed Work,interval,,,20,See interval details
+Interval Day,Cool Down,distance,1,km,10,Easy recovery

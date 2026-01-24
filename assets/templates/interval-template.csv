@@ -1,0 +1,17 @@
+session,task,mode,work_seconds,rest_seconds,rounds,notes
+HIIT Session,Jump Squats,interval,30,15,4,Explosive power
+HIIT Session,Burpees,interval,30,15,4,Full body cardio
+HIIT Session,Mountain Climbers,interval,30,15,4,Core and cardio
+HIIT Session,High Knees,interval,30,15,4,Running in place
+HIIT Session,Box Jumps,interval,30,15,4,Plyometric power
+Tabata Core,Bicycle Crunches,interval,20,10,8,Classic tabata
+Tabata Core,Plank Hold,interval,20,10,8,Core stability
+Tabata Core,Russian Twists,interval,20,10,8,Oblique focus
+Tabata Core,Leg Raises,interval,20,10,8,Lower abs
+Sprint Intervals,Sprint,interval,30,90,6,Maximum effort
+Sprint Intervals,Active Recovery,interval,60,30,6,Walking pace
+Circuit Training,Push-ups,interval,45,15,3,Upper body
+Circuit Training,Squats,interval,45,15,3,Lower body
+Circuit Training,Plank,interval,45,15,3,Core
+Circuit Training,Lunges,interval,45,15,3,Legs
+Circuit Training,Dips,interval,45,15,3,Triceps
