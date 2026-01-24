@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from "react";
-import { View, FlatList, StyleSheet, Pressable, RefreshControl, TextInput } from "react-native";
+import React, { useState, useCallback, useMemo } from "react";
+import { View, FlatList, StyleSheet, Pressable, RefreshControl, TextInput, ScrollView } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -161,6 +161,7 @@ export default function TrainingHomeScreen() {
                   autoCapitalize="words"
                   returnKeyType="done"
                   onSubmitEditing={handleSaveName}
+                  blurOnSubmit={false}
                 />
                 <Pressable
                   onPress={handleSaveName}
@@ -215,6 +216,21 @@ export default function TrainingHomeScreen() {
     );
   };
 
+  const emptySessionsContent = useMemo(() => (
+    <View style={styles.emptySessionsContainer}>
+      <View style={[styles.emptyIcon, { backgroundColor: theme.linkBackground }]}>
+        <Feather name="clipboard" size={32} color={theme.link} />
+      </View>
+      <ThemedText type="h3" style={styles.emptyTitle}>No Sessions</ThemedText>
+      <ThemedText type="secondary" style={styles.emptyDescription}>
+        Add session templates to this program
+      </ThemedText>
+      <Button onPress={() => setShowCreateSession(true)} style={styles.addSessionButton}>
+        Add Session
+      </Button>
+    </View>
+  ), [theme]);
+
   const renderEmpty = () => {
     if (loading) return null;
 
@@ -222,27 +238,36 @@ export default function TrainingHomeScreen() {
       return renderWelcome();
     }
 
+    return emptySessionsContent;
+  };
+
+  if (!activeProgram && !loading) {
     return (
-      <View style={styles.emptySessionsContainer}>
-        <View style={[styles.emptyIcon, { backgroundColor: theme.linkBackground }]}>
-          <Feather name="clipboard" size={32} color={theme.link} />
-        </View>
-        <ThemedText type="h3" style={styles.emptyTitle}>No Sessions</ThemedText>
-        <ThemedText type="secondary" style={styles.emptyDescription}>
-          Add session templates to this program
-        </ThemedText>
-        <Button onPress={() => setShowCreateSession(true)} style={styles.addSessionButton}>
-          Add Session
-        </Button>
+      <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[styles.content, { paddingTop: headerHeight + Spacing.xl, paddingBottom: tabBarHeight + Spacing["4xl"] }]}
+        >
+          {renderWelcome()}
+        </ScrollView>
+        <InputModal
+          visible={showCreateProgram}
+          title="New Program"
+          placeholder="Program name"
+          submitLabel="Create"
+          onSubmit={handleCreateProgram}
+          onClose={() => setShowCreateProgram(false)}
+        />
       </View>
     );
-  };
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
       <FlatList
         data={templates}
         keyExtractor={(item) => item.id}
+        keyboardShouldPersistTaps="handled"
         renderItem={({ item }) => (
           <SessionTemplateCard
             template={item}
@@ -251,15 +276,15 @@ export default function TrainingHomeScreen() {
             onLongPress={() => handleEditSession(item)}
           />
         )}
-        ListHeaderComponent={activeProgram ? renderHeader : null}
-        ListEmptyComponent={renderEmpty}
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={emptySessionsContent}
         contentContainerStyle={[
           styles.content,
           {
             paddingTop: headerHeight + Spacing.xl,
             paddingBottom: tabBarHeight + Spacing["4xl"],
           },
-          templates.length === 0 && !activeProgram && styles.emptyContent,
+          templates.length === 0 && styles.emptyContent,
         ]}
         refreshControl={
           <RefreshControl
