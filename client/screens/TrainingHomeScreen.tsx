@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, FlatList, StyleSheet, Pressable, RefreshControl } from "react-native";
+import { View, FlatList, StyleSheet, Pressable, RefreshControl, TextInput } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -9,18 +9,19 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
-import { EmptyState } from "@/components/EmptyState";
 import { SessionTemplateCard } from "@/components/SessionTemplateCard";
 import { InputModal } from "@/components/InputModal";
+import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
-import { usePrograms, useSessionTemplates, useTaskTemplates } from "@/hooks/useData";
+import { usePrograms, useSessionTemplates, useSettings } from "@/hooks/useData";
 import { taskTemplatesStorage } from "@/lib/storage";
-import { Spacing, BorderRadius } from "@/constants/theme";
+import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { TrainingStackParamList } from "@/navigation/TrainingStackNavigator";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
+import type { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import type { TaskTemplate } from "@/types";
 
-type NavigationProp = NativeStackNavigationProp<TrainingStackParamList & RootStackParamList>;
+type NavigationProp = NativeStackNavigationProp<TrainingStackParamList & RootStackParamList & ProfileStackParamList>;
 
 export default function TrainingHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -30,16 +31,20 @@ export default function TrainingHomeScreen() {
 
   const { programs, activeProgram, loading: programsLoading, refresh: refreshPrograms, createProgram } = usePrograms();
   const { templates, loading: templatesLoading, refresh: refreshTemplates, createTemplate } = useSessionTemplates(activeProgram?.id || null);
+  const { settings, updateSettings, refresh: refreshSettings } = useSettings();
 
   const [allTasks, setAllTasks] = useState<TaskTemplate[]>([]);
   const [showCreateProgram, setShowCreateProgram] = useState(false);
   const [showCreateSession, setShowCreateSession] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [userName, setUserName] = useState("");
+  const [isSettingName, setIsSettingName] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       refreshPrograms();
       refreshTemplates();
+      refreshSettings();
       loadAllTasks();
     }, [activeProgram?.id])
   );
@@ -51,8 +56,16 @@ export default function TrainingHomeScreen() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refreshPrograms(), refreshTemplates(), loadAllTasks()]);
+    await Promise.all([refreshPrograms(), refreshTemplates(), refreshSettings(), loadAllTasks()]);
     setRefreshing(false);
+  };
+
+  const handleSaveName = async () => {
+    if (!userName.trim()) return;
+    setIsSettingName(true);
+    await updateSettings({ userName: userName.trim() });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setIsSettingName(false);
   };
 
   const handleCreateProgram = async (name: string) => {
@@ -119,29 +132,106 @@ export default function TrainingHomeScreen() {
     </View>
   );
 
+  const renderWelcome = () => {
+    const hasUserName = settings?.userName && settings.userName.trim().length > 0;
+
+    return (
+      <View style={styles.welcomeContainer}>
+        <View style={[styles.welcomeCard, { backgroundColor: theme.backgroundDefault }]}>
+          <ThemedText type="h1" style={styles.welcomeTitle}>
+            {hasUserName ? `Hey, ${settings.userName}` : "Welcome to Trakio"}
+          </ThemedText>
+          <ThemedText type="secondary" style={styles.welcomeSubtitle}>
+            Your personal training log
+          </ThemedText>
+
+          {!hasUserName ? (
+            <View style={styles.nameInputSection}>
+              <ThemedText type="body" style={styles.nameLabel}>What should we call you?</ThemedText>
+              <View style={styles.nameInputRow}>
+                <TextInput
+                  style={[styles.nameInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+                  value={userName}
+                  onChangeText={setUserName}
+                  placeholder="Your name"
+                  placeholderTextColor={theme.textMuted}
+                  autoCapitalize="words"
+                  returnKeyType="done"
+                  onSubmitEditing={handleSaveName}
+                />
+                <Pressable
+                  onPress={handleSaveName}
+                  disabled={!userName.trim() || isSettingName}
+                  style={[
+                    styles.saveNameButton,
+                    { backgroundColor: userName.trim() ? Colors.dark.primary : theme.backgroundSecondary },
+                  ]}
+                >
+                  <Feather name="check" size={20} color={userName.trim() ? "#FFF" : theme.textMuted} />
+                </Pressable>
+              </View>
+            </View>
+          ) : null}
+        </View>
+
+        <View style={styles.getStartedSection}>
+          <ThemedText type="h2" style={styles.sectionLabel}>Get Started</ThemedText>
+          <ThemedText type="secondary" style={styles.getStartedText}>
+            Bring your own workout program or create one from scratch
+          </ThemedText>
+
+          <View style={styles.actionButtons}>
+            <Pressable
+              onPress={() => setShowCreateProgram(true)}
+              style={[styles.actionCard, { backgroundColor: theme.backgroundDefault }]}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: Colors.dark.primary + "20" }]}>
+                <Feather name="plus-circle" size={24} color={Colors.dark.primary} />
+              </View>
+              <ThemedText type="h4">Create Program</ThemedText>
+              <ThemedText type="muted" style={styles.actionDescription}>
+                Start fresh with a new program
+              </ThemedText>
+            </Pressable>
+
+            <Pressable
+              onPress={() => navigation.navigate("ImportProgram" as any)}
+              style={[styles.actionCard, { backgroundColor: theme.backgroundDefault }]}
+            >
+              <View style={[styles.actionIcon, { backgroundColor: Colors.dark.success + "20" }]}>
+                <Feather name="upload" size={24} color={Colors.dark.success} />
+              </View>
+              <ThemedText type="h4">Import Plan</ThemedText>
+              <ThemedText type="muted" style={styles.actionDescription}>
+                From CSV or Excel file
+              </ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   const renderEmpty = () => {
     if (loading) return null;
 
     if (!activeProgram) {
-      return (
-        <EmptyState
-          image={require("../../assets/images/empty-training.png")}
-          title="No Programs Yet"
-          description="Create your first training program to start logging workouts"
-          actionLabel="Create Program"
-          onAction={() => setShowCreateProgram(true)}
-        />
-      );
+      return renderWelcome();
     }
 
     return (
-      <EmptyState
-        icon="clipboard"
-        title="No Sessions"
-        description="Add session templates to this program"
-        actionLabel="Add Session"
-        onAction={() => setShowCreateSession(true)}
-      />
+      <View style={styles.emptySessionsContainer}>
+        <View style={[styles.emptyIcon, { backgroundColor: theme.linkBackground }]}>
+          <Feather name="clipboard" size={32} color={theme.link} />
+        </View>
+        <ThemedText type="h3" style={styles.emptyTitle}>No Sessions</ThemedText>
+        <ThemedText type="secondary" style={styles.emptyDescription}>
+          Add session templates to this program
+        </ThemedText>
+        <Button onPress={() => setShowCreateSession(true)} style={styles.addSessionButton}>
+          Add Session
+        </Button>
+      </View>
     );
   };
 
@@ -208,7 +298,6 @@ const styles = StyleSheet.create({
   },
   emptyContent: {
     flex: 1,
-    justifyContent: "center",
   },
   header: {
     marginBottom: Spacing.lg,
@@ -237,5 +326,93 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
     alignItems: "center",
     justifyContent: "center",
+  },
+  welcomeContainer: {
+    flex: 1,
+  },
+  welcomeCard: {
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    marginBottom: Spacing.xl,
+  },
+  welcomeTitle: {
+    marginBottom: Spacing.xs,
+  },
+  welcomeSubtitle: {
+    marginBottom: 0,
+  },
+  nameInputSection: {
+    marginTop: Spacing.xl,
+  },
+  nameLabel: {
+    marginBottom: Spacing.sm,
+  },
+  nameInputRow: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+  },
+  nameInput: {
+    flex: 1,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.lg,
+    fontSize: 16,
+    fontFamily: "Inter_500Medium",
+  },
+  saveNameButton: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  getStartedSection: {
+    marginBottom: Spacing.xl,
+  },
+  sectionLabel: {
+    marginBottom: Spacing.xs,
+  },
+  getStartedText: {
+    marginBottom: Spacing.lg,
+  },
+  actionButtons: {
+    gap: Spacing.md,
+  },
+  actionCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+  },
+  actionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.md,
+  },
+  actionDescription: {
+    marginTop: Spacing.xs,
+  },
+  emptySessionsContainer: {
+    alignItems: "center",
+    paddingVertical: Spacing["3xl"],
+  },
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: BorderRadius.lg,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.lg,
+  },
+  emptyTitle: {
+    marginBottom: Spacing.sm,
+  },
+  emptyDescription: {
+    textAlign: "center",
+    marginBottom: Spacing.lg,
+  },
+  addSessionButton: {
+    minWidth: 160,
   },
 });
