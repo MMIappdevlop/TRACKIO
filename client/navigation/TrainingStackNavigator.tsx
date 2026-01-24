@@ -12,7 +12,12 @@ export type TrainingStackParamList = {
   TrainingHome: undefined;
   ProgramList: undefined;
   ProgramDetail: { programId: string; programName: string };
-  SessionTemplateDetail: { templateId: string; templateName: string };
+  SessionTemplateDetail: { 
+    templateId: string; 
+    templateName: string;
+    programId: string;
+    programName: string;
+  };
 };
 
 const Stack = createNativeStackNavigator<TrainingStackParamList>();

@@ -38,6 +38,16 @@ export default function SessionRunScreen() {
   const [showRestTimer, setShowRestTimer] = useState(false);
   const [restSeconds, setRestSeconds] = useState(90);
   const startTimeRef = useRef(new Date());
+  const taskLogsRef = useRef<TaskLogState[]>([]);
+  const tasksRef = useRef<TaskTemplate[]>([]);
+
+  useEffect(() => {
+    taskLogsRef.current = taskLogs;
+  }, [taskLogs]);
+
+  useEffect(() => {
+    tasksRef.current = tasks;
+  }, [tasks]);
 
   useEffect(() => {
     loadTasks();
@@ -89,6 +99,7 @@ export default function SessionRunScreen() {
   };
 
   const updateTaskLog = (taskId: string, updates: Partial<TaskDataJson>) => {
+    console.log("[SessionRun] updateTaskLog called:", taskId, updates);
     setTaskLogs((prev) =>
       prev.map((log) =>
         log.taskId === taskId ? { ...log, data: { ...log.data, ...updates } } : log
@@ -156,6 +167,9 @@ export default function SessionRunScreen() {
   };
 
   const handleFinish = async () => {
+    const currentTaskLogs = taskLogsRef.current;
+    const currentTasks = tasksRef.current;
+    console.log("[SessionRun] handleFinish - taskLogs:", JSON.stringify(currentTaskLogs, null, 2));
     const endTime = new Date();
     const durationSeconds = Math.floor((endTime.getTime() - startTimeRef.current.getTime()) / 1000);
 
@@ -169,8 +183,8 @@ export default function SessionRunScreen() {
       durationSeconds,
     });
 
-    for (const log of taskLogs) {
-      const task = tasks.find((t) => t.id === log.taskId);
+    for (const log of currentTaskLogs) {
+      const task = currentTasks.find((t) => t.id === log.taskId);
       if (!task) continue;
 
       await completedTasksStorage.create({
@@ -242,9 +256,10 @@ export default function SessionRunScreen() {
               <View style={styles.distanceField}>
                 <ThemedText type="muted" style={styles.distanceLabel}>Distance</ThemedText>
                 <TextInput
+                  testID={`input-distance-${task.id}`}
                   style={[styles.distanceInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
                   value={log?.data.distance ? String(log.data.distance) : ""}
-                  onChangeText={(v) => updateTaskLog(task.id, { distance: parseFloat(v) || 0 })}
+                  onChangeText={(v) => updateTaskLog(task.id, { distance: parseFloat(v) || undefined })}
                   keyboardType="decimal-pad"
                   placeholder={task.config.distanceUnit || "km"}
                   placeholderTextColor={theme.textMuted}
@@ -253,6 +268,7 @@ export default function SessionRunScreen() {
               <View style={styles.distanceField}>
                 <ThemedText type="muted" style={styles.distanceLabel}>Duration (min)</ThemedText>
                 <TextInput
+                  testID={`input-duration-${task.id}`}
                   style={[styles.distanceInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
                   value={log?.data.durationSeconds ? String(Math.floor(log.data.durationSeconds / 60)) : ""}
                   onChangeText={(v) => updateTaskLog(task.id, { durationSeconds: (parseInt(v) || 0) * 60 })}

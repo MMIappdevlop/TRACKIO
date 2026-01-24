@@ -10,9 +10,10 @@ import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { TaskCard } from "@/components/TaskCard";
 import { EmptyState } from "@/components/EmptyState";
+import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { useTaskTemplates } from "@/hooks/useData";
-import { Spacing, BorderRadius } from "@/constants/theme";
+import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { TrainingStackParamList } from "@/navigation/TrainingStackNavigator";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { TaskTemplate } from "@/types";
@@ -26,9 +27,19 @@ export default function SessionTemplateDetailScreen() {
   const { theme } = useTheme();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
-  const { templateId } = route.params;
+  const { templateId, templateName, programId, programName } = route.params;
 
   const { tasks, loading, refresh, deleteTask } = useTaskTemplates(templateId);
+
+  const handleStartWorkout = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    navigation.navigate("SessionRun", {
+      sessionTemplateId: templateId,
+      sessionTemplateName: templateName,
+      programId,
+      programName,
+    });
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -124,13 +135,25 @@ export default function SessionTemplateDetailScreen() {
         ]}
         ListFooterComponent={
           tasks.length > 0 ? (
-            <Pressable
-              onPress={handleAddTask}
-              style={[styles.createButton, { backgroundColor: theme.linkBackground }]}
-            >
-              <Feather name="plus" size={20} color={theme.link} />
-              <ThemedText type="link">Add Task</ThemedText>
-            </Pressable>
+            <View style={styles.footerContainer}>
+              <Pressable
+                onPress={handleAddTask}
+                style={[styles.createButton, { backgroundColor: theme.linkBackground }]}
+              >
+                <Feather name="plus" size={20} color={theme.link} />
+                <ThemedText type="link">Add Task</ThemedText>
+              </Pressable>
+              <Pressable
+                onPress={handleStartWorkout}
+                testID="button-start-workout"
+                style={[styles.startButton, { backgroundColor: Colors.dark.primary }]}
+              >
+                <Feather name="play" size={20} color="#FFF" />
+                <ThemedText type="body" style={{ color: "#FFF", fontWeight: "600" }}>
+                  Start Workout
+                </ThemedText>
+              </Pressable>
+            </View>
           ) : null
         }
       />
@@ -163,6 +186,10 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.sm,
     marginBottom: Spacing.sm,
   },
+  footerContainer: {
+    marginTop: Spacing.md,
+    gap: Spacing.md,
+  },
   createButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -170,6 +197,13 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     padding: Spacing.lg,
     borderRadius: BorderRadius.lg,
-    marginTop: Spacing.md,
+  },
+  startButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
   },
 });

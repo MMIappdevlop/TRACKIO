@@ -73,7 +73,12 @@ export default function ProgramDetailScreen() {
 
   const renderTemplate = ({ item }: { item: SessionTemplate }) => (
     <Pressable
-      onPress={() => navigation.navigate("SessionTemplateDetail", { templateId: item.id, templateName: item.name })}
+      onPress={() => navigation.navigate("SessionTemplateDetail", { 
+        templateId: item.id, 
+        templateName: item.name,
+        programId: route.params.programId,
+        programName: route.params.programName,
+      })}
       onLongPress={() => handleEditTemplate(item)}
       style={[styles.templateCard, { backgroundColor: theme.backgroundDefault }]}
     >

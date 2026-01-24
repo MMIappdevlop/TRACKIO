@@ -91,9 +91,12 @@ export default function TrainingHomeScreen() {
   };
 
   const handleEditSession = (template: typeof templates[0]) => {
+    if (!activeProgram) return;
     navigation.navigate("SessionTemplateDetail", {
       templateId: template.id,
       templateName: template.name,
+      programId: activeProgram.id,
+      programName: activeProgram.name,
     });
   };
 

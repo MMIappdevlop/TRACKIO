@@ -83,6 +83,7 @@ export default function SessionSummaryScreen() {
     let setsCompleted = 0;
     let totalVolume = 0;
     let totalDistance = 0;
+    let totalActivityDuration = 0;
 
     for (const task of tasks) {
       if (task.mode === "strength" && task.dataJson.sets) {
@@ -99,16 +100,23 @@ export default function SessionSummaryScreen() {
       } else if (task.mode === "distance" && task.dataJson.distance) {
         tasksCompleted++;
         totalDistance += task.dataJson.distance;
+        if (task.dataJson.durationSeconds) {
+          totalActivityDuration += task.dataJson.durationSeconds;
+        }
       } else if (task.mode === "interval" && task.dataJson.roundsCompleted) {
         tasksCompleted++;
+        if (task.dataJson.durationSeconds) {
+          totalActivityDuration += task.dataJson.durationSeconds;
+        }
       } else if (task.mode === "time" && task.dataJson.durationSeconds) {
         tasksCompleted++;
+        totalActivityDuration += task.dataJson.durationSeconds;
       } else if (task.mode === "notes" && task.dataJson.notes) {
         tasksCompleted++;
       }
     }
 
-    return { tasksCompleted, setsCompleted, totalVolume, totalDistance };
+    return { tasksCompleted, setsCompleted, totalVolume, totalDistance, totalActivityDuration };
   };
 
   const handleRating = (value: number) => {
@@ -159,7 +167,7 @@ export default function SessionSummaryScreen() {
             </View>
           ) : null}
           <View style={styles.stat}>
-            <ThemedText type="stat">{formatDuration(session.durationSeconds)}</ThemedText>
+            <ThemedText type="stat">{formatDuration(stats.totalActivityDuration > 0 ? stats.totalActivityDuration : session.durationSeconds)}</ThemedText>
             <ThemedText type="muted">Duration</ThemedText>
           </View>
         </View>
