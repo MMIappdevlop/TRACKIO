@@ -6,6 +6,7 @@ import SessionRunScreen from "@/screens/SessionRunScreen";
 import SessionSummaryScreen from "@/screens/SessionSummaryScreen";
 import AddTaskScreen from "@/screens/AddTaskScreen";
 import IntervalTimerScreen from "@/screens/IntervalTimerScreen";
+import ImportProgramScreen from "@/screens/ImportProgramScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
 export type RootStackParamList = {
@@ -30,6 +31,7 @@ export type RootStackParamList = {
     rounds: number;
     onComplete: (roundsCompleted: number, totalSeconds: number) => void;
   };
+  ImportProgram: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -78,6 +80,14 @@ export default function RootStackNavigator() {
           presentation: "fullScreenModal",
           headerShown: false,
         })}
+      />
+      <Stack.Screen
+        name="ImportProgram"
+        component={ImportProgramScreen}
+        options={{
+          headerTitle: "Import Program",
+          presentation: "modal",
+        }}
       />
     </Stack.Navigator>
   );

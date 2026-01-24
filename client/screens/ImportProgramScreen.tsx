@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, FlatList, Alert, Pressable, TextInput } from "react-native";
+import { View, StyleSheet, ScrollView, FlatList, Alert, Pressable, TextInput, Platform } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -173,17 +173,30 @@ export default function ImportProgramScreen() {
     try {
       const templateContent = getTemplateContent(templateId);
       const fileName = `${templateId}-template.csv`;
-      const fileUri = FileSystem.cacheDirectory + fileName;
       
-      await FileSystem.writeAsStringAsync(fileUri, templateContent);
-      
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(fileUri, {
-          mimeType: "text/csv",
-          dialogTitle: "Save Template",
-        });
+      if (Platform.OS === "web") {
+        const blob = new Blob([templateContent], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        Alert.alert("Success", "Template downloaded");
       } else {
-        Alert.alert("Success", "Template saved to downloads");
+        const fileUri = FileSystem.cacheDirectory + fileName;
+        await FileSystem.writeAsStringAsync(fileUri, templateContent);
+        
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: "text/csv",
+            dialogTitle: "Save Template",
+          });
+        } else {
+          Alert.alert("Error", "Sharing is not available on this device");
+        }
       }
     } catch (error) {
       Alert.alert("Error", "Could not download template");
