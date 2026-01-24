@@ -1,0 +1,239 @@
+Trakio is a mobile-first personal training log built with React Native + Expo (TypeScript). It is designed for single-user, offline-first operation with all data stored locally on the device. Trakio does not provide training plans; users always bring their own program and exercises. Trakio focuses on fast logging, trustworthy history, clear progress, optional cloud backup without accounts, and meaningful milestones.
+
+Core product promise:
+
+“Bring your plan. Trakio records your training.”
+
+⸻
+
+Core Features (MVP)
+
+1) Program & Session Template Management
+	•	Create multiple Programs (training programs) and switch active program
+	•	Programs can be paused/archived (removed from rotation without deletion)
+	•	Build a program structure with Session Templates (e.g., “Upper Body”, “Intervals Day”, “Swim Session”)
+	•	Reorder Session Templates within a program
+	•	Within each Session Template, add and reorder Tasks (user-defined items to log)
+
+Important: Trakio does not provide plans/exercise libraries; everything is user-created or imported.
+
+⸻
+
+2) Task Types (Supports Strength + Endurance + Intervals)
+
+Each Session Template contains Tasks of different modes:
+
+A) Strength Tasks
+	•	Track per-set data: weight, reps, completion status
+	•	Supports bodyweight (weight optional)
+	•	Supports decimal input (comma or dot)
+	•	Optional per-set RPE or RIR (toggleable in settings)
+	•	Shows previous performance (last logged result) while logging
+
+B) Distance Tasks (Running / Cycling / Rowing / Swimming)
+	•	Log distance + duration
+	•	Auto-calculate pace (min/km, min/mi, or equivalent)
+	•	Swimming supported via meters (optionally: pool length + laps helper, but manual distance entry is acceptable for MVP)
+
+C) Interval / HIIT Tasks
+	•	Configure work/rest + rounds
+	•	Full-screen timer experience
+	•	Pause / resume / skip phase
+	•	Vibration/audio cues (device dependent)
+	•	Save result: rounds completed, total duration
+
+D) Time Tasks (Yoga / mobility / generic timed sessions)
+	•	Log a single duration
+	•	Optional rating + notes
+
+E) Free / Notes Tasks
+	•	Simple text or note capture for anything not fitting other modes
+
+⸻
+
+3) Workout Session Experience (Fast Logging)
+	•	Start a workout from the active program → select a Session Template
+	•	Trakio creates a Completed Session entry
+	•	UI is list-first for speed (cards are optional but not required)
+	•	For each task:
+	•	Strength: log sets quickly, mark sets complete
+	•	Distance: enter distance + duration, see calculated pace
+	•	Interval: run timer, then save result
+	•	Time: run timer or enter duration
+	•	End workout → show Session Summary and save
+
+⸻
+
+4) Rest Timer + Set Completion UX (Strength)
+	•	When a set is marked completed, show a rest timer bottom sheet:
+	•	Start / Pause
+	•	+15s / -15s
+	•	Skip rest
+	•	Each strength task can have a default rest time
+	•	Burnt orange highlight is used ONLY when the timer is actively running
+
+⸻
+
+5) Supersets / Grouped Tasks (MVP-Level)
+	•	Allow grouping tasks under a label (e.g., “Superset A”)
+	•	Grouping is visual + ordering (no advanced circuit logic required)
+	•	Logging stays simple and fast
+
+⸻
+
+6) Progress & History (MUST HAVE in MVP)
+
+Progress is a core MVP requirement.
+
+A) Weekly Overview
+	•	Sessions per week
+	•	Total training duration
+	•	Total strength volume (sum weight × reps for completed weighted sets)
+	•	Total distance (sum distance tasks)
+
+B) Session History
+	•	Chronological list of completed sessions
+	•	Filters: by program and by task type (strength/distance/interval/time)
+	•	Tap any session to view full details
+
+C) Task/Exercise History
+	•	For any task, show:
+	•	Last logged result
+	•	Best result (where applicable)
+	•	List of sessions where it appeared
+
+⸻
+
+7) Badges (Achievements) + Motivational Text (Respectful, Non-Pushy)
+
+Badges are descriptive. No streak badges. No “you’re close” messages. No pressure.
+
+Badge Families (MVP set)
+	1.	Training Days Logged (cumulative): 10 / 25 / 50 / 100 / 250
+	2.	Strength Milestones (per selected task): e.g., Squat reaching 40/60/80/100/140 kg
+	•	Users can enable “milestone tracking” for chosen tasks
+	•	Threshold ladder can be default + customizable
+	3.	Distance Milestones (single session):
+	•	Running: 1 / 2 / 5 / 10 km + 21.1 km + 42.1 km
+	•	Cycling: 10 / 25 / 50 / 100 km
+	•	Swimming: 500 / 1000 / 2000 m
+	4.	Lifetime Volume: 10,000 / 50,000 / 100,000 kg total lifted
+	5.	Lifetime Distance: 1,000 km total distance trained
+	6.	Program Completion (MVP version): Completed 12 planned sessions
+
+Badge Unlock UX
+	•	Small toast: “Milestone recorded: 42.1 km”
+	•	Badge detail includes calm contextual meaning, e.g.:
+	•	“You’ve completed marathon distance. This reflects patience, pacing, and long-term preparation.”
+
+⸻
+
+8) Session Summary + Motivational Reflection (Every Session)
+
+After finishing a workout:
+	•	Show factual summary:
+	•	Tasks completed
+	•	Sets completed
+	•	Total volume (strength)
+	•	Total distance (endurance)
+	•	Duration
+	•	Difficulty rating (1–5)
+	•	Show one neutral insight comparing to last same Session Template:
+	•	“Volume was higher than last time.”
+	•	“Distance matched your previous session.”
+	•	Show one short reflective line (from a curated library):
+	•	“Sessions like this build long-term capacity.”
+	•	No “keep going”, no guilt, no hype.
+
+⸻
+
+9) Import / Export / Backup (MVP-Level but “Pro” quality)
+
+A) Full Backup Export/Import
+	•	Export all data to a single file (JSON or zipped JSON):
+	•	Settings, Programs, Templates, Completed Sessions, Badges
+	•	Import backup with validation and safe overwrite options
+
+B) Optional Auto-Backup to iCloud/Google Drive (No Accounts)
+	•	User selects destination using OS file picker once
+	•	Store backup URI locally
+	•	After each saved session, write updated backup file
+	•	If location becomes invalid, show a calm warning and disable auto-backup until re-enabled
+
+C) Plan Import from CSV/XLSX
+	•	Import programs and session templates from CSV/XLSX
+	•	Show preview + column mapping
+	•	Row-level validation errors:
+	•	“Row 12: sets is missing”
+	•	“Row 18: invalid mode”
+	•	Provide downloadable templates inside the app (examples only, not plans)
+
+⸻
+
+User Flows (MVP)
+
+Flow 1: First-Time Setup
+
+Open app → Training tab shows empty state
+Tap “Create Program” → Enter program name
+Add session templates → Add tasks to each session template
+Set program active → Ready to log
+
+Flow 2: Import a Program
+
+Profile/Menu → “Import Program”
+Pick CSV/XLSX → Preview → Map columns → Validate rows
+Tap “Create Program” → Program is added and can be set active
+
+Flow 3: Start a Session (Strength)
+
+Training tab → Select session template
+Session logging screen opens
+Log sets/reps/weight → tap check to complete sets
+Rest timer appears after each completed set (optional)
+Finish → Session Summary → Save
+
+Flow 4: Start a Session (Distance)
+
+Training tab → Select distance session template
+Enter distance + duration → pace auto-calculates
+Finish → Summary → Save
+
+Flow 5: Interval / HIIT Session
+
+Training tab → Select interval session template
+Full-screen timer runs work/rest rounds
+Finish → Save rounds + duration → Summary
+
+Flow 6: View Progress & History
+
+Progress tab → Weekly overview
+Tap week → view sessions
+Tap session → full details
+Tap task → task history (last/best/list)
+
+Flow 7: Backup & Restore
+
+Profile → Data & Backup
+	•	Back up now / restore
+	•	Enable auto-backup and choose location
+	•	Export share file
+
+⸻
+
+UI Design (MVP)
+
+Visual Style
+	•	Dark-first, minimal, instrument-like
+	•	Primary accent: Steel Blue (navigation, selection, primary actions)
+	•	Secondary accent: Burnt Orange ONLY for effort states (active timer, active set highlight)
+	•	Light mode supported, but dark is primary identity
+	•	Minimal animations (fade/slide only)
+	•	Icons: Feather/Lucide acceptable
+
+Navigation Structure
+
+Bottom Tab Bar (3 tabs):
+	1.	Training – active program + session templates
+	2.	Progress – history + weekly overview + task detail
+	3.	Profile – badges, settings, import/export/backup
