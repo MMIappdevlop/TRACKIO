@@ -1,4 +1,4 @@
-import { Text, type TextProps } from "react-native";
+import { Text, type TextProps, StyleSheet } from "react-native";
 
 import { useTheme } from "@/hooks/useTheme";
 import { Typography } from "@/constants/theme";
@@ -6,7 +6,7 @@ import { Typography } from "@/constants/theme";
 export type ThemedTextProps = TextProps & {
   lightColor?: string;
   darkColor?: string;
-  type?: "h1" | "h2" | "h3" | "h4" | "body" | "small" | "link";
+  type?: "h1" | "h2" | "h3" | "h4" | "body" | "small" | "link" | "stat" | "statSmall" | "secondary" | "muted";
 };
 
 export function ThemedText({
@@ -31,6 +31,14 @@ export function ThemedText({
       return theme.link;
     }
 
+    if (type === "secondary") {
+      return theme.textSecondary;
+    }
+
+    if (type === "muted") {
+      return theme.textMuted;
+    }
+
     return theme.text;
   };
 
@@ -50,12 +58,26 @@ export function ThemedText({
         return Typography.small;
       case "link":
         return Typography.link;
+      case "stat":
+        return Typography.stat;
+      case "statSmall":
+        return Typography.statSmall;
+      case "secondary":
+        return Typography.body;
+      case "muted":
+        return Typography.small;
       default:
         return Typography.body;
     }
   };
 
   return (
-    <Text style={[{ color: getColor() }, getTypeStyle(), style]} {...rest} />
+    <Text style={[styles.base, { color: getColor() }, getTypeStyle(), style]} {...rest} />
   );
 }
+
+const styles = StyleSheet.create({
+  base: {
+    fontFamily: "Inter_400Regular",
+  },
+});
