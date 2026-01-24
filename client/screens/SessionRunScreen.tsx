@@ -10,6 +10,7 @@ import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { RestTimerSheet } from "@/components/RestTimerSheet";
+import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
 import { taskTemplatesStorage, completedSessionsStorage, completedTasksStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, TaskModes, Colors } from "@/constants/theme";
@@ -327,9 +328,19 @@ export default function SessionRunScreen() {
         data={tasks}
         keyExtractor={(item) => item.id}
         renderItem={renderTask}
+        ListEmptyComponent={
+          <EmptyState
+            icon="clipboard"
+            title="No Exercises"
+            description="This session has no exercises yet. Go back and long-press the session to add tasks."
+            actionLabel="Go Back"
+            onAction={() => navigation.goBack()}
+          />
+        }
         contentContainerStyle={[
           styles.content,
           { paddingTop: headerHeight + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl },
+          tasks.length === 0 && styles.emptyContent,
         ]}
       />
 
@@ -348,6 +359,11 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: Spacing.lg,
+    flexGrow: 1,
+  },
+  emptyContent: {
+    flex: 1,
+    justifyContent: "center",
   },
   taskCard: {
     borderRadius: BorderRadius.lg,
