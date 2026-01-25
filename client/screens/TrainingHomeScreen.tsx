@@ -186,7 +186,7 @@ export default function TrainingHomeScreen() {
 
           <View style={styles.actionButtons}>
             <Pressable
-              onPress={() => setShowCreateProgram(true)}
+              onPress={() => navigation.navigate("ProgramBuilder" as any)}
               style={[styles.actionCard, { backgroundColor: theme.backgroundDefault }]}
             >
               <View style={[styles.actionIcon, { backgroundColor: Colors.dark.primary + "20" }]}>
