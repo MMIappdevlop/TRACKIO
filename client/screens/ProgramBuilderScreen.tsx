@@ -258,7 +258,7 @@ export default function ProgramBuilderScreen() {
 
   const renderTaskTypeSelector = (sessionId: string) => (
     <View style={styles.taskTypeSelector}>
-      <ThemedText type="small" style={styles.taskTypeLabel}>
+      <ThemedText type="body" style={[styles.taskTypeLabel, { color: theme.text }]}>
         Select task type:
       </ThemedText>
       <View style={styles.taskTypeGrid}>
@@ -272,7 +272,7 @@ export default function ProgramBuilderScreen() {
             onPress={() => handleSelectTaskType(sessionId, type.mode)}
           >
             <Feather name={type.icon as any} size={18} color={Colors.dark.primary} />
-            <ThemedText type="small" style={styles.taskTypeText}>
+            <ThemedText type="body" style={[styles.taskTypeText, { color: theme.text }]}>
               {type.label}
             </ThemedText>
           </Pressable>
@@ -286,7 +286,7 @@ export default function ProgramBuilderScreen() {
 
     return (
       <View style={[styles.taskForm, { backgroundColor: theme.backgroundSecondary }]}>
-        <ThemedText type="small" style={styles.formLabel}>
+        <ThemedText type="body" style={[styles.formLabel, { color: theme.text }]}>
           {session.selectedTaskType?.charAt(0).toUpperCase() + session.selectedTaskType?.slice(1)} Task
         </ThemedText>
 
@@ -302,7 +302,7 @@ export default function ProgramBuilderScreen() {
         {isStrength ? (
           <View style={styles.inputRow}>
             <View style={styles.inputHalf}>
-              <ThemedText type="muted" style={styles.inputLabel}>Sets</ThemedText>
+              <ThemedText type="body" style={[styles.inputLabel, { color: theme.textSecondary }]}>Sets</ThemedText>
               <TextInput
                 style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
                 value={newTaskSets}
@@ -313,7 +313,7 @@ export default function ProgramBuilderScreen() {
               />
             </View>
             <View style={styles.inputHalf}>
-              <ThemedText type="muted" style={styles.inputLabel}>Reps</ThemedText>
+              <ThemedText type="body" style={[styles.inputLabel, { color: theme.textSecondary }]}>Reps</ThemedText>
               <TextInput
                 style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
                 value={newTaskReps}
@@ -331,7 +331,7 @@ export default function ProgramBuilderScreen() {
             style={[styles.formButton, styles.cancelButton]}
             onPress={() => handleCancelTask(session.id)}
           >
-            <ThemedText type="small" style={{ color: theme.textMuted }}>Cancel</ThemedText>
+            <ThemedText type="body" style={{ color: theme.textSecondary }}>Cancel</ThemedText>
           </Pressable>
           <Pressable
             style={[
@@ -342,7 +342,7 @@ export default function ProgramBuilderScreen() {
             onPress={() => handleSaveTask(session.id)}
             disabled={!newTaskName.trim()}
           >
-            <ThemedText type="small" style={{ color: newTaskName.trim() ? "#FFF" : theme.textMuted }}>
+            <ThemedText type="body" style={{ color: newTaskName.trim() ? "#FFF" : theme.textMuted }}>
               Save Task
             </ThemedText>
           </Pressable>
@@ -370,7 +370,7 @@ export default function ProgramBuilderScreen() {
             {session.name}
           </ThemedText>
           <View style={[styles.taskCount, { backgroundColor: theme.backgroundSecondary }]}>
-            <ThemedText type="small" style={{ color: theme.textMuted }}>
+            <ThemedText type="body" style={{ color: theme.textSecondary }}>
               {session.tasks.length} {session.tasks.length === 1 ? "task" : "tasks"}
             </ThemedText>
           </View>
@@ -403,7 +403,7 @@ export default function ProgramBuilderScreen() {
                       {task.name}
                     </ThemedText>
                     {task.sets || task.reps ? (
-                      <ThemedText type="muted" style={styles.taskDetails}>
+                      <ThemedText type="body" style={[styles.taskDetails, { color: theme.textSecondary }]}>
                         {task.sets ? `${task.sets} sets` : ""}{task.sets && task.reps ? " x " : ""}{task.reps ? `${task.reps} reps` : ""}
                       </ThemedText>
                     ) : null}
@@ -464,7 +464,7 @@ export default function ProgramBuilderScreen() {
             placeholderTextColor={theme.textMuted}
             autoCapitalize="words"
           />
-          <ThemedText type="muted" style={styles.helperText}>
+          <ThemedText type="body" style={[styles.helperText, { color: theme.textSecondary }]}>
             You can change this anytime
           </ThemedText>
         </View>
@@ -476,11 +476,11 @@ export default function ProgramBuilderScreen() {
 
           {sessions.length === 0 && !isAddingSession ? (
             <View style={[styles.emptyState, { backgroundColor: theme.backgroundDefault }]}>
-              <Feather name="calendar" size={32} color={theme.textMuted} />
-              <ThemedText type="secondary" style={styles.emptyText}>
+              <Feather name="calendar" size={32} color={theme.textSecondary} />
+              <ThemedText type="h3" style={[styles.emptyText, { color: theme.text }]}>
                 No sessions yet
               </ThemedText>
-              <ThemedText type="muted" style={styles.emptyHint}>
+              <ThemedText type="body" style={[styles.emptyHint, { color: theme.textSecondary }]}>
                 Add sessions like "Push Day" or "Cardio"
               </ThemedText>
             </View>
@@ -490,7 +490,7 @@ export default function ProgramBuilderScreen() {
 
           {isAddingSession ? (
             <View style={[styles.addSessionCard, { backgroundColor: theme.backgroundDefault }]}>
-              <ThemedText type="body" style={styles.addSessionLabel}>
+              <ThemedText type="body" style={[styles.addSessionLabel, { color: theme.text }]}>
                 Session Name
               </ThemedText>
               <TextInput
@@ -507,7 +507,7 @@ export default function ProgramBuilderScreen() {
                   style={[styles.formButton, styles.cancelButton]}
                   onPress={handleCancelSession}
                 >
-                  <ThemedText type="small" style={{ color: theme.textMuted }}>Cancel</ThemedText>
+                  <ThemedText type="body" style={{ color: theme.textSecondary }}>Cancel</ThemedText>
                 </Pressable>
                 <Pressable
                   style={[
@@ -518,7 +518,7 @@ export default function ProgramBuilderScreen() {
                   onPress={handleSaveSession}
                   disabled={!newSessionName.trim()}
                 >
-                  <ThemedText type="small" style={{ color: newSessionName.trim() ? "#FFF" : theme.textMuted }}>
+                  <ThemedText type="body" style={{ color: newSessionName.trim() ? "#FFF" : theme.textMuted }}>
                     Save Session
                   </ThemedText>
                 </Pressable>
@@ -540,7 +540,7 @@ export default function ProgramBuilderScreen() {
 
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md, backgroundColor: theme.backgroundRoot }]}>
         {!canFinish ? (
-          <ThemedText type="muted" style={styles.bottomHelper}>
+          <ThemedText type="body" style={[styles.bottomHelper, { color: theme.textSecondary }]}>
             {getHelperText()}
           </ThemedText>
         ) : null}
