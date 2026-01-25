@@ -1,0 +1,74 @@
+One-Screen Program Builder Flow for Trakio
+You are a senior product designer and UX architect.
+Design a single-screen, scroll-based “Program Builder” UI for a mobile-first fitness app called Trakio.
+The goal is to let a first-time user create a complete workout program (program → sessions → tasks) without navigating between screens, modals, or hidden gestures.
+Core UX Principles
+One screen only (vertical scroll)
+No modals, no long-press interactions
+Progressive disclosure (show complexity only when needed)
+Immediate visual feedback after every action
+Beginner-friendly, power-user capable
+Mobile-first (thumb-reachable actions)
+Screen Structure (Top to Bottom)
+1. Program Identity Section (Always Visible)
+Input field: Program Name
+Placeholder: “My Training Program”
+Helper text: “You can change this anytime”
+This section anchors the entire screen
+2. Sessions Section
+Title: Sessions
+Empty state message: “No sessions yet”
+Primary CTA: ➕ Add Session
+3. Add Session (Inline Expansion)
+When user taps Add Session:
+Inline expandable session card appears (no modal)
+Fields:
+Session Name (e.g. Push Day, Legs, Cardio)
+Actions:
+Save Session
+Optional: Add Tasks
+After saving:
+Session card collapses into the sessions list
+Session card remains tappable and expandable
+4. Tasks Inside Session Card
+Inside each expanded session card:
+Task list (empty initially)
+CTA: ➕ Add Task
+When adding a task:
+Inline task type selector appears:
+Strength
+Distance
+Interval
+Time
+Notes
+After selecting a task type:
+Show only relevant input fields
+Advanced fields hidden behind “More options”
+Button: Save Task
+Saved tasks appear immediately in the session card
+5. Progressive Disclosure Rules
+First session shows minimal required fields
+Additional complexity appears only after user interaction
+No required fields beyond what’s needed to start training
+User can freely add, edit, or remove sessions and tasks inline
+6. Sticky Bottom Action
+Sticky primary button at bottom of screen:
+✅ Finish & Start Training
+Button states:
+Disabled until:
+Program name exists
+At least one session exists
+At least one task exists
+Disabled helper text:
+“Add at least one session to continue”
+Interaction & UX Notes
+No navigation away from the screen
+No long press gestures
+All actions must be discoverable
+Animations should be subtle and purposeful (expand / collapse)
+The user should always feel progress and control
+Output Expectations
+Describe the UI layout clearly
+Explain interaction behavior (expand, collapse, save)
+Use concise UX language
+Think like a real production mobile app
