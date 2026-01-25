@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
+import { CommonActions } from "@react-navigation/native";
 
 import TrainingStackNavigator from "@/navigation/TrainingStackNavigator";
 import ProgressStackNavigator from "@/navigation/ProgressStackNavigator";
@@ -61,6 +62,17 @@ export default function MainTabNavigator() {
             <Feather name="activity" size={size} color={color} />
           ),
         }}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: "TrainingTab" }],
+              })
+            );
+          },
+        })}
       />
       <Tab.Screen
         name="ProgressTab"
