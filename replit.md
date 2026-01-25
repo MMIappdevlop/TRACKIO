@@ -6,6 +6,7 @@ Trakio is a mobile-first personal training log built with React Native + Expo (T
 **Core Promise**: "Bring your plan. Trakio records your training."
 
 ## Recent Changes
+- **2025-01-25**: Redesigned program creation with one-screen Program Builder - inline session/task creation, no modals
 - **2024-01-24**: Initial MVP implementation with full offline-first functionality
 
 ## Project Architecture
