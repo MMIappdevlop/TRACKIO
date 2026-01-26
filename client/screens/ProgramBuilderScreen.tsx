@@ -427,11 +427,11 @@ export default function ProgramBuilderScreen() {
             )
           ) : (
             <Pressable
-              style={[styles.addTaskButton, { borderColor: theme.border }]}
+              style={[styles.addTaskButton, { backgroundColor: Colors.dark.primary }]}
               onPress={() => handleStartAddTask(session.id)}
             >
-              <Feather name="plus" size={16} color={Colors.dark.primary} />
-              <ThemedText type="body" style={{ color: Colors.dark.primary }}>
+              <Feather name="plus" size={16} color="#FFFFFF" />
+              <ThemedText type="body" style={{ color: "#FFFFFF" }}>
                 Add Task
               </ThemedText>
             </Pressable>
@@ -665,8 +665,6 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderStyle: "dashed",
   },
   taskTypeSelector: {
     gap: Spacing.sm,
