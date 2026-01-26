@@ -1,4 +1,4 @@
-# Trakio Design Guidelines
+# Trackio Design Guidelines
 
 ## Brand Identity
 **Purpose**: Offline-first personal training log for users who bring their own programs. Fast logging, trustworthy history, clear progress.

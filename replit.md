@@ -1,9 +1,9 @@
-# Trakio - Personal Training Log
+# Trackio - Personal Training Log
 
 ## Overview
-Trakio is a mobile-first personal training log built with React Native + Expo (TypeScript). It is designed for single-user, offline-first operation with all data stored locally on the device. Trakio does not provide training plans; users always bring their own program and exercises.
+Trackio is a mobile-first personal training log built with React Native + Expo (TypeScript). It is designed for single-user, offline-first operation with all data stored locally on the device. Trackio does not provide training plans; users always bring their own program and exercises.
 
-**Core Promise**: "Bring your plan. Trakio records your training."
+**Core Promise**: "Bring your plan. Trackio records your training."
 
 ## Recent Changes
 - **2025-01-25**: Redesigned program creation with one-screen Program Builder - inline session/task creation, no modals
@@ -15,7 +15,7 @@ Trakio is a mobile-first personal training log built with React Native + Expo (T
 - **Frontend**: React Native with Expo SDK 54
 - **Navigation**: React Navigation 7 (bottom tabs + native stack)
 - **State Management**: React hooks + AsyncStorage for persistence
-- **Styling**: StyleSheet with Trakio design system
+- **Styling**: StyleSheet with Trackio design system
 - **Fonts**: Inter (Google Fonts)
 
 ### Directory Structure

@@ -47,7 +47,7 @@ export default function DataBackupScreen() {
         await writer.close();
         await Share.share({
           url: backupFile.uri,
-          title: "Trakio Backup",
+          title: "Trackio Backup",
         });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }

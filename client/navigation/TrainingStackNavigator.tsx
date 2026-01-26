@@ -31,7 +31,7 @@ export default function TrainingStackNavigator() {
         name="TrainingHome"
         component={TrainingHomeScreen}
         options={{
-          headerTitle: () => <HeaderTitle title="Trakio" />,
+          headerTitle: () => <HeaderTitle title="Trackio" />,
         }}
       />
       <Stack.Screen

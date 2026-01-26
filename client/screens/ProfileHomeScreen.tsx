@@ -121,7 +121,7 @@ export default function ProfileHomeScreen() {
       </View>
 
       <View style={styles.footer}>
-        <ThemedText type="muted" style={styles.footerText}>Trakio v1.0.0</ThemedText>
+        <ThemedText type="muted" style={styles.footerText}>Trackio v1.0.0</ThemedText>
         <ThemedText type="muted" style={styles.footerText}>Bring your plan. We record your training.</ThemedText>
       </View>
 

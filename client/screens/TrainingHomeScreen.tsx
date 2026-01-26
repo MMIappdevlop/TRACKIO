@@ -129,7 +129,7 @@ export default function TrainingHomeScreen() {
               </>
             ) : (
               <>
-                <ThemedText type="h1" style={styles.greeting}>Welcome to Trakio</ThemedText>
+                <ThemedText type="h1" style={styles.greeting}>Welcome to Trackio</ThemedText>
                 <ThemedText type="secondary" style={styles.programLabel}>
                   Your training tracker
                 </ThemedText>
