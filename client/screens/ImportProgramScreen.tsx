@@ -174,8 +174,8 @@ export default function ImportProgramScreen() {
     const templateContent = getTemplateContent(templateId);
     const fileName = `${templateId}-template.csv`;
     
-    if (Platform.OS === "web") {
-      try {
+    try {
+      if (Platform.OS === "web") {
         const blob = new Blob([templateContent], { type: "text/csv" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -186,13 +186,34 @@ export default function ImportProgramScreen() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch (error) {
-        console.error("Download error:", error);
-        Alert.alert("Error", "Could not download template");
+      } else {
+        // On mobile, try to share the file
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        
+        const cacheDir = (FileSystem as any).cacheDirectory;
+        if (!cacheDir) {
+          // Fallback to modal if no cache directory
+          showTemplateModal(templateId, templateContent);
+          return;
+        }
+        
+        const fileUri = cacheDir + fileName;
+        await FileSystem.writeAsStringAsync(fileUri, templateContent);
+        
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(fileUri, {
+            mimeType: "text/csv",
+            dialogTitle: "Save Template",
+          });
+        } else {
+          // Fallback to modal if sharing not available
+          showTemplateModal(templateId, templateContent);
+        }
       }
-    } else {
-      // On mobile, directly open the modal with template content
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (error) {
+      console.error("Template download error:", error);
+      // Fallback to modal on any error
       showTemplateModal(templateId, templateContent);
     }
   };
