@@ -477,14 +477,23 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      console.log("Import complete!");
       
-      // Navigate to home and show the imported program
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: "MainTabs" }],
-        })
+      Alert.alert(
+        "Import Complete",
+        `Successfully imported "${programName || "Imported Program"}" with ${sessions.length} sessions and ${validRows.length} exercises.`,
+        [
+          {
+            text: "Go to Training",
+            onPress: () => {
+              navigation.dispatch(
+                CommonActions.reset({
+                  index: 0,
+                  routes: [{ name: "MainTabs" }],
+                })
+              );
+            },
+          },
+        ]
       );
     } catch (error) {
       console.error("Import error:", error);
