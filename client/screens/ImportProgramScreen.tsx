@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, FlatList, Alert, Pressable, TextInput, Platform, Modal } from "react-native";
+import { View, StyleSheet, ScrollView, FlatList, Alert, Pressable, TextInput, Platform } from "react-native";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-import * as FileSystem from "expo-file-system";
+import { Paths, File } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
 import * as XLSX from "xlsx";
-import * as Clipboard from "expo-clipboard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -187,45 +186,36 @@ export default function ImportProgramScreen() {
         URL.revokeObjectURL(url);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
-        // On mobile, try to share the file
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         
-        const cacheDir = (FileSystem as any).cacheDirectory;
-        if (!cacheDir) {
-          // Fallback to modal if no cache directory
-          showTemplateModal(templateId, templateContent);
-          return;
-        }
-        
-        const fileUri = cacheDir + fileName;
-        await FileSystem.writeAsStringAsync(fileUri, templateContent);
+        const file = new File(Paths.cache, fileName);
+        await file.write(templateContent);
         
         const isAvailable = await Sharing.isAvailableAsync();
         if (isAvailable) {
-          await Sharing.shareAsync(fileUri, {
+          await Sharing.shareAsync(file.uri, {
             mimeType: "text/csv",
             dialogTitle: "Save Template",
+            UTI: "public.comma-separated-values-text",
           });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } else {
-          // Fallback to modal if sharing not available
-          showTemplateModal(templateId, templateContent);
+          Alert.alert(
+            "Sharing Not Available",
+            "File sharing is not supported on this device. The template content is shown above - you can manually create your spreadsheet based on it."
+          );
         }
       }
     } catch (error) {
       console.error("Template download error:", error);
-      // Fallback to modal on any error
-      showTemplateModal(templateId, templateContent);
+      Alert.alert(
+        "Download Failed", 
+        "Could not save the template file. Please try again."
+      );
     }
   };
 
-  const [templateModalVisible, setTemplateModalVisible] = useState(false);
-  const [templateModalContent, setTemplateModalContent] = useState({ id: "", content: "" });
   const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null);
-
-  const showTemplateModal = (id: string, content: string) => {
-    setTemplateModalContent({ id, content });
-    setTemplateModalVisible(true);
-  };
 
   const getTemplateContent = (templateId: string): string => {
     switch (templateId) {
@@ -296,9 +286,8 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
         });
       } else {
         // On native, use FileSystem
-        content = await FileSystem.readAsStringAsync(file.uri, {
-          encoding: "base64" as any,
-        });
+        const fsFile = new File(file.uri);
+        content = await fsFile.base64();
       }
 
       const workbook = XLSX.read(content, { type: "base64" });
@@ -551,25 +540,12 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
                     {getTemplateContent(template.id)}
                   </ThemedText>
                 </ScrollView>
-                <View style={styles.templateActions}>
-                  <Button
-                    variant="secondary"
-                    onPress={() => handleDownloadTemplate(template.id)}
-                    style={{ flex: 1 }}
-                  >
-                    Save File
-                  </Button>
-                  <Button
-                    onPress={async () => {
-                      await Clipboard.setStringAsync(getTemplateContent(template.id));
-                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                      Alert.alert("Copied!", "Paste into Excel or Google Sheets");
-                    }}
-                    style={{ flex: 1 }}
-                  >
-                    Copy
-                  </Button>
-                </View>
+                <Button
+                  onPress={() => handleDownloadTemplate(template.id)}
+                  style={{ marginTop: Spacing.md }}
+                >
+                  Download Template
+                </Button>
               </View>
             ) : null}
           </View>
@@ -803,55 +779,7 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
     </ScrollView>
   );
 
-  const renderTemplateModal = () => (
-    <Modal
-      visible={templateModalVisible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={() => setTemplateModalVisible(false)}
-    >
-      <View style={[styles.modalContainer, { backgroundColor: theme.backgroundRoot }]}>
-        <View style={styles.modalHeader}>
-          <ThemedText type="h2">Template: {templateModalContent.id}</ThemedText>
-          <Pressable onPress={() => setTemplateModalVisible(false)}>
-            <Feather name="x" size={24} color={theme.text} />
-          </Pressable>
-        </View>
-        
-        <ScrollView style={styles.modalContent}>
-          <ThemedText type="secondary" style={{ marginBottom: Spacing.md }}>
-            Copy this content and paste it into a spreadsheet app (Excel, Google Sheets, Numbers). Save as CSV or XLSX and import.
-          </ThemedText>
-          
-          <View style={[styles.codeBlock, { backgroundColor: theme.backgroundSecondary }]}>
-            <ThemedText type="body" style={{ fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace", fontSize: 12 }}>
-              {templateModalContent.content}
-            </ThemedText>
-          </View>
-        </ScrollView>
-        
-        <View style={styles.modalButtons}>
-          <Button
-            onPress={async () => {
-              await Clipboard.setStringAsync(templateModalContent.content);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              Alert.alert("Copied!", "Template copied to clipboard. Paste it into a spreadsheet app.");
-            }}
-            style={{ flex: 1 }}
-          >
-            Copy to Clipboard
-          </Button>
-        </View>
-      </View>
-    </Modal>
-  );
-
-  return (
-    <>
-      {step === "select" ? renderSelectStep() : step === "mapping" ? renderMappingStep() : renderPreviewStep()}
-      {renderTemplateModal()}
-    </>
-  );
+  return step === "select" ? renderSelectStep() : step === "mapping" ? renderMappingStep() : renderPreviewStep();
 }
 
 const styles = StyleSheet.create({
@@ -905,11 +833,6 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
     fontSize: 11,
     lineHeight: 18,
-  },
-  templateActions: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-    marginTop: Spacing.md,
   },
   pickButton: {
     marginTop: 0,
@@ -1026,31 +949,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     fontSize: 16,
     fontFamily: "Inter_500Medium",
-  },
-  modalContainer: {
-    flex: 1,
-    paddingTop: Spacing.xl,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.1)",
-  },
-  modalContent: {
-    flex: 1,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.lg,
-  },
-  codeBlock: {
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-  },
-  modalButtons: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing.xl,
   },
 });
