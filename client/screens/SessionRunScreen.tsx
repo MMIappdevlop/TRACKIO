@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, FlatList, StyleSheet, Pressable, TextInput, Alert } from "react-native";
+import { View, ScrollView, StyleSheet, Pressable, TextInput, Alert } from "react-native";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -35,6 +35,7 @@ export default function SessionRunScreen() {
 
   const [tasks, setTasks] = useState<TaskTemplate[]>([]);
   const [taskLogs, setTaskLogs] = useState<TaskLogState[]>([]);
+  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
   const [showRestTimer, setShowRestTimer] = useState(false);
   const [restSeconds, setRestSeconds] = useState(90);
   const startTimeRef = useRef(new Date());
@@ -99,7 +100,6 @@ export default function SessionRunScreen() {
   };
 
   const updateTaskLog = (taskId: string, updates: Partial<TaskDataJson>) => {
-    console.log("[SessionRun] updateTaskLog called:", taskId, updates);
     setTaskLogs((prev) =>
       prev.map((log) =>
         log.taskId === taskId ? { ...log, data: { ...log.data, ...updates } } : log
@@ -131,6 +131,34 @@ export default function SessionRunScreen() {
     updateTaskLog(taskId, { sets: newSets });
   };
 
+  const handleAddSet = (taskId: string) => {
+    const log = taskLogs.find((l) => l.taskId === taskId);
+    if (!log?.data.sets) return;
+
+    const newSets = [...log.data.sets];
+    const lastSet = newSets[newSets.length - 1];
+    newSets.push({
+      setNumber: newSets.length + 1,
+      weight: lastSet?.weight || 0,
+      reps: lastSet?.reps || 8,
+      isCompleted: false,
+    });
+    updateTaskLog(taskId, { sets: newSets });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleRemoveSet = (taskId: string, setIndex: number) => {
+    const log = taskLogs.find((l) => l.taskId === taskId);
+    if (!log?.data.sets || log.data.sets.length <= 1) return;
+
+    const newSets = log.data.sets.filter((_, i) => i !== setIndex).map((set, i) => ({
+      ...set,
+      setNumber: i + 1,
+    }));
+    updateTaskLog(taskId, { sets: newSets });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
   const handleStartInterval = (task: TaskTemplate) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
@@ -156,32 +184,26 @@ export default function SessionRunScreen() {
   };
 
   const handleCancel = () => {
-    Alert.alert(
-      "Discard Session",
-      "Are you sure you want to discard this session?",
-      [
-        { text: "Keep Training", style: "cancel" },
-        { text: "Discard", style: "destructive", onPress: () => navigation.goBack() },
-      ]
-    );
+    Alert.alert("End Session", "Are you sure you want to end this session? Your progress will not be saved.", [
+      { text: "Cancel", style: "cancel" },
+      { text: "End Session", style: "destructive", onPress: () => navigation.goBack() },
+    ]);
   };
 
   const handleFinish = async () => {
-    const currentTaskLogs = taskLogsRef.current;
-    const currentTasks = tasksRef.current;
-    console.log("[SessionRun] handleFinish - taskLogs:", JSON.stringify(currentTaskLogs, null, 2));
     const endTime = new Date();
     const durationSeconds = Math.floor((endTime.getTime() - startTimeRef.current.getTime()) / 1000);
 
     const completedSession = await completedSessionsStorage.create({
-      sessionTemplateId,
-      sessionTemplateName,
       programId,
       programName,
-      startedAt: startTimeRef.current.toISOString(),
-      completedAt: endTime.toISOString(),
+      sessionTemplateId,
+      sessionTemplateName,
       durationSeconds,
     });
+
+    const currentTaskLogs = taskLogsRef.current;
+    const currentTasks = tasksRef.current;
 
     for (const log of currentTaskLogs) {
       const task = currentTasks.find((t) => t.id === log.taskId);
@@ -189,11 +211,10 @@ export default function SessionRunScreen() {
 
       await completedTasksStorage.create({
         completedSessionId: completedSession.id,
-        taskTemplateId: log.taskId,
-        taskTemplateName: task.name,
+        taskTemplateId: task.id,
+        taskName: task.name,
         mode: task.mode,
-        dataJson: log.data,
-        completedAt: endTime.toISOString(),
+        data: log.data,
       });
     }
 
@@ -201,122 +222,225 @@ export default function SessionRunScreen() {
     navigation.replace("SessionSummary", { completedSessionId: completedSession.id });
   };
 
-  const renderTask = ({ item: task }: { item: TaskTemplate }) => {
-    const log = taskLogs.find((l) => l.taskId === task.id);
-    const modeConfig = TaskModes[task.mode];
+  const handlePrevious = () => {
+    if (currentTaskIndex > 0) {
+      setCurrentTaskIndex(currentTaskIndex - 1);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
 
+  const handleNext = () => {
+    if (currentTaskIndex < tasks.length - 1) {
+      setCurrentTaskIndex(currentTaskIndex + 1);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const currentTask = tasks[currentTaskIndex];
+  const currentLog = taskLogs.find((l) => l.taskId === currentTask?.id);
+  const progressPercent = tasks.length > 0 ? ((currentTaskIndex + 1) / tasks.length) * 100 : 0;
+
+  const getTargetText = (task: TaskTemplate) => {
+    if (task.mode === "strength") {
+      return `${task.config.sets || 3} sets × ${task.config.reps || 8} reps`;
+    }
+    if (task.mode === "distance") {
+      return `${task.config.targetDistance || 0} ${task.config.distanceUnit || "km"}`;
+    }
+    if (task.mode === "interval") {
+      return `${task.config.rounds || 5} rounds`;
+    }
+    if (task.mode === "time") {
+      return `${task.config.targetMinutes || 0} minutes`;
+    }
+    return "";
+  };
+
+  if (tasks.length === 0) {
     return (
-      <View style={[styles.taskCard, { backgroundColor: theme.backgroundDefault }]}>
-        <View style={styles.taskHeader}>
-          <View style={[styles.modeIndicator, { backgroundColor: modeConfig.color + "20" }]}>
-            <Feather name={modeConfig.icon as any} size={18} color={modeConfig.color} />
+      <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+        <View style={[styles.content, { paddingTop: headerHeight + Spacing.lg }]}>
+          <EmptyState
+            icon="clipboard"
+            title="No Exercises"
+            description="This session has no exercises yet."
+            actionLabel="Go Back"
+            onAction={() => navigation.goBack()}
+          />
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: headerHeight + Spacing.lg, paddingBottom: 100 + insets.bottom },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Task Counter */}
+        <ThemedText type="secondary" style={styles.taskCounter}>
+          {currentTaskIndex + 1}/{tasks.length}
+        </ThemedText>
+
+        {/* Task Name */}
+        <ThemedText type="h1" style={styles.taskName}>{currentTask.name}</ThemedText>
+
+        {/* Target */}
+        <ThemedText type="secondary" style={styles.targetText}>
+          {getTargetText(currentTask)}
+        </ThemedText>
+
+        {/* Progress Bar */}
+        <View style={styles.progressSection}>
+          <ThemedText type="secondary" style={styles.progressLabel}>
+            Exercise {currentTaskIndex + 1} of {tasks.length}
+          </ThemedText>
+          <View style={[styles.progressBarBg, { backgroundColor: theme.backgroundSecondary }]}>
+            <View
+              style={[styles.progressBarFill, { width: `${progressPercent}%`, backgroundColor: Colors.dark.effort }]}
+            />
           </View>
-          <ThemedText type="h4" style={styles.taskName}>{task.name}</ThemedText>
         </View>
 
-        {task.mode === "strength" && log?.data.sets ? (
-          <View style={styles.setsContainer}>
-            {log.data.sets.map((set, index) => (
-              <View key={index} style={styles.setRow}>
-                <ThemedText type="muted" style={styles.setNumber}>{set.setNumber}</ThemedText>
-                <TextInput
-                  style={[styles.setInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-                  value={set.weight ? String(set.weight) : ""}
-                  onChangeText={(v) => handleSetUpdate(task.id, index, "weight", v)}
-                  keyboardType="decimal-pad"
-                  placeholder="kg"
-                  placeholderTextColor={theme.textMuted}
-                />
-                <TextInput
-                  style={[styles.setInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-                  value={set.reps ? String(set.reps) : ""}
-                  onChangeText={(v) => handleSetUpdate(task.id, index, "reps", v)}
-                  keyboardType="number-pad"
-                  placeholder="reps"
-                  placeholderTextColor={theme.textMuted}
-                />
-                <Pressable
-                  onPress={() => handleSetComplete(task.id, index, task)}
-                  style={[
-                    styles.checkButton,
-                    set.isCompleted && { backgroundColor: Colors.dark.effort },
-                    !set.isCompleted && { backgroundColor: theme.backgroundSecondary },
-                  ]}
-                >
-                  <Feather name="check" size={18} color={set.isCompleted ? "#FFF" : theme.textMuted} />
-                </Pressable>
+        {/* Strength Mode - Sets */}
+        {currentTask.mode === "strength" && currentLog?.data.sets ? (
+          <View style={styles.setsSection}>
+            <View style={styles.setsHeader}>
+              <ThemedText type="h3">Sets</ThemedText>
+              <Pressable
+                onPress={() => handleAddSet(currentTask.id)}
+                style={[styles.addSetButton, { backgroundColor: Colors.dark.effort }]}
+              >
+                <Feather name="plus" size={16} color="#FFFFFF" />
+                <ThemedText type="body" style={styles.addSetText}>Add Set</ThemedText>
+              </Pressable>
+            </View>
+
+            {currentLog.data.sets.map((set, index) => (
+              <View key={index} style={[styles.setCard, { backgroundColor: theme.backgroundDefault }]}>
+                <View style={styles.setCardInner}>
+                  {/* Weight */}
+                  <View style={styles.setField}>
+                    <ThemedText type="muted" style={styles.setFieldLabel}>Weight</ThemedText>
+                    <TextInput
+                      style={[styles.setInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+                      value={set.weight ? String(set.weight) : "0"}
+                      onChangeText={(v) => handleSetUpdate(currentTask.id, index, "weight", v)}
+                      keyboardType="decimal-pad"
+                      selectTextOnFocus
+                    />
+                  </View>
+
+                  <ThemedText type="muted" style={styles.separator}>-</ThemedText>
+
+                  {/* Set Number */}
+                  <View style={styles.setField}>
+                    <ThemedText type="muted" style={styles.setFieldLabel}>Set</ThemedText>
+                    <View style={[styles.setNumberBox, { backgroundColor: theme.backgroundSecondary }]}>
+                      <ThemedText type="body" style={styles.setNumberText}>{set.setNumber}</ThemedText>
+                    </View>
+                  </View>
+
+                  <ThemedText type="muted" style={styles.separator}>-</ThemedText>
+
+                  {/* Reps */}
+                  <View style={styles.setField}>
+                    <ThemedText type="muted" style={styles.setFieldLabel}>Reps</ThemedText>
+                    <TextInput
+                      style={[styles.setInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+                      value={set.reps ? String(set.reps) : "0"}
+                      onChangeText={(v) => handleSetUpdate(currentTask.id, index, "reps", v)}
+                      keyboardType="number-pad"
+                      selectTextOnFocus
+                    />
+                  </View>
+
+                  {/* Delete Button */}
+                  <Pressable
+                    onPress={() => handleRemoveSet(currentTask.id, index)}
+                    style={styles.deleteButton}
+                    disabled={currentLog.data.sets!.length <= 1}
+                  >
+                    <Feather
+                      name="x"
+                      size={20}
+                      color={currentLog.data.sets!.length <= 1 ? theme.textMuted : Colors.dark.error}
+                    />
+                  </Pressable>
+                </View>
               </View>
             ))}
           </View>
         ) : null}
 
-        {task.mode === "distance" ? (
-          <View style={styles.distanceContainer}>
+        {/* Distance Mode */}
+        {currentTask.mode === "distance" ? (
+          <View style={styles.modeSection}>
             <View style={styles.distanceRow}>
               <View style={styles.distanceField}>
-                <ThemedText type="muted" style={styles.distanceLabel}>Distance</ThemedText>
+                <ThemedText type="muted" style={styles.fieldLabel}>Distance</ThemedText>
                 <TextInput
-                  testID={`input-distance-${task.id}`}
-                  style={[styles.distanceInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-                  value={log?.data.distance ? String(log.data.distance) : ""}
-                  onChangeText={(v) => updateTaskLog(task.id, { distance: parseFloat(v) || undefined })}
+                  style={[styles.largeInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+                  value={currentLog?.data.distance ? String(currentLog.data.distance) : ""}
+                  onChangeText={(v) => updateTaskLog(currentTask.id, { distance: parseFloat(v) || undefined })}
                   keyboardType="decimal-pad"
-                  placeholder={task.config.distanceUnit || "km"}
+                  placeholder={currentTask.config.distanceUnit || "km"}
                   placeholderTextColor={theme.textMuted}
                 />
               </View>
               <View style={styles.distanceField}>
-                <ThemedText type="muted" style={styles.distanceLabel}>Duration (min)</ThemedText>
+                <ThemedText type="muted" style={styles.fieldLabel}>Duration (min)</ThemedText>
                 <TextInput
-                  testID={`input-duration-${task.id}`}
-                  style={[styles.distanceInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-                  value={log?.data.durationSeconds ? String(Math.floor(log.data.durationSeconds / 60)) : ""}
-                  onChangeText={(v) => updateTaskLog(task.id, { durationSeconds: (parseInt(v) || 0) * 60 })}
+                  style={[styles.largeInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+                  value={currentLog?.data.durationSeconds ? String(Math.floor(currentLog.data.durationSeconds / 60)) : ""}
+                  onChangeText={(v) => updateTaskLog(currentTask.id, { durationSeconds: (parseInt(v) || 0) * 60 })}
                   keyboardType="number-pad"
                   placeholder="min"
                   placeholderTextColor={theme.textMuted}
                 />
               </View>
             </View>
-            {log?.data.distance && log?.data.durationSeconds ? (
-              <ThemedText type="secondary" style={styles.paceText}>
-                Pace: {(log.data.durationSeconds / 60 / log.data.distance).toFixed(2)} min/{log.data.distanceUnit || "km"}
-              </ThemedText>
-            ) : null}
           </View>
         ) : null}
 
-        {task.mode === "interval" ? (
-          <View style={styles.intervalContainer}>
-            <ThemedText type="secondary">
-              {task.config.rounds} rounds: {task.config.workSeconds}s work / {task.config.restSeconds}s rest
+        {/* Interval Mode */}
+        {currentTask.mode === "interval" ? (
+          <View style={styles.modeSection}>
+            <ThemedText type="secondary" style={styles.intervalInfo}>
+              {currentTask.config.rounds} rounds: {currentTask.config.workSeconds}s work / {currentTask.config.restSeconds}s rest
             </ThemedText>
-            {log?.data.roundsCompleted ? (
+            {currentLog?.data.roundsCompleted ? (
               <View style={[styles.completedBadge, { backgroundColor: Colors.dark.success + "20" }]}>
-                <Feather name="check-circle" size={16} color={Colors.dark.success} />
-                <ThemedText type="secondary" style={{ color: Colors.dark.success }}>
-                  Completed {log.data.roundsCompleted} rounds
+                <Feather name="check-circle" size={20} color={Colors.dark.success} />
+                <ThemedText type="body" style={{ color: Colors.dark.success }}>
+                  Completed {currentLog.data.roundsCompleted} rounds
                 </ThemedText>
               </View>
             ) : (
               <Pressable
-                onPress={() => handleStartInterval(task)}
-                style={[styles.startButton, { backgroundColor: modeConfig.color }]}
+                onPress={() => handleStartInterval(currentTask)}
+                style={[styles.startButton, { backgroundColor: Colors.dark.effort }]}
               >
-                <Feather name="play" size={18} color="#FFF" />
-                <ThemedText type="body" style={{ color: "#FFF", fontWeight: "600" }}>Start Timer</ThemedText>
+                <Feather name="play" size={20} color="#FFF" />
+                <ThemedText type="body" style={styles.startButtonText}>Start Timer</ThemedText>
               </Pressable>
             )}
           </View>
         ) : null}
 
-        {task.mode === "time" ? (
-          <View style={styles.timeContainer}>
-            <ThemedText type="muted" style={styles.distanceLabel}>Duration (minutes)</ThemedText>
+        {/* Time Mode */}
+        {currentTask.mode === "time" ? (
+          <View style={styles.modeSection}>
+            <ThemedText type="muted" style={styles.fieldLabel}>Duration (minutes)</ThemedText>
             <TextInput
-              style={[styles.distanceInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-              value={log?.data.durationSeconds ? String(Math.floor(log.data.durationSeconds / 60)) : ""}
-              onChangeText={(v) => updateTaskLog(task.id, { durationSeconds: (parseInt(v) || 0) * 60 })}
+              style={[styles.largeInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+              value={currentLog?.data.durationSeconds ? String(Math.floor(currentLog.data.durationSeconds / 60)) : ""}
+              onChangeText={(v) => updateTaskLog(currentTask.id, { durationSeconds: (parseInt(v) || 0) * 60 })}
               keyboardType="number-pad"
               placeholder="0"
               placeholderTextColor={theme.textMuted}
@@ -324,41 +448,55 @@ export default function SessionRunScreen() {
           </View>
         ) : null}
 
-        {task.mode === "notes" ? (
-          <TextInput
-            style={[styles.notesInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-            value={log?.data.notes || ""}
-            onChangeText={(v) => updateTaskLog(task.id, { notes: v })}
-            placeholder="Add notes..."
-            placeholderTextColor={theme.textMuted}
-            multiline
-          />
+        {/* Notes Mode */}
+        {currentTask.mode === "notes" ? (
+          <View style={styles.modeSection}>
+            <TextInput
+              style={[styles.notesInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+              value={currentLog?.data.notes || ""}
+              onChangeText={(v) => updateTaskLog(currentTask.id, { notes: v })}
+              placeholder="Add notes..."
+              placeholderTextColor={theme.textMuted}
+              multiline
+            />
+          </View>
         ) : null}
-      </View>
-    );
-  };
+      </ScrollView>
 
-  return (
-    <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
-      <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id}
-        renderItem={renderTask}
-        ListEmptyComponent={
-          <EmptyState
-            icon="clipboard"
-            title="No Exercises"
-            description="This session has no exercises yet. Go back and long-press the session to add tasks."
-            actionLabel="Go Back"
-            onAction={() => navigation.goBack()}
+      {/* Bottom Navigation */}
+      <View style={[styles.bottomNav, { paddingBottom: insets.bottom + Spacing.md, backgroundColor: theme.backgroundRoot }]}>
+        <Pressable
+          onPress={handlePrevious}
+          disabled={currentTaskIndex === 0}
+          style={[styles.navButton, styles.prevButton]}
+        >
+          <Feather name="chevron-left" size={20} color={currentTaskIndex === 0 ? theme.textMuted : theme.text} />
+          <ThemedText
+            type="body"
+            style={[styles.navButtonText, currentTaskIndex === 0 && { color: theme.textMuted }]}
+          >
+            Previous
+          </ThemedText>
+        </Pressable>
+
+        <Pressable
+          onPress={handleNext}
+          disabled={currentTaskIndex === tasks.length - 1}
+          style={[styles.navButton, styles.nextButton, { backgroundColor: theme.backgroundDefault }]}
+        >
+          <ThemedText
+            type="body"
+            style={[styles.navButtonText, currentTaskIndex === tasks.length - 1 && { color: theme.textMuted }]}
+          >
+            Next
+          </ThemedText>
+          <Feather
+            name="chevron-right"
+            size={20}
+            color={currentTaskIndex === tasks.length - 1 ? theme.textMuted : theme.text}
           />
-        }
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: headerHeight + Spacing.lg, paddingBottom: insets.bottom + Spacing.xl },
-          tasks.length === 0 && styles.emptyContent,
-        ]}
-      />
+        </Pressable>
+      </View>
 
       <RestTimerSheet
         visible={showRestTimer}
@@ -373,63 +511,108 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  scrollView: {
+    flex: 1,
+  },
   content: {
     paddingHorizontal: Spacing.lg,
     flexGrow: 1,
   },
-  emptyContent: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  taskCard: {
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  taskHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing.md,
-    gap: Spacing.md,
-  },
-  modeIndicator: {
-    width: 36,
-    height: 36,
-    borderRadius: BorderRadius.sm,
-    alignItems: "center",
-    justifyContent: "center",
+  taskCounter: {
+    textAlign: "center",
+    marginBottom: Spacing.sm,
   },
   taskName: {
-    flex: 1,
+    marginBottom: Spacing.xs,
   },
-  setsContainer: {
-    gap: Spacing.sm,
+  targetText: {
+    marginBottom: Spacing.lg,
   },
-  setRow: {
+  progressSection: {
+    marginBottom: Spacing.xl,
+  },
+  progressLabel: {
+    marginBottom: Spacing.sm,
+  },
+  progressBarBg: {
+    height: 8,
+    borderRadius: 4,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    borderRadius: 4,
+  },
+  setsSection: {
+    gap: Spacing.md,
+  },
+  setsHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.sm,
+  },
+  addSetButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
   },
-  setNumber: {
-    width: 24,
-    textAlign: "center",
+  addSetText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  setCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  setCardInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  setField: {
+    alignItems: "center",
+    flex: 1,
+  },
+  setFieldLabel: {
+    fontSize: 12,
+    marginBottom: Spacing.xs,
   },
   setInput: {
-    flex: 1,
-    height: 44,
-    borderRadius: BorderRadius.sm,
+    width: 60,
+    height: 48,
+    borderRadius: BorderRadius.md,
     textAlign: "center",
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: "Inter_500Medium",
   },
-  checkButton: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.sm,
+  setNumberBox: {
+    width: 60,
+    height: 48,
+    borderRadius: BorderRadius.md,
     alignItems: "center",
     justifyContent: "center",
   },
-  distanceContainer: {
+  setNumberText: {
+    fontSize: 18,
+    fontFamily: "Inter_500Medium",
+  },
+  separator: {
+    fontSize: 16,
+    marginHorizontal: Spacing.xs,
+  },
+  deleteButton: {
+    width: 40,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modeSection: {
+    marginTop: Spacing.lg,
     gap: Spacing.md,
   },
   distanceRow: {
@@ -439,46 +622,73 @@ const styles = StyleSheet.create({
   distanceField: {
     flex: 1,
   },
-  distanceLabel: {
-    marginBottom: Spacing.xs,
+  fieldLabel: {
+    marginBottom: Spacing.sm,
   },
-  distanceInput: {
-    height: 48,
-    borderRadius: BorderRadius.sm,
+  largeInput: {
+    height: 56,
+    borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: "Inter_500Medium",
   },
-  paceText: {
-    marginTop: Spacing.xs,
+  intervalInfo: {
+    marginBottom: Spacing.md,
   },
-  intervalContainer: {
-    gap: Spacing.md,
+  completedBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.md,
   },
   startButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.sm,
-    height: 48,
+    height: 56,
     borderRadius: BorderRadius.md,
   },
-  completedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.sm,
-  },
-  timeContainer: {
-    gap: Spacing.xs,
+  startButtonText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 16,
   },
   notesInput: {
-    minHeight: 80,
-    borderRadius: BorderRadius.sm,
+    minHeight: 120,
+    borderRadius: BorderRadius.md,
     padding: Spacing.md,
-    fontSize: 15,
+    fontSize: 16,
     fontFamily: "Inter_400Regular",
     textAlignVertical: "top",
+  },
+  bottomNav: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    gap: Spacing.md,
+  },
+  navButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 52,
+    borderRadius: BorderRadius.full,
+    gap: Spacing.xs,
+  },
+  prevButton: {
+    backgroundColor: "transparent",
+  },
+  nextButton: {
+    flex: 1.5,
+  },
+  navButtonText: {
+    fontWeight: "600",
   },
 });
