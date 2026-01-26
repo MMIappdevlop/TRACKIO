@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Image } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -58,10 +58,6 @@ export default function ProfileHomeScreen() {
         style={[styles.profileCard, { backgroundColor: theme.backgroundDefault }]}
         onPress={() => setShowNameModal(true)}
       >
-        <Image
-          source={require("../../assets/images/avatar-default.png")}
-          style={styles.avatar}
-        />
         <View style={styles.profileInfo}>
           <ThemedText type="h2">{settings?.userName || "Athlete"}</ThemedText>
           <ThemedText type="muted">Tap to edit name</ThemedText>
@@ -146,12 +142,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     marginBottom: Spacing.xl,
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    marginRight: Spacing.lg,
   },
   profileInfo: {
     flex: 1,
