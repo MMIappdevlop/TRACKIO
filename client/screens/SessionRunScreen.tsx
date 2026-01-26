@@ -314,7 +314,7 @@ export default function SessionRunScreen() {
               <ThemedText type="h3">Sets</ThemedText>
               <Pressable
                 onPress={() => handleAddSet(currentTask.id)}
-                style={[styles.addSetButton, { backgroundColor: Colors.dark.effort }]}
+                style={[styles.addSetButton, { backgroundColor: Colors.dark.primary }]}
               >
                 <Feather name="plus" size={16} color="#FFFFFF" />
                 <ThemedText type="body" style={styles.addSetText}>Add Set</ThemedText>
