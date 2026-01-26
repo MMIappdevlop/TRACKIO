@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet, Pressable, RefreshControl, TextInput, ScrollView, Keyboard, Platform } from "react-native";
+import { View, StyleSheet, Pressable, RefreshControl, TextInput, ScrollView, Keyboard, Platform, TouchableOpacity } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -167,20 +167,19 @@ export default function TrainingHomeScreen() {
                 returnKeyType="done"
                 onSubmitEditing={handleSaveName}
               />
-              <Pressable
+              <TouchableOpacity
                 onPress={handleSaveName}
                 disabled={!userName.trim() || isSettingName}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={({ pressed }) => [
+                activeOpacity={0.7}
+                style={[
                   styles.saveNameButton,
                   { 
                     backgroundColor: userName.trim() ? theme.link : theme.backgroundSecondary,
-                    opacity: pressed ? 0.7 : 1,
                   },
                 ]}
               >
                 <Feather name="check" size={20} color={userName.trim() ? "#FFF" : theme.textMuted} />
-              </Pressable>
+              </TouchableOpacity>
             </View>
           </View>
         ) : null}
