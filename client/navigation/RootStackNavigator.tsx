@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import MainTabNavigator from "@/navigation/MainTabNavigator";
+import OnboardingScreen from "@/screens/OnboardingScreen";
 import SessionRunScreen from "@/screens/SessionRunScreen";
 import SessionSummaryScreen from "@/screens/SessionSummaryScreen";
 import AddTaskScreen from "@/screens/AddTaskScreen";
@@ -9,6 +10,7 @@ import IntervalTimerScreen from "@/screens/IntervalTimerScreen";
 import ImportProgramScreen from "@/screens/ImportProgramScreen";
 import ProgramBuilderScreen from "@/screens/ProgramBuilderScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
+import { useSettings } from "@/hooks/useData";
 
 export type RootStackParamList = {
   Main: undefined;
@@ -40,6 +42,25 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootStackNavigator() {
   const screenOptions = useScreenOptions();
+  const { settings, loading } = useSettings();
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!loading) {
+      const hasUserName = settings?.userName && settings.userName.trim().length > 0;
+      setShowOnboarding(!hasUserName);
+    }
+  }, [settings, loading]);
+
+  if (showOnboarding === null) {
+    return null;
+  }
+
+  if (showOnboarding) {
+    return (
+      <OnboardingScreen onComplete={() => setShowOnboarding(false)} />
+    );
+  }
 
   return (
     <Stack.Navigator screenOptions={screenOptions}>

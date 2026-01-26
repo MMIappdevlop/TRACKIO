@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet, Pressable, RefreshControl, TextInput, ScrollView, Keyboard, Platform } from "react-native";
+import { View, StyleSheet, Pressable, RefreshControl, ScrollView } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -47,13 +47,11 @@ export default function TrainingHomeScreen() {
 
   const { activeProgram, loading: programsLoading, refresh: refreshPrograms } = usePrograms();
   const { templates, refresh: refreshTemplates } = useSessionTemplates(activeProgram?.id || null);
-  const { settings, updateSettings, refresh: refreshSettings } = useSettings();
+  const { settings, refresh: refreshSettings } = useSettings();
   const { sessions, refresh: refreshSessions } = useCompletedSessions();
   const { stats: weeklyStats, refresh: refreshWeeklyStats } = useWeeklyStats();
 
   const [refreshing, setRefreshing] = useState(false);
-  const [userName, setUserName] = useState("");
-  const [isSettingName, setIsSettingName] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -71,29 +69,6 @@ export default function TrainingHomeScreen() {
     setRefreshing(false);
   };
 
-  const handleSaveName = useCallback(async () => {
-    console.log("handleSaveName called, userName:", userName);
-    if (!userName.trim()) {
-      console.log("userName empty, returning");
-      return;
-    }
-    Keyboard.dismiss();
-    setIsSettingName(true);
-    try {
-      console.log("Saving settings with userName:", userName.trim());
-      await updateSettings({ userName: userName.trim() });
-      console.log("Settings saved successfully");
-      if (Platform.OS !== "web") {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-      await refreshSettings();
-    } catch (error) {
-      console.error("Error saving name:", error);
-    } finally {
-      setIsSettingName(false);
-    }
-  }, [userName, updateSettings, refreshSettings]);
-
   const handleStartSession = (template: SessionTemplate) => {
     if (!activeProgram) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -105,7 +80,6 @@ export default function TrainingHomeScreen() {
     });
   };
 
-  const hasUserName = settings?.userName && settings.userName.trim().length > 0;
   const lastSession = sessions.length > 0 ? sessions[0] : null;
   const todaySession = templates.length > 0 ? templates[0] : null;
 
@@ -131,25 +105,14 @@ export default function TrainingHomeScreen() {
         {/* Header Section */}
         <View style={styles.headerSection}>
           <View style={styles.headerLeft}>
-            {hasUserName ? (
-              <>
-                <ThemedText type="h1" style={styles.greeting}>
-                  {getGreeting()}, {settings.userName}
-                </ThemedText>
-                {activeProgram ? (
-                  <ThemedText type="secondary" style={styles.programLabel}>
-                    Program: {activeProgram.name}
-                  </ThemedText>
-                ) : null}
-              </>
-            ) : (
-              <>
-                <ThemedText type="h1" style={styles.greeting}>Welcome to Trackio</ThemedText>
-                <ThemedText type="secondary" style={styles.programLabel}>
-                  Your training tracker
-                </ThemedText>
-              </>
-            )}
+            <ThemedText type="h1" style={styles.greeting}>
+              {getGreeting()}, {settings?.userName || "Athlete"}
+            </ThemedText>
+            {activeProgram ? (
+              <ThemedText type="secondary" style={styles.programLabel}>
+                Program: {activeProgram.name}
+              </ThemedText>
+            ) : null}
           </View>
           <Pressable
             onPress={() => navigation.navigate("Settings" as any)}
@@ -159,33 +122,8 @@ export default function TrainingHomeScreen() {
           </Pressable>
         </View>
 
-        {/* Name Input for new users */}
-        {!hasUserName ? (
-          <View style={[styles.nameCard, { backgroundColor: theme.backgroundDefault }]}>
-            <ThemedText type="body" style={styles.nameLabel}>What should we call you?</ThemedText>
-            <TextInput
-              style={[styles.nameInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-              value={userName}
-              onChangeText={setUserName}
-              placeholder="Your name"
-              placeholderTextColor={theme.textMuted}
-              autoCapitalize="words"
-              returnKeyType="done"
-              onSubmitEditing={handleSaveName}
-              testID="name-input"
-            />
-            <Button
-              onPress={handleSaveName}
-              disabled={!userName.trim() || isSettingName}
-              style={styles.continueButton}
-            >
-              {isSettingName ? "Saving..." : "Continue"}
-            </Button>
-          </View>
-        ) : null}
-
         {/* Today's Session Card */}
-        <View style={[styles.sessionCard, { backgroundColor: theme.backgroundDefault }, !hasUserName && styles.cardDisabled]}>
+        <View style={[styles.sessionCard, { backgroundColor: theme.backgroundDefault }]}>
           {todaySession && activeProgram ? (
             <>
               <ThemedText type="h2" style={styles.sessionName}>{todaySession.name}</ThemedText>
@@ -195,7 +133,6 @@ export default function TrainingHomeScreen() {
               <Button
                 onPress={() => handleStartSession(todaySession)}
                 style={styles.startButton}
-                disabled={!hasUserName}
               >
                 Start Workout
               </Button>
@@ -208,7 +145,6 @@ export default function TrainingHomeScreen() {
               <Button
                 onPress={() => navigation.navigate("SessionTemplateDetail" as any, { programId: activeProgram.id })}
                 style={styles.startButton}
-                disabled={!hasUserName}
               >
                 Add Session
               </Button>
@@ -221,16 +157,14 @@ export default function TrainingHomeScreen() {
               <Button
                 onPress={() => navigation.navigate("ProgramBuilder" as any)}
                 style={styles.startButton}
-                disabled={!hasUserName}
               >
                 Create Program
               </Button>
               <Pressable
                 onPress={() => navigation.navigate("ImportProgram" as any)}
                 style={styles.secondaryAction}
-                disabled={!hasUserName}
               >
-                <ThemedText type="link" style={!hasUserName ? { color: theme.textMuted } : undefined}>
+                <ThemedText type="link">
                   Or import a plan
                 </ThemedText>
               </Pressable>
@@ -239,11 +173,10 @@ export default function TrainingHomeScreen() {
         </View>
 
         {/* Quick Actions */}
-        <View style={[styles.quickActions, !hasUserName && styles.cardDisabled]}>
+        <View style={styles.quickActions}>
           <Pressable
             onPress={() => navigation.navigate("ProgramBuilder" as any)}
             style={[styles.quickAction, { backgroundColor: theme.backgroundDefault }]}
-            disabled={!hasUserName}
           >
             <View style={[styles.quickActionIcon, { backgroundColor: theme.link + "20" }]}>
               <Feather name="plus" size={20} color={theme.link} />
@@ -254,7 +187,6 @@ export default function TrainingHomeScreen() {
           <Pressable
             onPress={() => navigation.navigate("ProgramList")}
             style={[styles.quickAction, { backgroundColor: theme.backgroundDefault }]}
-            disabled={!hasUserName}
           >
             <View style={[styles.quickActionIcon, { backgroundColor: Colors.dark.success + "20" }]}>
               <Feather name="folder" size={20} color={Colors.dark.success} />
@@ -265,7 +197,6 @@ export default function TrainingHomeScreen() {
           <Pressable
             onPress={() => navigation.navigate("ImportProgram" as any)}
             style={[styles.quickAction, { backgroundColor: theme.backgroundDefault }]}
-            disabled={!hasUserName}
           >
             <View style={[styles.quickActionIcon, { backgroundColor: Colors.dark.warning + "20" }]}>
               <Feather name="upload" size={20} color={Colors.dark.warning} />
@@ -275,7 +206,7 @@ export default function TrainingHomeScreen() {
         </View>
 
         {/* Last Workout Summary */}
-        {lastSession && hasUserName ? (
+        {lastSession ? (
           <View style={[styles.lastWorkoutCard, { backgroundColor: theme.backgroundDefault }]}>
             <View style={styles.lastWorkoutHeader}>
               <ThemedText type="muted">Last Workout</ThemedText>
@@ -292,7 +223,7 @@ export default function TrainingHomeScreen() {
         ) : null}
 
         {/* Motivation / Status Line */}
-        {hasUserName && weeklyStats && weeklyStats.sessionsCount > 0 ? (
+        {weeklyStats && weeklyStats.sessionsCount > 0 ? (
           <View style={styles.motivationSection}>
             <ThemedText type="secondary" style={styles.motivationText}>
               {weeklyStats.sessionsCount} workout{weeklyStats.sessionsCount !== 1 ? "s" : ""} this week
@@ -332,40 +263,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  nameCard: {
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-  },
-  nameLabel: {
-    marginBottom: Spacing.sm,
-  },
-  nameInputRow: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-  },
-  nameInput: {
-    height: 48,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    fontSize: 16,
-    fontFamily: "Inter_400Regular",
-    marginBottom: Spacing.md,
-  },
-  saveNameFullButton: {
-    width: "100%",
-  },
-  continueButton: {
-    marginTop: Spacing.sm,
-  },
   sessionCard: {
     borderRadius: BorderRadius.lg,
     padding: Spacing.xl,
     marginBottom: Spacing.lg,
     alignItems: "center",
-  },
-  cardDisabled: {
-    opacity: 0.5,
   },
   sessionName: {
     textAlign: "center",
