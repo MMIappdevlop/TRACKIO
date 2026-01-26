@@ -191,20 +191,9 @@ export default function ImportProgramScreen() {
         Alert.alert("Error", "Could not download template");
       }
     } else {
-      // On mobile, show the template content in an alert with copy option
-      // This is more reliable than file sharing in Expo Go
-      Alert.alert(
-        "Template: " + templateId,
-        "The template format is shown below. You can create a spreadsheet with these columns:\n\n" +
-        templateContent.split('\n')[0].split(',').join(', '),
-        [
-          {
-            text: "View Full Template",
-            onPress: () => showTemplateModal(templateId, templateContent),
-          },
-          { text: "OK", style: "cancel" },
-        ]
-      );
+      // On mobile, directly open the modal with template content
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      showTemplateModal(templateId, templateContent);
     }
   };
 
