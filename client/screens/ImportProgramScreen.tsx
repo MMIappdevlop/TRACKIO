@@ -427,15 +427,11 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
   };
 
   const handleImport = async () => {
-    console.log("Import button pressed, parsedData:", parsedData.length);
-    
     if (parsedData.length === 0) {
-      console.log("No parsed data");
       return;
     }
 
     const validRows = parsedData.filter((r) => !r.error);
-    console.log("Valid rows:", validRows.length);
     
     if (validRows.length === 0) {
       Alert.alert("Cannot Import", "All rows have validation errors. Please fix them first.");
