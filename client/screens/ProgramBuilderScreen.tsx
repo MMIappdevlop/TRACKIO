@@ -364,7 +364,7 @@ export default function ProgramBuilderScreen() {
           <Feather
             name={session.isExpanded ? "chevron-down" : "chevron-right"}
             size={20}
-            color={theme.textMuted}
+            color={theme.text}
           />
           <ThemedText type="body" style={styles.sessionName}>
             {session.name}
