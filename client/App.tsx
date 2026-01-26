@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, Platform } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -22,6 +22,14 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 SplashScreen.preventAutoHideAsync();
 
+function AppContent() {
+  return (
+    <NavigationContainer>
+      <RootStackNavigator />
+    </NavigationContainer>
+  );
+}
+
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
@@ -40,17 +48,22 @@ export default function App() {
     return null;
   }
 
+  // On iOS, skip KeyboardProvider as it may interfere with touch events
+  const content = Platform.OS === 'ios' ? (
+    <AppContent />
+  ) : (
+    <KeyboardProvider>
+      <AppContent />
+    </KeyboardProvider>
+  );
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <SafeAreaProvider>
           <GestureHandlerRootView style={styles.root}>
-            <KeyboardProvider>
-              <NavigationContainer>
-                <RootStackNavigator />
-              </NavigationContainer>
-              <StatusBar style="light" />
-            </KeyboardProvider>
+            {content}
+            <StatusBar style="light" />
           </GestureHandlerRootView>
         </SafeAreaProvider>
       </QueryClientProvider>
