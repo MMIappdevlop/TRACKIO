@@ -10,7 +10,7 @@ import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
 import { useTheme } from "@/hooks/useTheme";
 
 export type MainTabParamList = {
-  Training: undefined;
+  Home: undefined;
   Progress: undefined;
   Profile: undefined;
 };
@@ -22,7 +22,7 @@ export default function MainTabNavigator() {
 
   return (
     <Tab.Navigator
-      initialRouteName="Training"
+      initialRouteName="Home"
       screenOptions={{
         tabBarActiveTintColor: theme.tabIconSelected,
         tabBarInactiveTintColor: theme.tabIconDefault,
@@ -48,12 +48,12 @@ export default function MainTabNavigator() {
       }}
     >
       <Tab.Screen
-        name="Training"
+        name="Home"
         component={TrainingStackNavigator}
         options={{
-          title: "Training",
+          title: "Home",
           tabBarIcon: ({ color, size }) => (
-            <Feather name="activity" size={size} color={color} />
+            <Feather name="home" size={size} color={color} />
           ),
         }}
       />
