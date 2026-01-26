@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useMemo } from "react";
-import { View, FlatList, StyleSheet, Pressable, RefreshControl, TextInput, ScrollView } from "react-native";
+import React, { useState, useCallback } from "react";
+import { View, StyleSheet, Pressable, RefreshControl, TextInput, ScrollView } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -9,19 +9,35 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
-import { SessionTemplateCard } from "@/components/SessionTemplateCard";
-import { InputModal } from "@/components/InputModal";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
-import { usePrograms, useSessionTemplates, useSettings } from "@/hooks/useData";
-import { taskTemplatesStorage } from "@/lib/storage";
+import { usePrograms, useSessionTemplates, useSettings, useCompletedSessions, useWeeklyStats } from "@/hooks/useData";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { TrainingStackParamList } from "@/navigation/TrainingStackNavigator";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import type { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
-import type { TaskTemplate } from "@/types";
+import type { SessionTemplate } from "@/types";
 
-type NavigationProp = NativeStackNavigationProp<TrainingStackParamList & RootStackParamList & ProfileStackParamList>;
+type NavigationProp = NativeStackNavigationProp<TrainingStackParamList & RootStackParamList>;
+
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+}
+
+function formatRelativeDate(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return date.toLocaleDateString();
+}
 
 export default function TrainingHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -29,13 +45,12 @@ export default function TrainingHomeScreen() {
   const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
 
-  const { programs, activeProgram, loading: programsLoading, refresh: refreshPrograms, createProgram } = usePrograms();
-  const { templates, loading: templatesLoading, refresh: refreshTemplates, createTemplate } = useSessionTemplates(activeProgram?.id || null);
+  const { activeProgram, loading: programsLoading, refresh: refreshPrograms } = usePrograms();
+  const { templates, refresh: refreshTemplates } = useSessionTemplates(activeProgram?.id || null);
   const { settings, updateSettings, refresh: refreshSettings } = useSettings();
+  const { sessions, refresh: refreshSessions } = useCompletedSessions();
+  const { stats: weeklyStats, refresh: refreshWeeklyStats } = useWeeklyStats();
 
-  const [allTasks, setAllTasks] = useState<TaskTemplate[]>([]);
-  const [showCreateProgram, setShowCreateProgram] = useState(false);
-  const [showCreateSession, setShowCreateSession] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [userName, setUserName] = useState("");
   const [isSettingName, setIsSettingName] = useState(false);
@@ -45,18 +60,14 @@ export default function TrainingHomeScreen() {
       refreshPrograms();
       refreshTemplates();
       refreshSettings();
-      loadAllTasks();
+      refreshSessions();
+      refreshWeeklyStats();
     }, [activeProgram?.id])
   );
 
-  const loadAllTasks = async () => {
-    const tasks = await taskTemplatesStorage.getAll();
-    setAllTasks(tasks);
-  };
-
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refreshPrograms(), refreshTemplates(), refreshSettings(), loadAllTasks()]);
+    await Promise.all([refreshPrograms(), refreshTemplates(), refreshSettings(), refreshSessions(), refreshWeeklyStats()]);
     setRefreshing(false);
   };
 
@@ -68,18 +79,7 @@ export default function TrainingHomeScreen() {
     setIsSettingName(false);
   };
 
-  const handleCreateProgram = async (name: string) => {
-    await createProgram(name);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  };
-
-  const handleCreateSession = async (name: string) => {
-    await createTemplate(name);
-    await loadAllTasks();
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  };
-
-  const handleStartSession = (template: typeof templates[0]) => {
+  const handleStartSession = (template: SessionTemplate) => {
     if (!activeProgram) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     navigation.navigate("SessionRun", {
@@ -90,230 +90,205 @@ export default function TrainingHomeScreen() {
     });
   };
 
-  const handleEditSession = (template: typeof templates[0]) => {
-    if (!activeProgram) return;
-    navigation.navigate("SessionTemplateDetail", {
-      templateId: template.id,
-      templateName: template.name,
-      programId: activeProgram.id,
-      programName: activeProgram.name,
-    });
+  const hasUserName = settings?.userName && settings.userName.trim().length > 0;
+  const lastSession = sessions.length > 0 ? sessions[0] : null;
+  const todaySession = templates.length > 0 ? templates[0] : null;
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
   };
-
-  const loading = programsLoading || templatesLoading;
-
-  const renderHeader = () => (
-    <View style={styles.header}>
-      {activeProgram ? (
-        <Pressable
-          style={styles.programSelector}
-          onPress={() => navigation.navigate("ProgramList")}
-        >
-          <View style={styles.programInfo}>
-            <ThemedText type="muted" style={styles.activeLabel}>
-              Active Program
-            </ThemedText>
-            <View style={styles.programNameRow}>
-              <ThemedText type="h2">{activeProgram.name}</ThemedText>
-              <Feather name="chevron-right" size={20} color={theme.textSecondary} />
-            </View>
-          </View>
-        </Pressable>
-      ) : null}
-
-      {templates.length > 0 ? (
-        <View style={styles.sectionHeader}>
-          <ThemedText type="h2">Sessions</ThemedText>
-          <Pressable
-            onPress={() => setShowCreateSession(true)}
-            style={[styles.addButton, { backgroundColor: theme.linkBackground }]}
-          >
-            <Feather name="plus" size={18} color={theme.link} />
-          </Pressable>
-        </View>
-      ) : null}
-    </View>
-  );
-
-  const renderWelcome = () => {
-    const hasUserName = settings?.userName && settings.userName.trim().length > 0;
-
-    return (
-      <View style={styles.welcomeContainer}>
-        <View style={[styles.welcomeCard, { backgroundColor: theme.backgroundDefault }]}>
-          <ThemedText type="h1" style={styles.welcomeTitle}>
-            {hasUserName ? `Hey, ${settings.userName}` : "Welcome to Trakio"}
-          </ThemedText>
-          <ThemedText type="secondary" style={styles.welcomeSubtitle}>
-            Your training tracker
-          </ThemedText>
-
-          {!hasUserName ? (
-            <View style={styles.nameInputSection}>
-              <ThemedText type="body" style={styles.nameLabel}>What should we call you?</ThemedText>
-              <View style={styles.nameInputRow}>
-                <TextInput
-                  style={[styles.nameInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-                  value={userName}
-                  onChangeText={setUserName}
-                  placeholder="Your name"
-                  placeholderTextColor={theme.textMuted}
-                  autoCapitalize="words"
-                  returnKeyType="done"
-                  onSubmitEditing={handleSaveName}
-                  blurOnSubmit={false}
-                />
-                <Pressable
-                  onPress={handleSaveName}
-                  disabled={!userName.trim() || isSettingName}
-                  style={[
-                    styles.saveNameButton,
-                    { backgroundColor: userName.trim() ? Colors.dark.primary : theme.backgroundSecondary },
-                  ]}
-                >
-                  <Feather name="check" size={20} color={userName.trim() ? "#FFF" : theme.textMuted} />
-                </Pressable>
-              </View>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={[styles.getStartedSection, !hasUserName && styles.sectionDisabled]}>
-          <ThemedText type="h2" style={[styles.sectionLabel, !hasUserName && { color: theme.textMuted }]}>Get Started</ThemedText>
-          <ThemedText type="secondary" style={[styles.getStartedText, !hasUserName && { color: theme.textMuted }]}>
-            Bring your own workout program or create one from scratch
-          </ThemedText>
-
-          <View style={styles.actionButtons}>
-            <Pressable
-              onPress={() => navigation.navigate("ProgramBuilder" as any)}
-              style={[styles.actionCard, { backgroundColor: theme.backgroundDefault }]}
-              disabled={!hasUserName}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: hasUserName ? "#4C7DFF" : theme.textMuted }]}>
-                <Feather name="plus" size={24} color={hasUserName ? "#FFFFFF" : theme.backgroundDefault} />
-              </View>
-              <ThemedText type="h4" style={!hasUserName ? { color: theme.textMuted } : undefined}>Create Program</ThemedText>
-              <ThemedText type="muted" style={styles.actionDescription}>
-                Start fresh with a new program
-              </ThemedText>
-            </Pressable>
-
-            <Pressable
-              onPress={() => navigation.navigate("ImportProgram" as any)}
-              style={[styles.actionCard, { backgroundColor: theme.backgroundDefault }]}
-              disabled={!hasUserName}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: hasUserName ? Colors.dark.success + "20" : theme.textMuted }]}>
-                <Feather name="upload" size={24} color={hasUserName ? Colors.dark.success : theme.backgroundDefault} />
-              </View>
-              <ThemedText type="h4" style={!hasUserName ? { color: theme.textMuted } : undefined}>Import Plan</ThemedText>
-              <ThemedText type="muted" style={styles.actionDescription}>
-                From CSV or Excel file
-              </ThemedText>
-            </Pressable>
-          </View>
-        </View>
-      </View>
-    );
-  };
-
-  const emptySessionsContent = useMemo(() => (
-    <View style={styles.emptySessionsContainer}>
-      <View style={[styles.emptyIcon, { backgroundColor: theme.linkBackground }]}>
-        <Feather name="clipboard" size={32} color={theme.link} />
-      </View>
-      <ThemedText type="h3" style={styles.emptyTitle}>No Sessions</ThemedText>
-      <ThemedText type="secondary" style={styles.emptyDescription}>
-        Add session templates to this program
-      </ThemedText>
-      <Button onPress={() => setShowCreateSession(true)} style={styles.addSessionButton}>
-        Add Session
-      </Button>
-    </View>
-  ), [theme]);
-
-  const renderEmpty = () => {
-    if (loading) return null;
-
-    if (!activeProgram) {
-      return renderWelcome();
-    }
-
-    return emptySessionsContent;
-  };
-
-  if (!activeProgram && !loading) {
-    return (
-      <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={[styles.content, { paddingTop: headerHeight + Spacing.xl, paddingBottom: tabBarHeight + Spacing["4xl"] }]}
-        >
-          {renderWelcome()}
-        </ScrollView>
-        <InputModal
-          visible={showCreateProgram}
-          title="New Program"
-          placeholder="Program name"
-          submitLabel="Create"
-          onSubmit={handleCreateProgram}
-          onClose={() => setShowCreateProgram(false)}
-        />
-      </View>
-    );
-  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
-      <FlatList
-        data={templates}
-        keyExtractor={(item) => item.id}
-        keyboardShouldPersistTaps="handled"
-        renderItem={({ item }) => (
-          <SessionTemplateCard
-            template={item}
-            tasks={allTasks.filter((t) => t.sessionTemplateId === item.id)}
-            onPress={() => handleStartSession(item)}
-            onLongPress={() => handleEditSession(item)}
-          />
-        )}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={emptySessionsContent}
+      <ScrollView
         contentContainerStyle={[
           styles.content,
-          {
-            paddingTop: headerHeight + Spacing.xl,
-            paddingBottom: tabBarHeight + Spacing["4xl"],
-          },
-          templates.length === 0 && styles.emptyContent,
+          { paddingTop: headerHeight + Spacing.lg, paddingBottom: tabBarHeight + Spacing["4xl"] },
         ]}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={theme.link}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.link} />
         }
-      />
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <View style={styles.headerLeft}>
+            {hasUserName ? (
+              <>
+                <ThemedText type="h1" style={styles.greeting}>
+                  {getGreeting()}, {settings.userName}
+                </ThemedText>
+                {activeProgram ? (
+                  <ThemedText type="secondary" style={styles.programLabel}>
+                    Program: {activeProgram.name}
+                  </ThemedText>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <ThemedText type="h1" style={styles.greeting}>Welcome to Trakio</ThemedText>
+                <ThemedText type="secondary" style={styles.programLabel}>
+                  Your training tracker
+                </ThemedText>
+              </>
+            )}
+          </View>
+          <Pressable
+            onPress={() => navigation.navigate("Settings" as any)}
+            style={[styles.settingsButton, { backgroundColor: theme.backgroundDefault }]}
+          >
+            <Feather name="settings" size={20} color={theme.textSecondary} />
+          </Pressable>
+        </View>
 
-      <InputModal
-        visible={showCreateProgram}
-        title="New Program"
-        placeholder="Program name"
-        submitLabel="Create"
-        onSubmit={handleCreateProgram}
-        onClose={() => setShowCreateProgram(false)}
-      />
+        {/* Name Input for new users */}
+        {!hasUserName ? (
+          <View style={[styles.nameCard, { backgroundColor: theme.backgroundDefault }]}>
+            <ThemedText type="body" style={styles.nameLabel}>What should we call you?</ThemedText>
+            <View style={styles.nameInputRow}>
+              <TextInput
+                style={[styles.nameInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+                value={userName}
+                onChangeText={setUserName}
+                placeholder="Your name"
+                placeholderTextColor={theme.textMuted}
+                autoCapitalize="words"
+                returnKeyType="done"
+                onSubmitEditing={handleSaveName}
+              />
+              <Pressable
+                onPress={handleSaveName}
+                disabled={!userName.trim() || isSettingName}
+                style={[
+                  styles.saveNameButton,
+                  { backgroundColor: userName.trim() ? theme.link : theme.backgroundSecondary },
+                ]}
+              >
+                <Feather name="check" size={20} color={userName.trim() ? "#FFF" : theme.textMuted} />
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
 
-      <InputModal
-        visible={showCreateSession}
-        title="New Session"
-        placeholder="Session name"
-        submitLabel="Create"
-        onSubmit={handleCreateSession}
-        onClose={() => setShowCreateSession(false)}
-      />
+        {/* Today's Session Card */}
+        <View style={[styles.sessionCard, { backgroundColor: theme.backgroundDefault }, !hasUserName && styles.cardDisabled]}>
+          {todaySession && activeProgram ? (
+            <>
+              <ThemedText type="h2" style={styles.sessionName}>{todaySession.name}</ThemedText>
+              <ThemedText type="secondary" style={styles.sessionMeta}>
+                {templates.length} session{templates.length !== 1 ? "s" : ""} available
+              </ThemedText>
+              <Button
+                onPress={() => handleStartSession(todaySession)}
+                style={styles.startButton}
+                disabled={!hasUserName}
+              >
+                Start Workout
+              </Button>
+            </>
+          ) : activeProgram ? (
+            <>
+              <ThemedText type="secondary" style={styles.noSessionText}>
+                No sessions in this program yet
+              </ThemedText>
+              <Button
+                onPress={() => navigation.navigate("SessionTemplateDetail" as any, { programId: activeProgram.id })}
+                style={styles.startButton}
+                disabled={!hasUserName}
+              >
+                Add Session
+              </Button>
+            </>
+          ) : (
+            <>
+              <ThemedText type="secondary" style={styles.noSessionText}>
+                No program selected
+              </ThemedText>
+              <Button
+                onPress={() => navigation.navigate("ProgramBuilder" as any)}
+                style={styles.startButton}
+                disabled={!hasUserName}
+              >
+                Create Program
+              </Button>
+              <Pressable
+                onPress={() => navigation.navigate("ImportProgram" as any)}
+                style={styles.secondaryAction}
+                disabled={!hasUserName}
+              >
+                <ThemedText type="link" style={!hasUserName ? { color: theme.textMuted } : undefined}>
+                  Or import a plan
+                </ThemedText>
+              </Pressable>
+            </>
+          )}
+        </View>
+
+        {/* Quick Actions */}
+        <View style={[styles.quickActions, !hasUserName && styles.cardDisabled]}>
+          <Pressable
+            onPress={() => navigation.navigate("ProgramBuilder" as any)}
+            style={[styles.quickAction, { backgroundColor: theme.backgroundDefault }]}
+            disabled={!hasUserName}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: theme.link + "20" }]}>
+              <Feather name="plus" size={20} color={theme.link} />
+            </View>
+            <ThemedText type="body" style={styles.quickActionLabel}>New Program</ThemedText>
+          </Pressable>
+
+          <Pressable
+            onPress={() => navigation.navigate("ProgramList")}
+            style={[styles.quickAction, { backgroundColor: theme.backgroundDefault }]}
+            disabled={!hasUserName}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: Colors.dark.success + "20" }]}>
+              <Feather name="folder" size={20} color={Colors.dark.success} />
+            </View>
+            <ThemedText type="body" style={styles.quickActionLabel}>Programs</ThemedText>
+          </Pressable>
+
+          <Pressable
+            onPress={() => navigation.navigate("ImportProgram" as any)}
+            style={[styles.quickAction, { backgroundColor: theme.backgroundDefault }]}
+            disabled={!hasUserName}
+          >
+            <View style={[styles.quickActionIcon, { backgroundColor: Colors.dark.warning + "20" }]}>
+              <Feather name="upload" size={20} color={Colors.dark.warning} />
+            </View>
+            <ThemedText type="body" style={styles.quickActionLabel}>Import</ThemedText>
+          </Pressable>
+        </View>
+
+        {/* Last Workout Summary */}
+        {lastSession && hasUserName ? (
+          <View style={[styles.lastWorkoutCard, { backgroundColor: theme.backgroundDefault }]}>
+            <View style={styles.lastWorkoutHeader}>
+              <ThemedText type="muted">Last Workout</ThemedText>
+              <ThemedText type="muted">{formatRelativeDate(lastSession.completedAt)}</ThemedText>
+            </View>
+            <ThemedText type="h4" style={styles.lastWorkoutName}>{lastSession.sessionTemplateName}</ThemedText>
+            <View style={styles.lastWorkoutStats}>
+              <View style={styles.lastWorkoutStat}>
+                <Feather name="clock" size={14} color={theme.textSecondary} />
+                <ThemedText type="secondary">{formatDuration(lastSession.durationSeconds)}</ThemedText>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Motivation / Status Line */}
+        {hasUserName && weeklyStats && weeklyStats.sessionsCount > 0 ? (
+          <View style={styles.motivationSection}>
+            <ThemedText type="secondary" style={styles.motivationText}>
+              {weeklyStats.sessionsCount} workout{weeklyStats.sessionsCount !== 1 ? "s" : ""} this week
+            </ThemedText>
+          </View>
+        ) : null}
+      </ScrollView>
     </View>
   );
 }
@@ -326,53 +301,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     flexGrow: 1,
   },
-  emptyContent: {
-    flex: 1,
-  },
-  header: {
-    marginBottom: Spacing.lg,
-  },
-  programSelector: {
+  headerSection: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: Spacing.xl,
   },
-  programInfo: {},
-  activeLabel: {
-    marginBottom: 2,
+  headerLeft: {
+    flex: 1,
   },
-  programNameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
+  greeting: {
+    marginBottom: Spacing.xs,
   },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: Spacing.md,
-  },
-  addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: BorderRadius.sm,
+  programLabel: {},
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.full,
     alignItems: "center",
     justifyContent: "center",
   },
-  welcomeContainer: {
-    flex: 1,
-  },
-  welcomeCard: {
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.xl,
-    marginBottom: Spacing.xl,
-  },
-  welcomeTitle: {
-    marginBottom: Spacing.xs,
-  },
-  welcomeSubtitle: {
-    marginBottom: 0,
-  },
-  nameInputSection: {
-    marginTop: Spacing.xl,
+  nameCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
   },
   nameLabel: {
     marginBottom: Spacing.sm,
@@ -385,9 +337,9 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
+    paddingHorizontal: Spacing.md,
     fontSize: 16,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "Inter_400Regular",
   },
   saveNameButton: {
     width: 48,
@@ -396,56 +348,84 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  getStartedSection: {
-    marginBottom: Spacing.xl,
+  sessionCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
+    alignItems: "center",
   },
-  sectionDisabled: {
+  cardDisabled: {
     opacity: 0.5,
   },
-  sectionLabel: {
+  sessionName: {
+    textAlign: "center",
     marginBottom: Spacing.xs,
   },
-  getStartedText: {
-    marginBottom: Spacing.lg,
-  },
-  actionButtons: {
-    gap: Spacing.md,
-  },
-  actionCard: {
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.lg,
-  },
-  actionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: BorderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.md,
-  },
-  actionDescription: {
-    marginTop: Spacing.xs,
-  },
-  emptySessionsContainer: {
-    alignItems: "center",
-    paddingVertical: Spacing["3xl"],
-  },
-  emptyIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: BorderRadius.lg,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: Spacing.lg,
-  },
-  emptyTitle: {
-    marginBottom: Spacing.sm,
-  },
-  emptyDescription: {
+  sessionMeta: {
     textAlign: "center",
     marginBottom: Spacing.lg,
   },
-  addSessionButton: {
-    minWidth: 160,
+  noSessionText: {
+    textAlign: "center",
+    marginBottom: Spacing.lg,
+  },
+  startButton: {
+    width: "100%",
+  },
+  secondaryAction: {
+    marginTop: Spacing.md,
+    padding: Spacing.sm,
+  },
+  quickActions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    marginBottom: Spacing.lg,
+  },
+  quickAction: {
+    flex: 1,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  quickActionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  quickActionLabel: {
+    fontSize: 12,
+    textAlign: "center",
+  },
+  lastWorkoutCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  lastWorkoutHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: Spacing.sm,
+  },
+  lastWorkoutName: {
+    marginBottom: Spacing.sm,
+  },
+  lastWorkoutStats: {
+    flexDirection: "row",
+    gap: Spacing.lg,
+  },
+  lastWorkoutStat: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+  },
+  motivationSection: {
+    alignItems: "center",
+    paddingVertical: Spacing.lg,
+  },
+  motivationText: {
+    fontStyle: "italic",
   },
 });
