@@ -397,7 +397,7 @@ export default function ProgramBuilderScreen() {
                     <Feather
                       name={TASK_TYPES.find((t) => t.mode === task.mode)?.icon as any || "circle"}
                       size={14}
-                      color={Colors.dark.primary}
+                      color="#4C7DFF"
                     />
                     <ThemedText type="body" style={styles.taskName}>
                       {task.name}
