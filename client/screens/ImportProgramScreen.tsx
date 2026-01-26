@@ -220,6 +220,7 @@ export default function ImportProgramScreen() {
 
   const [templateModalVisible, setTemplateModalVisible] = useState(false);
   const [templateModalContent, setTemplateModalContent] = useState({ id: "", content: "" });
+  const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null);
 
   const showTemplateModal = (id: string, content: string) => {
     setTemplateModalContent({ id, content });
@@ -515,24 +516,63 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
       <View style={styles.section}>
         <ThemedText type="h2" style={styles.sectionTitle}>Example Templates</ThemedText>
         <ThemedText type="secondary" style={styles.description}>
-          Download a template to see the expected format for your data
+          Tap a template to see the expected format for your data
         </ThemedText>
 
         {TEMPLATE_INFO.map((template) => (
-          <Pressable
-            key={template.id}
-            style={[styles.templateCard, { backgroundColor: theme.backgroundDefault }]}
-            onPress={() => handleDownloadTemplate(template.id)}
-          >
-            <View style={[styles.templateIcon, { backgroundColor: template.color + "20" }]}>
-              <Feather name={template.icon} size={20} color={template.color} />
-            </View>
-            <View style={styles.templateInfo}>
-              <ThemedText type="body" style={{ fontWeight: "600" }}>{template.name}</ThemedText>
-              <ThemedText type="muted">{template.description}</ThemedText>
-            </View>
-            <Feather name="download" size={20} color={theme.link} />
-          </Pressable>
+          <View key={template.id}>
+            <Pressable
+              style={[styles.templateCard, { backgroundColor: theme.backgroundDefault }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setExpandedTemplate(expandedTemplate === template.id ? null : template.id);
+              }}
+            >
+              <View style={[styles.templateIcon, { backgroundColor: template.color + "20" }]}>
+                <Feather name={template.icon} size={20} color={template.color} />
+              </View>
+              <View style={styles.templateInfo}>
+                <ThemedText type="body" style={{ fontWeight: "600" }}>{template.name}</ThemedText>
+                <ThemedText type="muted">{template.description}</ThemedText>
+              </View>
+              <Feather 
+                name={expandedTemplate === template.id ? "chevron-up" : "chevron-down"} 
+                size={20} 
+                color={theme.link} 
+              />
+            </Pressable>
+            {expandedTemplate === template.id ? (
+              <View style={[styles.templatePreview, { backgroundColor: theme.backgroundSecondary }]}>
+                <ThemedText type="muted" style={{ marginBottom: Spacing.sm }}>
+                  Required columns: {getTemplateContent(template.id).split('\n')[0]}
+                </ThemedText>
+                <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+                  <ThemedText type="body" style={styles.templateCode}>
+                    {getTemplateContent(template.id)}
+                  </ThemedText>
+                </ScrollView>
+                <View style={styles.templateActions}>
+                  <Button
+                    variant="secondary"
+                    onPress={() => handleDownloadTemplate(template.id)}
+                    style={{ flex: 1 }}
+                  >
+                    Save File
+                  </Button>
+                  <Button
+                    onPress={async () => {
+                      await Clipboard.setStringAsync(getTemplateContent(template.id));
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      Alert.alert("Copied!", "Paste into Excel or Google Sheets");
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    Copy
+                  </Button>
+                </View>
+              </View>
+            ) : null}
+          </View>
         ))}
       </View>
 
@@ -854,6 +894,22 @@ const styles = StyleSheet.create({
   },
   templateInfo: {
     flex: 1,
+  },
+  templatePreview: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.md,
+    marginTop: -Spacing.xs,
+  },
+  templateCode: {
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    fontSize: 11,
+    lineHeight: 18,
+  },
+  templateActions: {
+    flexDirection: "row",
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
   },
   pickButton: {
     marginTop: 0,
