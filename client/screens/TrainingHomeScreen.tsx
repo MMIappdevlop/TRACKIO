@@ -126,8 +126,7 @@ export default function TrainingHomeScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.link} />
         }
-        keyboardShouldPersistTaps="always"
-        keyboardDismissMode="none"
+        keyboardShouldPersistTaps="handled"
       >
         {/* Header Section */}
         <View style={styles.headerSection}>

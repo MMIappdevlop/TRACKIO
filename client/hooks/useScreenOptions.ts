@@ -15,11 +15,15 @@ export function useScreenOptions({
 
   return {
     headerTitleAlign: "center",
-    headerTransparent: Platform.OS === 'ios' ? false : transparent,
+    headerTransparent: transparent,
     headerBlurEffect: isDark ? "dark" : "light",
     headerTintColor: theme.text,
     headerStyle: {
-      backgroundColor: theme.backgroundRoot,
+      backgroundColor: Platform.select({
+        ios: undefined,
+        android: theme.backgroundRoot,
+        web: theme.backgroundRoot,
+      }),
     },
     gestureEnabled: true,
     gestureDirection: "horizontal",
