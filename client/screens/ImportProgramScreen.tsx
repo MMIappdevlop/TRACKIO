@@ -482,13 +482,13 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
-      // Navigate directly to Training home
+      // Close modal and go to Training home
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
           routes: [
             {
-              name: "MainTabs",
+              name: "Main",
               state: {
                 index: 0,
                 routes: [{ name: "Training" }],
