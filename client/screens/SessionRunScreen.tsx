@@ -479,18 +479,18 @@ export default function SessionRunScreen() {
         <Pressable
           onPress={handleNext}
           disabled={currentTaskIndex === tasks.length - 1}
-          style={[styles.navButton, styles.nextButton, { backgroundColor: theme.backgroundDefault }]}
+          style={[styles.navButton, styles.nextButton, { backgroundColor: currentTaskIndex === tasks.length - 1 ? theme.backgroundDefault : Colors.dark.primary }]}
         >
           <ThemedText
             type="body"
-            style={[styles.navButtonText, currentTaskIndex === tasks.length - 1 && { color: theme.textMuted }]}
+            style={[styles.navButtonText, { color: currentTaskIndex === tasks.length - 1 ? theme.textMuted : "#FFFFFF" }]}
           >
             Next
           </ThemedText>
           <Feather
             name="chevron-right"
             size={20}
-            color={currentTaskIndex === tasks.length - 1 ? theme.textMuted : theme.text}
+            color={currentTaskIndex === tasks.length - 1 ? theme.textMuted : "#FFFFFF"}
           />
         </Pressable>
       </View>
