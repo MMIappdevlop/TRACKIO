@@ -57,9 +57,9 @@ export default function MainTabNavigator() {
         name="TrainingTab"
         component={TrainingStackNavigator}
         options={{
-          title: "Training",
+          title: "Home",
           tabBarIcon: ({ color, size }) => (
-            <Feather name="activity" size={size} color={color} />
+            <Feather name="home" size={size} color={color} />
           ),
         }}
         listeners={({ navigation }) => ({
