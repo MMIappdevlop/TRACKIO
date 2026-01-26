@@ -178,9 +178,9 @@ export default function TrainingHomeScreen() {
           ) : null}
         </View>
 
-        <View style={styles.getStartedSection}>
-          <ThemedText type="h2" style={styles.sectionLabel}>Get Started</ThemedText>
-          <ThemedText type="secondary" style={styles.getStartedText}>
+        <View style={[styles.getStartedSection, !hasUserName && styles.sectionDisabled]}>
+          <ThemedText type="h2" style={[styles.sectionLabel, !hasUserName && { color: theme.textMuted }]}>Get Started</ThemedText>
+          <ThemedText type="secondary" style={[styles.getStartedText, !hasUserName && { color: theme.textMuted }]}>
             Bring your own workout program or create one from scratch
           </ThemedText>
 
@@ -188,11 +188,12 @@ export default function TrainingHomeScreen() {
             <Pressable
               onPress={() => navigation.navigate("ProgramBuilder" as any)}
               style={[styles.actionCard, { backgroundColor: theme.backgroundDefault }]}
+              disabled={!hasUserName}
             >
-              <View style={[styles.actionIcon, { backgroundColor: "#4C7DFF" }]}>
-                <Feather name="plus" size={24} color="#FFFFFF" />
+              <View style={[styles.actionIcon, { backgroundColor: hasUserName ? "#4C7DFF" : theme.textMuted }]}>
+                <Feather name="plus" size={24} color={hasUserName ? "#FFFFFF" : theme.backgroundDefault} />
               </View>
-              <ThemedText type="h4">Create Program</ThemedText>
+              <ThemedText type="h4" style={!hasUserName ? { color: theme.textMuted } : undefined}>Create Program</ThemedText>
               <ThemedText type="muted" style={styles.actionDescription}>
                 Start fresh with a new program
               </ThemedText>
@@ -201,11 +202,12 @@ export default function TrainingHomeScreen() {
             <Pressable
               onPress={() => navigation.navigate("ImportProgram" as any)}
               style={[styles.actionCard, { backgroundColor: theme.backgroundDefault }]}
+              disabled={!hasUserName}
             >
-              <View style={[styles.actionIcon, { backgroundColor: Colors.dark.success + "20" }]}>
-                <Feather name="upload" size={24} color={Colors.dark.success} />
+              <View style={[styles.actionIcon, { backgroundColor: hasUserName ? Colors.dark.success + "20" : theme.textMuted }]}>
+                <Feather name="upload" size={24} color={hasUserName ? Colors.dark.success : theme.backgroundDefault} />
               </View>
-              <ThemedText type="h4">Import Plan</ThemedText>
+              <ThemedText type="h4" style={!hasUserName ? { color: theme.textMuted } : undefined}>Import Plan</ThemedText>
               <ThemedText type="muted" style={styles.actionDescription}>
                 From CSV or Excel file
               </ThemedText>
@@ -396,6 +398,9 @@ const styles = StyleSheet.create({
   },
   getStartedSection: {
     marginBottom: Spacing.xl,
+  },
+  sectionDisabled: {
+    opacity: 0.5,
   },
   sectionLabel: {
     marginBottom: Spacing.xs,
