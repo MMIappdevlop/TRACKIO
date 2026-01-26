@@ -3,7 +3,6 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
-import { CommonActions, StackActions } from "@react-navigation/native";
 
 import TrainingStackNavigator from "@/navigation/TrainingStackNavigator";
 import ProgressStackNavigator from "@/navigation/ProgressStackNavigator";
@@ -28,12 +27,7 @@ export default function MainTabNavigator() {
         tabBarActiveTintColor: theme.tabIconSelected,
         tabBarInactiveTintColor: theme.tabIconDefault,
         tabBarStyle: {
-          position: "absolute",
-          backgroundColor: Platform.select({
-            ios: "transparent",
-            android: theme.backgroundRoot,
-            web: theme.backgroundRoot,
-          }),
+          backgroundColor: theme.backgroundRoot,
           borderTopWidth: 0,
           borderTopColor: "transparent",
           elevation: 0,
@@ -62,16 +56,6 @@ export default function MainTabNavigator() {
             <Feather name="home" size={size} color={color} />
           ),
         }}
-        listeners={({ navigation }) => ({
-          tabPress: (e) => {
-            e.preventDefault();
-            // Always reset to home, closing all screens without save
-            navigation.dispatch(
-              StackActions.popToTop()
-            );
-            navigation.navigate("TrainingTab");
-          },
-        })}
       />
       <Tab.Screen
         name="ProgressTab"
