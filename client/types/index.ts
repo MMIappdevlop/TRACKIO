@@ -9,12 +9,15 @@ export interface Program {
   updatedAt: string;
 }
 
+export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
 export interface SessionTemplate {
   id: string;
   programId: string;
   name: string;
   order: number;
   defaultRestSeconds: number;
+  days?: DayOfWeek[];
   createdAt: string;
   updatedAt: string;
 }

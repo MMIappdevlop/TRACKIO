@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { View, FlatList, StyleSheet, Pressable, Alert } from "react-native";
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -13,10 +13,14 @@ import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { useTaskTemplates } from "@/hooks/useData";
-import { Spacing, BorderRadius, Colors } from "@/constants/theme";
+import { sessionTemplatesStorage } from "@/lib/storage";
+import { Spacing, BorderRadius } from "@/constants/theme";
 import type { TrainingStackParamList } from "@/navigation/TrainingStackNavigator";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import type { TaskTemplate } from "@/types";
+import type { TaskTemplate, DayOfWeek } from "@/types";
+
+const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 type RoutePropType = RouteProp<TrainingStackParamList, "SessionTemplateDetail">;
 type NavigationProp = NativeStackNavigationProp<TrainingStackParamList & RootStackParamList>;
@@ -30,6 +34,26 @@ export default function SessionTemplateDetailScreen() {
   const { templateId, templateName, programId, programName } = route.params;
 
   const { tasks, loading, refresh, deleteTask } = useTaskTemplates(templateId);
+  const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
+
+  useEffect(() => {
+    const loadSessionDays = async () => {
+      const session = await sessionTemplatesStorage.getById(templateId);
+      if (session?.days) {
+        setSelectedDays(session.days);
+      }
+    };
+    loadSessionDays();
+  }, [templateId]);
+
+  const handleToggleDay = async (day: DayOfWeek) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newDays = selectedDays.includes(day)
+      ? selectedDays.filter((d) => d !== day)
+      : [...selectedDays, day].sort((a, b) => a - b);
+    setSelectedDays(newDays);
+    await sessionTemplatesStorage.update(templateId, { days: newDays });
+  };
 
   const handleStartWorkout = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -99,11 +123,59 @@ export default function SessionTemplateDetailScreen() {
     />
   );
 
+  const renderDayPicker = () => (
+    <View style={[styles.dayPickerCard, { backgroundColor: theme.backgroundDefault }]}>
+      <View style={styles.dayPickerHeader}>
+        <Feather name="calendar" size={16} color={theme.textSecondary} />
+        <ThemedText type="secondary">Schedule Days</ThemedText>
+      </View>
+      <View style={styles.dayPickerRow}>
+        {DAY_LABELS.map((label, index) => {
+          const day = index as DayOfWeek;
+          const isSelected = selectedDays.includes(day);
+          return (
+            <Pressable
+              key={index}
+              onPress={() => handleToggleDay(day)}
+              style={[
+                styles.dayButton,
+                { 
+                  backgroundColor: isSelected ? theme.link : theme.backgroundSecondary,
+                  borderColor: isSelected ? theme.link : theme.border,
+                },
+              ]}
+            >
+              <ThemedText
+                type="body"
+                style={[
+                  styles.dayLabel,
+                  { color: isSelected ? "#FFF" : theme.textSecondary },
+                ]}
+              >
+                {label}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
+      {selectedDays.length > 0 ? (
+        <ThemedText type="muted" style={styles.dayHint}>
+          {selectedDays.map((d) => DAY_NAMES[d]).join(", ")}
+        </ThemedText>
+      ) : (
+        <ThemedText type="muted" style={styles.dayHint}>
+          No days assigned - available anytime
+        </ThemedText>
+      )}
+    </View>
+  );
+
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
       <FlatList
         data={sortedGroups}
         keyExtractor={(item) => item || "ungrouped"}
+        ListHeaderComponent={renderDayPicker}
         renderItem={({ item: group }) => (
           <View style={styles.groupSection}>
             {group ? (
@@ -146,7 +218,7 @@ export default function SessionTemplateDetailScreen() {
               <Pressable
                 onPress={handleStartWorkout}
                 testID="button-start-workout"
-                style={[styles.startButton, { backgroundColor: Colors.dark.primary }]}
+                style={[styles.startButton, { backgroundColor: theme.link }]}
               >
                 <Feather name="play" size={20} color="#FFF" />
                 <ThemedText type="body" style={{ color: "#FFF", fontWeight: "600" }}>
@@ -205,5 +277,39 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     padding: Spacing.lg,
     borderRadius: BorderRadius.lg,
+  },
+  dayPickerCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  dayPickerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  dayPickerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: Spacing.xs,
+  },
+  dayButton: {
+    flex: 1,
+    aspectRatio: 1,
+    maxWidth: 40,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dayLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  dayHint: {
+    textAlign: "center",
+    marginTop: Spacing.md,
+    fontSize: 12,
   },
 });
