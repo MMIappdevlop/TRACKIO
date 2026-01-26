@@ -82,7 +82,7 @@ const TEMPLATE_INFO = [
     name: "Strength Template", 
     description: "For weight training programs",
     icon: "target" as const,
-    color: Colors.dark.primary,
+    color: "#4C7DFF",
   },
   { 
     id: "endurance", 
@@ -186,7 +186,8 @@ export default function ImportProgramScreen() {
         URL.revokeObjectURL(url);
         Alert.alert("Success", "Template downloaded");
       } else {
-        const fileUri = FileSystem.cacheDirectory + fileName;
+        const cacheDir = (FileSystem as any).cacheDirectory || "";
+        const fileUri = cacheDir + fileName;
         await FileSystem.writeAsStringAsync(fileUri, templateContent);
         
         if (await Sharing.isAvailableAsync()) {
@@ -255,9 +256,27 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
       const file = result.assets[0];
       setFileName(file.name);
 
-      const content = await FileSystem.readAsStringAsync(file.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+      let content: string;
+      
+      if (Platform.OS === "web") {
+        // On web, fetch the blob URL and convert to base64
+        const response = await fetch(file.uri);
+        const blob = await response.blob();
+        content = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const base64 = (reader.result as string).split(",")[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } else {
+        // On native, use FileSystem
+        content = await FileSystem.readAsStringAsync(file.uri, {
+          encoding: "base64" as any,
+        });
+      }
 
       const workbook = XLSX.read(content, { type: "base64" });
       const sheetName = workbook.SheetNames[0];
@@ -277,6 +296,7 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
       autoDetectMapping(columns);
       setStep("mapping");
     } catch (error) {
+      console.error("File read error:", error);
       Alert.alert("Error", "Could not read the file. Please try a different format.");
     }
   };
@@ -526,7 +546,7 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
               placeholder="Preset name..."
               placeholderTextColor={theme.textMuted}
             />
-            <Pressable onPress={savePreset} style={[styles.saveBtn, { backgroundColor: Colors.dark.primary }]}>
+            <Pressable onPress={savePreset} style={[styles.saveBtn, { backgroundColor: "#4C7DFF" }]}>
               <ThemedText type="small" style={{ color: "#FFF" }}>Save</ThemedText>
             </Pressable>
             <Pressable onPress={() => setShowPresetInput(false)}>
