@@ -415,9 +415,16 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
   };
 
   const handleImport = async () => {
-    if (parsedData.length === 0) return;
+    console.log("Import button pressed, parsedData:", parsedData.length);
+    
+    if (parsedData.length === 0) {
+      console.log("No parsed data");
+      return;
+    }
 
     const validRows = parsedData.filter((r) => !r.error);
+    console.log("Valid rows:", validRows.length);
+    
     if (validRows.length === 0) {
       Alert.alert("Cannot Import", "All rows have validation errors. Please fix them first.");
       return;
@@ -426,6 +433,7 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
     setImporting(true);
     try {
       const program = await programsStorage.create(programName || "Imported Program");
+      console.log("Created program:", program.name);
 
       const sessions = [...new Set(validRows.map((r) => r.session))];
       const sessionMap = new Map<string, string>();
@@ -457,12 +465,12 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert(
-        "Import Complete",
-        `Created "${program.name}" with ${sessions.length} sessions and ${validRows.length} tasks.`,
-        [{ text: "OK", onPress: () => navigation.goBack() }]
-      );
+      console.log("Import complete!");
+      
+      // Navigate back immediately for better UX on web
+      navigation.goBack();
     } catch (error) {
+      console.error("Import error:", error);
       Alert.alert("Import Failed", "Could not create the program. Please try again.");
     } finally {
       setImporting(false);
