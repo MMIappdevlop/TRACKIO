@@ -145,7 +145,7 @@ export default function TrainingHomeScreen() {
             {hasUserName ? `Hey, ${settings.userName}` : "Welcome to Trakio"}
           </ThemedText>
           <ThemedText type="secondary" style={styles.welcomeSubtitle}>
-            Your personal training log
+            Your training tracker
           </ThemedText>
 
           {!hasUserName ? (
