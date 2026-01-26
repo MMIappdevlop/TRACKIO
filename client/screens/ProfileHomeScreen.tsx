@@ -120,11 +120,6 @@ export default function ProfileHomeScreen() {
         </View>
       </View>
 
-      <View style={styles.footer}>
-        <ThemedText type="muted" style={styles.footerText}>Trackio v1.0.0</ThemedText>
-        <ThemedText type="muted" style={styles.footerText}>Bring your plan. We record your training.</ThemedText>
-      </View>
-
       <InputModal
         visible={showNameModal}
         title="Your Name"
@@ -205,12 +200,4 @@ const styles = StyleSheet.create({
   menuTitle: {
     flex: 1,
   },
-  footer: {
-    alignItems: "center",
-    paddingVertical: Spacing.xl,
-  },
-  footerText: {
-    fontSize: 12,
-    marginBottom: 2,
-  },
-});
+  });
