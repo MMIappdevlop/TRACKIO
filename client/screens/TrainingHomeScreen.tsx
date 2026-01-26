@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet, Pressable, RefreshControl, TextInput, ScrollView, Keyboard, Platform, TouchableOpacity } from "react-native";
+import { View, StyleSheet, Pressable, RefreshControl, TextInput, ScrollView, Keyboard, Platform } from "react-native";
+import { TouchableOpacity } from "react-native-gesture-handler";
 import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
