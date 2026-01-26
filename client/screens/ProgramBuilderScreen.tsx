@@ -337,12 +337,12 @@ export default function ProgramBuilderScreen() {
             style={[
               styles.formButton,
               styles.saveButton,
-              { backgroundColor: newTaskName.trim() ? Colors.dark.primary : theme.backgroundSecondary },
+              { backgroundColor: "#4C7DFF", opacity: newTaskName.trim() ? 1 : 0.5 },
             ]}
             onPress={() => handleSaveTask(session.id)}
             disabled={!newTaskName.trim()}
           >
-            <ThemedText type="body" style={{ color: newTaskName.trim() ? "#FFF" : theme.textMuted }}>
+            <ThemedText type="body" style={{ color: "#FFFFFF" }}>
               Save Task
             </ThemedText>
           </Pressable>
@@ -513,12 +513,12 @@ export default function ProgramBuilderScreen() {
                   style={[
                     styles.formButton,
                     styles.saveButton,
-                    { backgroundColor: newSessionName.trim() ? Colors.dark.primary : theme.backgroundSecondary },
+                    { backgroundColor: "#4C7DFF", opacity: newSessionName.trim() ? 1 : 0.5 },
                   ]}
                   onPress={handleSaveSession}
                   disabled={!newSessionName.trim()}
                 >
-                  <ThemedText type="body" style={{ color: newSessionName.trim() ? "#FFF" : theme.textMuted }}>
+                  <ThemedText type="body" style={{ color: "#FFFFFF" }}>
                     Save Session
                   </ThemedText>
                 </Pressable>
