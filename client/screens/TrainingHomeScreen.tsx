@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from "react";
 import { View, StyleSheet, Pressable, RefreshControl, TextInput, ScrollView, Keyboard, Platform } from "react-native";
-import { TouchableOpacity } from "react-native-gesture-handler";
 import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -165,35 +164,24 @@ export default function TrainingHomeScreen() {
         {!hasUserName ? (
           <View style={[styles.nameCard, { backgroundColor: theme.backgroundDefault }]}>
             <ThemedText type="body" style={styles.nameLabel}>What should we call you?</ThemedText>
-            <View style={styles.nameInputRow}>
-              <TextInput
-                style={[styles.nameInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-                value={userName}
-                onChangeText={setUserName}
-                placeholder="Your name"
-                placeholderTextColor={theme.textMuted}
-                autoCapitalize="words"
-                returnKeyType="done"
-                onSubmitEditing={handleSaveName}
-              />
-              <TouchableOpacity
-                onPress={() => {
-                  console.log("Button pressed!");
-                  handleSaveName();
-                }}
-                disabled={!userName.trim() || isSettingName}
-                activeOpacity={0.7}
-                style={[
-                  styles.saveNameButton,
-                  { 
-                    backgroundColor: userName.trim() ? theme.link : theme.backgroundSecondary,
-                  },
-                ]}
-                testID="save-name-button"
-              >
-                <Feather name="check" size={20} color={userName.trim() ? "#FFF" : theme.textMuted} />
-              </TouchableOpacity>
-            </View>
+            <TextInput
+              style={[styles.nameInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+              value={userName}
+              onChangeText={setUserName}
+              placeholder="Your name"
+              placeholderTextColor={theme.textMuted}
+              autoCapitalize="words"
+              returnKeyType="done"
+              onSubmitEditing={handleSaveName}
+              testID="name-input"
+            />
+            <Button
+              onPress={handleSaveName}
+              disabled={!userName.trim() || isSettingName}
+              style={styles.saveNameFullButton}
+            >
+              {isSettingName ? "Saving..." : "Continue"}
+            </Button>
           </View>
         ) : null}
 
@@ -358,19 +346,15 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   nameInput: {
-    flex: 1,
     height: 48,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     fontSize: 16,
     fontFamily: "Inter_400Regular",
+    marginBottom: Spacing.md,
   },
-  saveNameButton: {
-    width: 48,
-    height: 48,
-    borderRadius: BorderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
+  saveNameFullButton: {
+    width: "100%",
   },
   sessionCard: {
     borderRadius: BorderRadius.lg,
