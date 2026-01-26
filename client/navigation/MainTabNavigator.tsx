@@ -65,36 +65,11 @@ export default function MainTabNavigator() {
         listeners={({ navigation }) => ({
           tabPress: (e) => {
             e.preventDefault();
-            const rootNav = navigation.getParent();
-            if (rootNav) {
-              rootNav.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [
-                    {
-                      name: "Main",
-                      state: {
-                        routes: [
-                          {
-                            name: "TrainingTab",
-                            state: {
-                              routes: [{ name: "TrainingHome" }],
-                            },
-                          },
-                        ],
-                      },
-                    },
-                  ],
-                })
-              );
-            } else {
-              navigation.dispatch(
-                CommonActions.reset({
-                  index: 0,
-                  routes: [{ name: "TrainingTab" }],
-                })
-              );
-            }
+            // Always reset to home, closing all screens without save
+            navigation.dispatch(
+              StackActions.popToTop()
+            );
+            navigation.navigate("TrainingTab", { screen: "TrainingHome" });
           },
         })}
       />
