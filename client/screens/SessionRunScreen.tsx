@@ -322,13 +322,13 @@ export default function SessionRunScreen() {
             </View>
 
             {currentLog.data.sets.map((set, index) => (
-              <View key={index} style={[styles.setCard, { backgroundColor: theme.backgroundDefault }]}>
+              <View key={index} style={[styles.setCard, { backgroundColor: theme.backgroundElevated }]}>
                 <View style={styles.setCardInner}>
                   {/* Weight */}
                   <View style={styles.setField}>
                     <ThemedText type="muted" style={styles.setFieldLabel}>Weight</ThemedText>
                     <TextInput
-                      style={[styles.setInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+                      style={[styles.setInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
                       value={set.weight ? String(set.weight) : "0"}
                       onChangeText={(v) => handleSetUpdate(currentTask.id, index, "weight", v)}
                       keyboardType="decimal-pad"
@@ -341,7 +341,7 @@ export default function SessionRunScreen() {
                   {/* Set Number */}
                   <View style={styles.setField}>
                     <ThemedText type="muted" style={styles.setFieldLabel}>Set</ThemedText>
-                    <View style={[styles.setNumberBox, { backgroundColor: theme.backgroundSecondary }]}>
+                    <View style={[styles.setNumberBox, { backgroundColor: theme.backgroundDefault }]}>
                       <ThemedText type="body" style={styles.setNumberText}>{set.setNumber}</ThemedText>
                     </View>
                   </View>
@@ -352,7 +352,7 @@ export default function SessionRunScreen() {
                   <View style={styles.setField}>
                     <ThemedText type="muted" style={styles.setFieldLabel}>Reps</ThemedText>
                     <TextInput
-                      style={[styles.setInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+                      style={[styles.setInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
                       value={set.reps ? String(set.reps) : "0"}
                       onChangeText={(v) => handleSetUpdate(currentTask.id, index, "reps", v)}
                       keyboardType="number-pad"
@@ -360,18 +360,15 @@ export default function SessionRunScreen() {
                     />
                   </View>
 
-                  {/* Delete Button */}
-                  <Pressable
-                    onPress={() => handleRemoveSet(currentTask.id, index)}
-                    style={styles.deleteButton}
-                    disabled={currentLog.data.sets!.length <= 1}
-                  >
-                    <Feather
-                      name="x"
-                      size={20}
-                      color={currentLog.data.sets!.length <= 1 ? theme.textMuted : Colors.dark.error}
-                    />
-                  </Pressable>
+                  {/* Delete Button - only show if more than 1 set */}
+                  {currentLog.data.sets!.length > 1 ? (
+                    <Pressable
+                      onPress={() => handleRemoveSet(currentTask.id, index)}
+                      style={styles.deleteButton}
+                    >
+                      <Feather name="x" size={18} color={Colors.dark.error} />
+                    </Pressable>
+                  ) : null}
                 </View>
               </View>
             ))}
