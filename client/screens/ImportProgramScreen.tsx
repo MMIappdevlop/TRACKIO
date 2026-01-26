@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, FlatList, Alert, Pressable, TextInput, Platform } from "react-native";
+import { View, StyleSheet, ScrollView, FlatList, Alert, Pressable, TextInput, Platform, Modal } from "react-native";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,6 +9,7 @@ import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
 import * as XLSX from "xlsx";
+import * as Clipboard from "expo-clipboard";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -170,11 +171,11 @@ export default function ImportProgramScreen() {
   };
 
   const handleDownloadTemplate = async (templateId: string) => {
-    try {
-      const templateContent = getTemplateContent(templateId);
-      const fileName = `${templateId}-template.csv`;
-      
-      if (Platform.OS === "web") {
+    const templateContent = getTemplateContent(templateId);
+    const fileName = `${templateId}-template.csv`;
+    
+    if (Platform.OS === "web") {
+      try {
         const blob = new Blob([templateContent], { type: "text/csv" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -185,43 +186,34 @@ export default function ImportProgramScreen() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } else {
-        // Create xlsx file for better compatibility on mobile
-        const rows = templateContent.split('\n').map(line => line.split(','));
-        const worksheet = XLSX.utils.aoa_to_sheet(rows);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
-        
-        const xlsxData = XLSX.write(workbook, { type: "base64", bookType: "xlsx" });
-        const xlsxFileName = `${templateId}-template.xlsx`;
-        
-        const cacheDir = (FileSystem as any).cacheDirectory as string | null;
-        if (!cacheDir) {
-          Alert.alert("Error", "Cannot access file storage");
-          return;
-        }
-        
-        const fileUri = cacheDir + xlsxFileName;
-        await FileSystem.writeAsStringAsync(fileUri, xlsxData, {
-          encoding: "base64" as any,
-        });
-        
-        const isAvailable = await Sharing.isAvailableAsync();
-        if (isAvailable) {
-          await Sharing.shareAsync(fileUri, {
-            mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            dialogTitle: "Save Template",
-            UTI: "org.openxmlformats.spreadsheetml.sheet",
-          });
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        } else {
-          Alert.alert("Error", "Sharing is not available on this device");
-        }
+      } catch (error) {
+        console.error("Download error:", error);
+        Alert.alert("Error", "Could not download template");
       }
-    } catch (error) {
-      console.error("Download template error:", error);
-      Alert.alert("Error", "Could not download template. Please try again.");
+    } else {
+      // On mobile, show the template content in an alert with copy option
+      // This is more reliable than file sharing in Expo Go
+      Alert.alert(
+        "Template: " + templateId,
+        "The template format is shown below. You can create a spreadsheet with these columns:\n\n" +
+        templateContent.split('\n')[0].split(',').join(', '),
+        [
+          {
+            text: "View Full Template",
+            onPress: () => showTemplateModal(templateId, templateContent),
+          },
+          { text: "OK", style: "cancel" },
+        ]
+      );
     }
+  };
+
+  const [templateModalVisible, setTemplateModalVisible] = useState(false);
+  const [templateModalContent, setTemplateModalContent] = useState({ id: "", content: "" });
+
+  const showTemplateModal = (id: string, content: string) => {
+    setTemplateModalContent({ id, content });
+    setTemplateModalVisible(true);
   };
 
   const getTemplateContent = (templateId: string): string => {
@@ -761,7 +753,55 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
     </ScrollView>
   );
 
-  return step === "select" ? renderSelectStep() : step === "mapping" ? renderMappingStep() : renderPreviewStep();
+  const renderTemplateModal = () => (
+    <Modal
+      visible={templateModalVisible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={() => setTemplateModalVisible(false)}
+    >
+      <View style={[styles.modalContainer, { backgroundColor: theme.backgroundRoot }]}>
+        <View style={styles.modalHeader}>
+          <ThemedText type="h2">Template: {templateModalContent.id}</ThemedText>
+          <Pressable onPress={() => setTemplateModalVisible(false)}>
+            <Feather name="x" size={24} color={theme.text} />
+          </Pressable>
+        </View>
+        
+        <ScrollView style={styles.modalContent}>
+          <ThemedText type="secondary" style={{ marginBottom: Spacing.md }}>
+            Copy this content and paste it into a spreadsheet app (Excel, Google Sheets, Numbers). Save as CSV or XLSX and import.
+          </ThemedText>
+          
+          <View style={[styles.codeBlock, { backgroundColor: theme.backgroundSecondary }]}>
+            <ThemedText type="body" style={{ fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace", fontSize: 12 }}>
+              {templateModalContent.content}
+            </ThemedText>
+          </View>
+        </ScrollView>
+        
+        <View style={styles.modalButtons}>
+          <Button
+            onPress={async () => {
+              await Clipboard.setStringAsync(templateModalContent.content);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Alert.alert("Copied!", "Template copied to clipboard. Paste it into a spreadsheet app.");
+            }}
+            style={{ flex: 1 }}
+          >
+            Copy to Clipboard
+          </Button>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  return (
+    <>
+      {step === "select" ? renderSelectStep() : step === "mapping" ? renderMappingStep() : renderPreviewStep()}
+      {renderTemplateModal()}
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -920,5 +960,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     fontSize: 16,
     fontFamily: "Inter_500Medium",
+  },
+  modalContainer: {
+    flex: 1,
+    paddingTop: Spacing.xl,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.1)",
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+  },
+  codeBlock: {
+    padding: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
+  modalButtons: {
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
 });
