@@ -69,7 +69,7 @@ export default function MainTabNavigator() {
             navigation.dispatch(
               StackActions.popToTop()
             );
-            navigation.navigate("TrainingTab", { screen: "TrainingHome" });
+            navigation.navigate("TrainingTab");
           },
         })}
       />

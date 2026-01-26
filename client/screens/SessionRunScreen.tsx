@@ -200,6 +200,8 @@ export default function SessionRunScreen() {
       sessionTemplateId,
       sessionTemplateName,
       durationSeconds,
+      startedAt: startTimeRef.current.toISOString(),
+      completedAt: endTime.toISOString(),
     });
 
     const currentTaskLogs = taskLogsRef.current;
@@ -212,9 +214,10 @@ export default function SessionRunScreen() {
       await completedTasksStorage.create({
         completedSessionId: completedSession.id,
         taskTemplateId: task.id,
-        taskName: task.name,
+        taskTemplateName: task.name,
         mode: task.mode,
-        data: log.data,
+        dataJson: log.data,
+        completedAt: new Date().toISOString(),
       });
     }
 
@@ -251,7 +254,7 @@ export default function SessionRunScreen() {
       return `${task.config.rounds || 5} rounds`;
     }
     if (task.mode === "time") {
-      return `${task.config.targetMinutes || 0} minutes`;
+      return "Timed activity";
     }
     return "";
   };
@@ -314,7 +317,7 @@ export default function SessionRunScreen() {
               <ThemedText type="h3">Sets</ThemedText>
               <Pressable
                 onPress={() => handleAddSet(currentTask.id)}
-                style={[styles.addSetButton, { backgroundColor: theme.backgroundElevated }]}
+                style={[styles.addSetButton, { backgroundColor: theme.backgroundSecondary }]}
               >
                 <Feather name="plus" size={16} color={theme.text} />
                 <ThemedText type="body" style={[styles.addSetText, { color: theme.text }]}>Add Set</ThemedText>
@@ -322,7 +325,7 @@ export default function SessionRunScreen() {
             </View>
 
             {currentLog.data.sets.map((set, index) => (
-              <View key={index} style={[styles.setCard, { backgroundColor: theme.backgroundElevated }]}>
+              <View key={index} style={[styles.setCard, { backgroundColor: theme.backgroundSecondary }]}>
                 <View style={styles.setCardInner}>
                   {/* Weight */}
                   <View style={styles.setField}>
@@ -479,7 +482,7 @@ export default function SessionRunScreen() {
         <Pressable
           onPress={handleNext}
           disabled={currentTaskIndex === tasks.length - 1}
-          style={[styles.navButton, styles.nextButton, { backgroundColor: theme.backgroundElevated }]}
+          style={[styles.navButton, styles.nextButton, { backgroundColor: theme.backgroundSecondary }]}
         >
           <ThemedText
             type="body"
