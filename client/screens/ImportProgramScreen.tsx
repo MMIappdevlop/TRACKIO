@@ -444,8 +444,12 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
 
     setImporting(true);
     try {
-      const program = await programsStorage.create(programName || "Imported Program");
-      console.log("Created program:", program.name);
+      // Generate program name: "Imported Program (N)"
+      const existingPrograms = await programsStorage.getAll();
+      const importedCount = existingPrograms.filter(p => p.name.startsWith("Imported Program")).length;
+      const newProgramName = `Imported Program (${importedCount + 1})`;
+      
+      const program = await programsStorage.create(newProgramName);
 
       const sessions = [...new Set(validRows.map((r) => r.session))];
       const sessionMap = new Map<string, string>();
