@@ -41,6 +41,7 @@ export default function ProfileHomeScreen() {
 
   const handleUpdateName = async (name: string) => {
     await updateSettings({ userName: name });
+    await refreshSettings();
     setShowNameModal(false);
   };
 
