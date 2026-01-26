@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet, Pressable, RefreshControl, TextInput, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, RefreshControl, TextInput, ScrollView, Keyboard, Platform } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -73,10 +73,18 @@ export default function TrainingHomeScreen() {
 
   const handleSaveName = async () => {
     if (!userName.trim()) return;
+    Keyboard.dismiss();
     setIsSettingName(true);
-    await updateSettings({ userName: userName.trim() });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setIsSettingName(false);
+    try {
+      await updateSettings({ userName: userName.trim() });
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    } catch (error) {
+      console.error("Error saving name:", error);
+    } finally {
+      setIsSettingName(false);
+    }
   };
 
   const handleStartSession = (template: SessionTemplate) => {
@@ -162,9 +170,13 @@ export default function TrainingHomeScreen() {
               <Pressable
                 onPress={handleSaveName}
                 disabled={!userName.trim() || isSettingName}
-                style={[
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={({ pressed }) => [
                   styles.saveNameButton,
-                  { backgroundColor: userName.trim() ? theme.link : theme.backgroundSecondary },
+                  { 
+                    backgroundColor: userName.trim() ? theme.link : theme.backgroundSecondary,
+                    opacity: pressed ? 0.7 : 1,
+                  },
                 ]}
               >
                 <Feather name="check" size={20} color={userName.trim() ? "#FFF" : theme.textMuted} />
