@@ -476,11 +476,11 @@ export default function ProgramBuilderScreen() {
 
           {sessions.length === 0 && !isAddingSession ? (
             <View style={[styles.emptyState, { backgroundColor: theme.backgroundDefault }]}>
-              <Feather name="calendar" size={32} color={theme.textSecondary} />
-              <ThemedText type="h3" style={[styles.emptyText, { color: theme.text }]}>
+              <Feather name="calendar" size={32} color={theme.textMuted} />
+              <ThemedText type="h3" style={[styles.emptyText, { color: theme.textSecondary }]}>
                 No sessions yet
               </ThemedText>
-              <ThemedText type="body" style={[styles.emptyHint, { color: theme.textSecondary }]}>
+              <ThemedText type="body" style={[styles.emptyHint, { color: theme.textMuted }]}>
                 Add sessions like "Push Day" or "Cardio"
               </ThemedText>
             </View>
