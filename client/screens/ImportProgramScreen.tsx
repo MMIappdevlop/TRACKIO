@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, ScrollView, FlatList, Alert, Pressable, TextInput, Platform } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
@@ -467,8 +467,13 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       console.log("Import complete!");
       
-      // Navigate back immediately for better UX on web
-      navigation.goBack();
+      // Navigate to home and show the imported program
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: "MainTabs" }],
+        })
+      );
     } catch (error) {
       console.error("Import error:", error);
       Alert.alert("Import Failed", "Could not create the program. Please try again.");
