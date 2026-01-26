@@ -302,7 +302,7 @@ export default function SessionRunScreen() {
           </ThemedText>
           <View style={[styles.progressBarBg, { backgroundColor: theme.backgroundSecondary }]}>
             <View
-              style={[styles.progressBarFill, { width: `${progressPercent}%`, backgroundColor: Colors.dark.effort }]}
+              style={[styles.progressBarFill, { width: `${progressPercent}%`, backgroundColor: Colors.dark.success }]}
             />
           </View>
         </View>
