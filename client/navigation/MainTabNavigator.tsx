@@ -10,9 +10,9 @@ import ProfileStackNavigator from "@/navigation/ProfileStackNavigator";
 import { useTheme } from "@/hooks/useTheme";
 
 export type MainTabParamList = {
-  TrainingTab: undefined;
-  ProgressTab: undefined;
-  ProfileTab: undefined;
+  Training: undefined;
+  Progress: undefined;
+  Profile: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -22,7 +22,7 @@ export default function MainTabNavigator() {
 
   return (
     <Tab.Navigator
-      initialRouteName="TrainingTab"
+      initialRouteName="Training"
       screenOptions={{
         tabBarActiveTintColor: theme.tabIconSelected,
         tabBarInactiveTintColor: theme.tabIconDefault,
@@ -48,27 +48,27 @@ export default function MainTabNavigator() {
       }}
     >
       <Tab.Screen
-        name="TrainingTab"
+        name="Training"
         component={TrainingStackNavigator}
         options={{
-          title: "Home",
+          title: "Training",
           tabBarIcon: ({ color, size }) => (
-            <Feather name="home" size={size} color={color} />
+            <Feather name="activity" size={size} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="ProgressTab"
+        name="Progress"
         component={ProgressStackNavigator}
         options={{
           title: "Progress",
           tabBarIcon: ({ color, size }) => (
-            <Feather name="bar-chart-2" size={size} color={color} />
+            <Feather name="trending-up" size={size} color={color} />
           ),
         }}
       />
       <Tab.Screen
-        name="ProfileTab"
+        name="Profile"
         component={ProfileStackNavigator}
         options={{
           title: "Profile",

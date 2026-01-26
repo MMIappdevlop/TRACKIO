@@ -30,7 +30,7 @@ export default function ProgressStackNavigator() {
         name="SessionDetail"
         component={SessionDetailScreen}
         options={{
-          headerTitle: "Session",
+          headerTitle: "Workout Details",
         }}
       />
       <Stack.Screen

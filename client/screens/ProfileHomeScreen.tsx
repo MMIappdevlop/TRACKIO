@@ -12,8 +12,9 @@ import { useTheme } from "@/hooks/useTheme";
 import { useSettings, useBadges } from "@/hooks/useData";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
+import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 
-type NavigationProp = NativeStackNavigationProp<ProfileStackParamList>;
+type NavigationProp = NativeStackNavigationProp<ProfileStackParamList & RootStackParamList>;
 
 const MENU_ITEMS = [
   { id: "badges", title: "Badges", icon: "award", screen: "Badges" as const },

@@ -5,7 +5,6 @@ import ProfileHomeScreen from "@/screens/ProfileHomeScreen";
 import BadgesScreen from "@/screens/BadgesScreen";
 import SettingsScreen from "@/screens/SettingsScreen";
 import DataBackupScreen from "@/screens/DataBackupScreen";
-import ImportProgramScreen from "@/screens/ImportProgramScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
 export type ProfileStackParamList = {
@@ -13,7 +12,6 @@ export type ProfileStackParamList = {
   Badges: undefined;
   Settings: undefined;
   DataBackup: undefined;
-  ImportProgram: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -49,13 +47,6 @@ export default function ProfileStackNavigator() {
         component={DataBackupScreen}
         options={{
           headerTitle: "Data & Backup",
-        }}
-      />
-      <Stack.Screen
-        name="ImportProgram"
-        component={ImportProgramScreen}
-        options={{
-          headerTitle: "Import Program",
         }}
       />
     </Stack.Navigator>

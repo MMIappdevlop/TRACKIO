@@ -82,7 +82,7 @@ export default function RootStackNavigator() {
         name="SessionSummary"
         component={SessionSummaryScreen}
         options={{
-          headerTitle: "Session Complete",
+          headerTitle: "Workout Summary",
           presentation: "modal",
           gestureEnabled: false,
         }}
@@ -91,7 +91,7 @@ export default function RootStackNavigator() {
         name="AddTask"
         component={AddTaskScreen}
         options={{
-          headerTitle: "Add Task",
+          headerTitle: "Add Exercise",
           presentation: "modal",
         }}
       />
