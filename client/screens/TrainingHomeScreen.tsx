@@ -189,8 +189,8 @@ export default function TrainingHomeScreen() {
               onPress={() => navigation.navigate("ProgramBuilder" as any)}
               style={[styles.actionCard, { backgroundColor: theme.backgroundDefault }]}
             >
-              <View style={[styles.actionIcon, { backgroundColor: Colors.dark.primary + "20" }]}>
-                <Feather name="plus-circle" size={24} color={Colors.dark.primary} />
+              <View style={[styles.actionIcon, { backgroundColor: "#4C7DFF" }]}>
+                <Feather name="plus" size={24} color="#FFFFFF" />
               </View>
               <ThemedText type="h4">Create Program</ThemedText>
               <ThemedText type="muted" style={styles.actionDescription}>
