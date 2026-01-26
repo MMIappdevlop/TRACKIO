@@ -1,11 +1,5 @@
 import React, { ReactNode } from "react";
 import { StyleSheet, Pressable, ViewStyle, StyleProp } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withSpring,
-  WithSpringConfig,
-} from "react-native-reanimated";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
@@ -19,16 +13,6 @@ export interface ButtonProps {
   variant?: "primary" | "secondary";
 }
 
-const springConfig: WithSpringConfig = {
-  damping: 15,
-  mass: 0.3,
-  stiffness: 150,
-  overshootClamping: true,
-  energyThreshold: 0.001,
-};
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
 export function Button({
   onPress,
   children,
@@ -37,39 +21,20 @@ export function Button({
   variant = "primary",
 }: ButtonProps) {
   const { theme } = useTheme();
-  const scale = useSharedValue(1);
   const isSecondary = variant === "secondary";
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePressIn = () => {
-    if (!disabled) {
-      scale.value = withSpring(0.98, springConfig);
-    }
-  };
-
-  const handlePressOut = () => {
-    if (!disabled) {
-      scale.value = withSpring(1, springConfig);
-    }
-  };
-
   return (
-    <AnimatedPressable
-      onPress={disabled ? undefined : onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
+    <Pressable
+      onPress={onPress}
       disabled={disabled}
-      style={[
+      style={({ pressed }) => [
         styles.button,
         {
           backgroundColor: isSecondary ? theme.backgroundSecondary : theme.link,
-          opacity: disabled ? 0.5 : 1,
+          opacity: disabled ? 0.5 : pressed ? 0.8 : 1,
+          transform: [{ scale: pressed && !disabled ? 0.98 : 1 }],
         },
         style,
-        animatedStyle,
       ]}
     >
       <ThemedText
@@ -78,7 +43,7 @@ export function Button({
       >
         {children}
       </ThemedText>
-    </AnimatedPressable>
+    </Pressable>
   );
 }
 
