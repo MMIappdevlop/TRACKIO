@@ -71,21 +71,28 @@ export default function TrainingHomeScreen() {
     setRefreshing(false);
   };
 
-  const handleSaveName = async () => {
-    if (!userName.trim()) return;
+  const handleSaveName = useCallback(async () => {
+    console.log("handleSaveName called, userName:", userName);
+    if (!userName.trim()) {
+      console.log("userName empty, returning");
+      return;
+    }
     Keyboard.dismiss();
     setIsSettingName(true);
     try {
+      console.log("Saving settings with userName:", userName.trim());
       await updateSettings({ userName: userName.trim() });
+      console.log("Settings saved successfully");
       if (Platform.OS !== "web") {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
+      await refreshSettings();
     } catch (error) {
       console.error("Error saving name:", error);
     } finally {
       setIsSettingName(false);
     }
-  };
+  }, [userName, updateSettings, refreshSettings]);
 
   const handleStartSession = (template: SessionTemplate) => {
     if (!activeProgram) return;
@@ -168,7 +175,10 @@ export default function TrainingHomeScreen() {
                 onSubmitEditing={handleSaveName}
               />
               <TouchableOpacity
-                onPress={handleSaveName}
+                onPress={() => {
+                  console.log("Button pressed!");
+                  handleSaveName();
+                }}
                 disabled={!userName.trim() || isSettingName}
                 activeOpacity={0.7}
                 style={[
@@ -177,6 +187,7 @@ export default function TrainingHomeScreen() {
                     backgroundColor: userName.trim() ? theme.link : theme.backgroundSecondary,
                   },
                 ]}
+                testID="save-name-button"
               >
                 <Feather name="check" size={20} color={userName.trim() ? "#FFF" : theme.textMuted} />
               </TouchableOpacity>
