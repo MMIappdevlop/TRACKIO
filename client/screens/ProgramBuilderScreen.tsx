@@ -427,7 +427,7 @@ export default function ProgramBuilderScreen() {
             )
           ) : (
             <Pressable
-              style={[styles.addTaskButton, { backgroundColor: Colors.dark.primary }]}
+              style={[styles.addTaskButton, { backgroundColor: "#4C7DFF" }]}
               onPress={() => handleStartAddTask(session.id)}
             >
               <Feather name="plus" size={16} color="#FFFFFF" />
@@ -526,7 +526,7 @@ export default function ProgramBuilderScreen() {
             </View>
           ) : (
             <Pressable
-              style={[styles.addSessionButton, { backgroundColor: Colors.dark.primary }]}
+              style={[styles.addSessionButton, { backgroundColor: "#4C7DFF" }]}
               onPress={handleAddSession}
             >
               <Feather name="plus-circle" size={20} color="#FFFFFF" />
