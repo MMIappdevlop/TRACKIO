@@ -412,7 +412,7 @@ export default function ProgramBuilderScreen() {
                     onPress={() => handleDeleteTask(session.id, task.id)}
                     hitSlop={8}
                   >
-                    <Feather name="x" size={16} color={theme.textMuted} />
+                    <Feather name="x" size={16} color={theme.text} />
                   </Pressable>
                 </View>
               ))}
