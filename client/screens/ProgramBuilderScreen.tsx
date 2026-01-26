@@ -526,11 +526,11 @@ export default function ProgramBuilderScreen() {
             </View>
           ) : (
             <Pressable
-              style={[styles.addSessionButton, { backgroundColor: theme.backgroundDefault }]}
+              style={[styles.addSessionButton, { backgroundColor: Colors.dark.primary }]}
               onPress={handleAddSession}
             >
-              <Feather name="plus-circle" size={20} color={Colors.dark.primary} />
-              <ThemedText type="body" style={{ color: Colors.dark.primary }}>
+              <Feather name="plus-circle" size={20} color="#FFFFFF" />
+              <ThemedText type="body" style={{ color: "#FFFFFF" }}>
                 Add Session
               </ThemedText>
             </Pressable>
