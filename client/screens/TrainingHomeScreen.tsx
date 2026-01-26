@@ -52,6 +52,7 @@ export default function TrainingHomeScreen() {
   const { stats: weeklyStats, refresh: refreshWeeklyStats } = useWeeklyStats();
 
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedSessionIndex, setSelectedSessionIndex] = useState(0);
 
   useFocusEffect(
     useCallback(() => {
@@ -81,7 +82,22 @@ export default function TrainingHomeScreen() {
   };
 
   const lastSession = sessions.length > 0 ? sessions[0] : null;
-  const todaySession = templates.length > 0 ? templates[0] : null;
+  const safeIndex = Math.min(selectedSessionIndex, Math.max(0, templates.length - 1));
+  const selectedSession = templates.length > 0 ? templates[safeIndex] : null;
+
+  const handlePrevSession = () => {
+    if (templates.length > 1) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setSelectedSessionIndex((prev) => (prev === 0 ? templates.length - 1 : prev - 1));
+    }
+  };
+
+  const handleNextSession = () => {
+    if (templates.length > 1) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setSelectedSessionIndex((prev) => (prev === templates.length - 1 ? 0 : prev + 1));
+    }
+  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -124,14 +140,32 @@ export default function TrainingHomeScreen() {
 
         {/* Today's Session Card */}
         <View style={[styles.sessionCard, { backgroundColor: theme.backgroundDefault }]}>
-          {todaySession && activeProgram ? (
+          {selectedSession && activeProgram ? (
             <>
-              <ThemedText type="h2" style={styles.sessionName}>{todaySession.name}</ThemedText>
-              <ThemedText type="secondary" style={styles.sessionMeta}>
-                {templates.length} session{templates.length !== 1 ? "s" : ""} available
-              </ThemedText>
+              <View style={styles.sessionPicker}>
+                <Pressable 
+                  onPress={handlePrevSession} 
+                  style={[styles.arrowButton, templates.length <= 1 && styles.arrowButtonDisabled]}
+                  disabled={templates.length <= 1}
+                >
+                  <Feather name="chevron-left" size={28} color={templates.length > 1 ? theme.link : theme.textMuted} />
+                </Pressable>
+                <View style={styles.sessionNameContainer}>
+                  <ThemedText type="h2" style={styles.sessionName}>{selectedSession.name}</ThemedText>
+                  <ThemedText type="muted" style={styles.sessionCounter}>
+                    {safeIndex + 1} of {templates.length}
+                  </ThemedText>
+                </View>
+                <Pressable 
+                  onPress={handleNextSession} 
+                  style={[styles.arrowButton, templates.length <= 1 && styles.arrowButtonDisabled]}
+                  disabled={templates.length <= 1}
+                >
+                  <Feather name="chevron-right" size={28} color={templates.length > 1 ? theme.link : theme.textMuted} />
+                </Pressable>
+              </View>
               <Button
-                onPress={() => handleStartSession(todaySession)}
+                onPress={() => handleStartSession(selectedSession)}
                 style={styles.startButton}
               >
                 Start Workout
@@ -269,13 +303,33 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
     alignItems: "center",
   },
+  sessionPicker: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    marginBottom: Spacing.lg,
+  },
+  arrowButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  arrowButtonDisabled: {
+    opacity: 0.3,
+  },
+  sessionNameContainer: {
+    flex: 1,
+    alignItems: "center",
+  },
   sessionName: {
     textAlign: "center",
-    marginBottom: Spacing.xs,
   },
-  sessionMeta: {
+  sessionCounter: {
     textAlign: "center",
-    marginBottom: Spacing.lg,
+    marginTop: Spacing.xs,
+    fontSize: 12,
   },
   noSessionText: {
     textAlign: "center",
