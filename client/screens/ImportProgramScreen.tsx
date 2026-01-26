@@ -184,23 +184,43 @@ export default function ImportProgramScreen() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        Alert.alert("Success", "Template downloaded");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
-        const cacheDir = (FileSystem as any).cacheDirectory || "";
-        const fileUri = cacheDir + fileName;
-        await FileSystem.writeAsStringAsync(fileUri, templateContent);
+        // Create xlsx file for better compatibility on mobile
+        const rows = templateContent.split('\n').map(line => line.split(','));
+        const worksheet = XLSX.utils.aoa_to_sheet(rows);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
         
-        if (await Sharing.isAvailableAsync()) {
+        const xlsxData = XLSX.write(workbook, { type: "base64", bookType: "xlsx" });
+        const xlsxFileName = `${templateId}-template.xlsx`;
+        
+        const cacheDir = (FileSystem as any).cacheDirectory as string | null;
+        if (!cacheDir) {
+          Alert.alert("Error", "Cannot access file storage");
+          return;
+        }
+        
+        const fileUri = cacheDir + xlsxFileName;
+        await FileSystem.writeAsStringAsync(fileUri, xlsxData, {
+          encoding: "base64" as any,
+        });
+        
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
           await Sharing.shareAsync(fileUri, {
-            mimeType: "text/csv",
+            mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             dialogTitle: "Save Template",
+            UTI: "org.openxmlformats.spreadsheetml.sheet",
           });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } else {
           Alert.alert("Error", "Sharing is not available on this device");
         }
       }
     } catch (error) {
-      Alert.alert("Error", "Could not download template");
+      console.error("Download template error:", error);
+      Alert.alert("Error", "Could not download template. Please try again.");
     }
   };
 
