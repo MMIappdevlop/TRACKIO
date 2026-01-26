@@ -47,7 +47,6 @@ export function InputModal({
     if (value.trim()) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       onSubmit(value.trim());
-      onClose();
     }
   };
 

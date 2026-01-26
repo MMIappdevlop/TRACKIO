@@ -174,21 +174,13 @@ export default function TrainingHomeScreen() {
               onSubmitEditing={handleSaveName}
               testID="name-input"
             />
-            <Pressable
+            <Button
               onPress={handleSaveName}
               disabled={!userName.trim() || isSettingName}
-              style={({ pressed }) => [
-                styles.continueButton,
-                {
-                  backgroundColor: !userName.trim() || isSettingName ? theme.backgroundSecondary : theme.link,
-                  opacity: pressed ? 0.8 : 1,
-                },
-              ]}
+              style={styles.continueButton}
             >
-              <ThemedText type="body" style={{ color: !userName.trim() ? theme.textMuted : "#FFF", fontWeight: "600" }}>
-                {isSettingName ? "Saving..." : "Continue"}
-              </ThemedText>
-            </Pressable>
+              {isSettingName ? "Saving..." : "Continue"}
+            </Button>
           </View>
         ) : null}
 
@@ -364,11 +356,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   continueButton: {
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
+    marginTop: Spacing.sm,
   },
   sessionCard: {
     borderRadius: BorderRadius.lg,
