@@ -271,7 +271,7 @@ export default function ProgramBuilderScreen() {
             ]}
             onPress={() => handleSelectTaskType(sessionId, type.mode)}
           >
-            <Feather name={type.icon as any} size={18} color={Colors.dark.primary} />
+            <Feather name={type.icon as any} size={18} color="#4C7DFF" />
             <ThemedText type="body" style={[styles.taskTypeText, { color: theme.text }]}>
               {type.label}
             </ThemedText>
