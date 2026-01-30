@@ -80,7 +80,7 @@ const TEMPLATE_INFO = [
   { 
     id: "strength", 
     name: "Strength Template", 
-    description: "For weight training programs",
+    description: "For weight training plans",
     icon: "target" as const,
     color: "#4C7DFF",
   },
@@ -562,7 +562,7 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
       <View style={styles.section}>
         <ThemedText type="h2" style={styles.sectionTitle}>Import Your File</ThemedText>
         <ThemedText type="secondary" style={styles.description}>
-          Select a CSV or Excel file with your workout program
+          Select a CSV or Excel file with your workout plan
         </ThemedText>
 
         <Button onPress={handlePickFile} style={styles.pickButton}>
