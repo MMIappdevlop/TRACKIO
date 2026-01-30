@@ -81,7 +81,7 @@ export default function SessionTemplateDetailScreen() {
 
   const handleDeleteTask = (task: TaskTemplate) => {
     Alert.alert(
-      "Delete Task",
+      "Delete Exercise",
       `Are you sure you want to delete "${task.name}"?`,
       [
         { text: "Cancel", style: "cancel" },
@@ -116,9 +116,9 @@ export default function SessionTemplateDetailScreen() {
   const renderEmpty = () => (
     <EmptyState
       icon="plus-circle"
-      title="No Tasks"
-      description="Add exercises and activities to this session"
-      actionLabel="Add Task"
+      title="No Exercises"
+      description="Add exercises and activities to this day"
+      actionLabel="Add Exercise"
       onAction={handleAddTask}
     />
   );
@@ -213,7 +213,7 @@ export default function SessionTemplateDetailScreen() {
                 style={[styles.createButton, { backgroundColor: theme.linkBackground }]}
               >
                 <Feather name="plus" size={20} color={theme.link} />
-                <ThemedText type="link">Add Task</ThemedText>
+                <ThemedText type="link">Add Exercise</ThemedText>
               </Pressable>
               <Pressable
                 onPress={handleStartWorkout}

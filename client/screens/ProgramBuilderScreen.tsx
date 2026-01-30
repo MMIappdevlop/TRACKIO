@@ -86,9 +86,9 @@ export default function ProgramBuilderScreen() {
     sessions.some((s) => s.tasks.length > 0);
 
   const getHelperText = () => {
-    if (!programName.trim()) return "Enter a program name to continue";
-    if (sessions.length === 0) return "Add at least one session to continue";
-    if (!sessions.some((s) => s.tasks.length > 0)) return "Add at least one task to continue";
+    if (!programName.trim()) return "Enter a plan name to continue";
+    if (sessions.length === 0) return "Add at least one day to continue";
+    if (!sessions.some((s) => s.tasks.length > 0)) return "Add at least one exercise to continue";
     return "";
   };
 
@@ -432,7 +432,7 @@ export default function ProgramBuilderScreen() {
             >
               <Feather name="plus" size={16} color="#FFFFFF" />
               <ThemedText type="body" style={{ color: "#FFFFFF" }}>
-                Add Task
+                Add Exercise
               </ThemedText>
             </Pressable>
           )}
@@ -454,13 +454,13 @@ export default function ProgramBuilderScreen() {
       >
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <ThemedText type="h2" style={styles.sectionTitle}>
-            Program Name
+            Plan Name
           </ThemedText>
           <TextInput
             style={[styles.programInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
             value={programName}
             onChangeText={setProgramName}
-            placeholder="My Training Program"
+            placeholder="My Training Plan"
             placeholderTextColor={theme.textMuted}
             autoCapitalize="words"
           />
@@ -471,17 +471,17 @@ export default function ProgramBuilderScreen() {
 
         <View style={styles.sessionsSection}>
           <View style={styles.sectionHeader}>
-            <ThemedText type="h2">Sessions</ThemedText>
+            <ThemedText type="h2">Days</ThemedText>
           </View>
 
           {sessions.length === 0 && !isAddingSession ? (
             <View style={[styles.emptyState, { backgroundColor: theme.backgroundDefault }]}>
               <Feather name="calendar" size={32} color={theme.textMuted} />
               <ThemedText type="h3" style={[styles.emptyText, { color: theme.textSecondary }]}>
-                No sessions yet
+                No days yet
               </ThemedText>
               <ThemedText type="body" style={[styles.emptyHint, { color: theme.textMuted }]}>
-                Add sessions like "Push Day" or "Cardio"
+                Add days like "Push Day" or "Cardio"
               </ThemedText>
             </View>
           ) : null}
@@ -491,7 +491,7 @@ export default function ProgramBuilderScreen() {
           {isAddingSession ? (
             <View style={[styles.addSessionCard, { backgroundColor: theme.backgroundDefault }]}>
               <ThemedText type="body" style={[styles.addSessionLabel, { color: theme.text }]}>
-                Session Name
+                Day Name
               </ThemedText>
               <TextInput
                 style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
@@ -519,7 +519,7 @@ export default function ProgramBuilderScreen() {
                   disabled={!newSessionName.trim()}
                 >
                   <ThemedText type="body" style={{ color: "#FFFFFF" }}>
-                    Save Session
+                    Save Day
                   </ThemedText>
                 </Pressable>
               </View>
@@ -531,7 +531,7 @@ export default function ProgramBuilderScreen() {
             >
               <Feather name="plus-circle" size={20} color="#FFFFFF" />
               <ThemedText type="body" style={{ color: "#FFFFFF" }}>
-                Add Session
+                Add Day
               </ThemedText>
             </Pressable>
           )}

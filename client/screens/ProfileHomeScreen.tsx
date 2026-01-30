@@ -20,7 +20,7 @@ const MENU_ITEMS = [
   { id: "badges", title: "Badges", icon: "award", screen: "Badges" as const },
   { id: "settings", title: "Settings", icon: "settings", screen: "Settings" as const },
   { id: "backup", title: "Data & Backup", icon: "database", screen: "DataBackup" as const },
-  { id: "import", title: "Import Program", icon: "upload", screen: "ImportProgram" as const },
+  { id: "import", title: "Import Plan", icon: "upload", screen: "ImportProgram" as const },
 ];
 
 export default function ProfileHomeScreen() {

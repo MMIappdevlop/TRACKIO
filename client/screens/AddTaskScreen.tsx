@@ -305,7 +305,7 @@ export default function AddTaskScreen() {
       ) : null}
 
       <Button onPress={handleSave} disabled={!name.trim()} style={styles.saveButton}>
-        {isEditing ? "Update Task" : "Add Task"}
+        {isEditing ? "Update Exercise" : "Add Exercise"}
       </Button>
     </ScrollView>
   );

@@ -38,7 +38,7 @@ export default function TrainingStackNavigator() {
         name="ProgramList"
         component={ProgramListScreen}
         options={{
-          headerTitle: "Programs",
+          headerTitle: "Plans",
         }}
       />
       <Stack.Screen

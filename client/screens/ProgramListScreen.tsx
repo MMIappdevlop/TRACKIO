@@ -57,7 +57,7 @@ export default function ProgramListScreen() {
 
   const handleArchiveProgram = (program: Program) => {
     Alert.alert(
-      "Archive Program",
+      "Archive Plan",
       `Are you sure you want to archive "${program.name}"? It will be removed from rotation.`,
       [
         { text: "Cancel", style: "cancel" },
@@ -139,15 +139,15 @@ export default function ProgramListScreen() {
             style={[styles.createButton, { backgroundColor: theme.linkBackground }]}
           >
             <Feather name="plus" size={20} color={theme.link} />
-            <ThemedText type="link">Create New Program</ThemedText>
+            <ThemedText type="link">Create New Plan</ThemedText>
           </Pressable>
         }
       />
 
       <InputModal
         visible={showCreate}
-        title="New Program"
-        placeholder="Program name"
+        title="New Plan"
+        placeholder="Plan name"
         submitLabel="Create"
         onSubmit={handleCreateProgram}
         onClose={() => setShowCreate(false)}
@@ -155,8 +155,8 @@ export default function ProgramListScreen() {
 
       <InputModal
         visible={!!editingProgram}
-        title="Rename Program"
-        placeholder="Program name"
+        title="Rename Plan"
+        placeholder="Plan name"
         initialValue={editingProgram?.name || ""}
         submitLabel="Save"
         onSubmit={handleUpdateProgram}

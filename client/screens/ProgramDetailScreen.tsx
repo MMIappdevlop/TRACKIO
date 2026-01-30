@@ -55,8 +55,8 @@ export default function ProgramDetailScreen() {
 
   const handleDeleteTemplate = (template: SessionTemplate) => {
     Alert.alert(
-      "Delete Session",
-      `Are you sure you want to delete "${template.name}"? This will also delete all tasks in this session.`,
+      "Delete Day",
+      `Are you sure you want to delete "${template.name}"? This will also delete all exercises in this day.`,
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -101,9 +101,9 @@ export default function ProgramDetailScreen() {
   const renderEmpty = () => (
     <EmptyState
       icon="clipboard"
-      title="No Sessions"
-      description="Add session templates to organize your workouts"
-      actionLabel="Add Session"
+      title="No Days"
+      description="Add day templates to organize your workouts"
+      actionLabel="Add Day"
       onAction={() => setShowCreate(true)}
     />
   );
@@ -130,7 +130,7 @@ export default function ProgramDetailScreen() {
               style={[styles.createButton, { backgroundColor: theme.linkBackground }]}
             >
               <Feather name="plus" size={20} color={theme.link} />
-              <ThemedText type="link">Add Session</ThemedText>
+              <ThemedText type="link">Add Day</ThemedText>
             </Pressable>
           ) : null
         }
@@ -138,8 +138,8 @@ export default function ProgramDetailScreen() {
 
       <InputModal
         visible={showCreate}
-        title="New Session"
-        placeholder="Session name"
+        title="New Day"
+        placeholder="Day name"
         submitLabel="Create"
         onSubmit={handleCreateSession}
         onClose={() => setShowCreate(false)}
@@ -147,8 +147,8 @@ export default function ProgramDetailScreen() {
 
       <InputModal
         visible={!!editingTemplate}
-        title="Rename Session"
-        placeholder="Session name"
+        title="Rename Day"
+        placeholder="Day name"
         initialValue={editingTemplate?.name || ""}
         submitLabel="Save"
         onSubmit={handleUpdateTemplate}

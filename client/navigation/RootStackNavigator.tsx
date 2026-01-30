@@ -108,7 +108,7 @@ export default function RootStackNavigator() {
         name="ImportProgram"
         component={ImportProgramScreen}
         options={{
-          headerTitle: "Import Program",
+          headerTitle: "Import Plan",
           presentation: "modal",
         }}
       />
@@ -116,7 +116,7 @@ export default function RootStackNavigator() {
         name="ProgramBuilder"
         component={ProgramBuilderScreen}
         options={{
-          headerTitle: "Create Program",
+          headerTitle: "Create Plan",
           presentation: "modal",
         }}
       />

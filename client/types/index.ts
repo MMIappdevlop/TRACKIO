@@ -1,6 +1,6 @@
-export type TaskMode = "strength" | "distance" | "interval" | "time" | "notes";
+export type ExerciseMode = "strength" | "distance" | "interval" | "time" | "notes";
 
-export interface Program {
+export interface Plan {
   id: string;
   name: string;
   isActive: boolean;
@@ -11,7 +11,7 @@ export interface Program {
 
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-export interface SessionTemplate {
+export interface DayTemplate {
   id: string;
   programId: string;
   name: string;
@@ -22,21 +22,21 @@ export interface SessionTemplate {
   updatedAt: string;
 }
 
-export interface TaskTemplate {
+export interface ExerciseTemplate {
   id: string;
   sessionTemplateId: string;
   name: string;
-  mode: TaskMode;
+  mode: ExerciseMode;
   order: number;
   groupLabel?: string;
   defaultRestSeconds?: number;
-  config: TaskConfig;
+  config: ExerciseConfig;
   trackMilestones: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface TaskConfig {
+export interface ExerciseConfig {
   sets?: number;
   reps?: number;
   weight?: number;
@@ -48,7 +48,7 @@ export interface TaskConfig {
   distanceUnit?: "km" | "mi" | "m";
 }
 
-export interface CompletedSession {
+export interface CompletedDay {
   id: string;
   sessionTemplateId: string;
   sessionTemplateName: string;
@@ -61,15 +61,25 @@ export interface CompletedSession {
   notes?: string;
 }
 
-export interface CompletedTask {
+export interface CompletedExercise {
   id: string;
   completedSessionId: string;
   taskTemplateId: string;
   taskTemplateName: string;
-  mode: TaskMode;
-  dataJson: TaskDataJson;
+  mode: ExerciseMode;
+  dataJson: ExerciseDataJson;
   completedAt: string;
 }
+
+// Backward compatibility aliases
+export type CompletedSession = CompletedDay;
+export type CompletedTask = CompletedExercise;
+export type TaskMode = ExerciseMode;
+export type Program = Plan;
+export type SessionTemplate = DayTemplate;
+export type TaskTemplate = ExerciseTemplate;
+export type TaskConfig = ExerciseConfig;
+export type TaskDataJson = ExerciseDataJson;
 
 export interface StrengthSetData {
   setNumber: number;
@@ -80,7 +90,7 @@ export interface StrengthSetData {
   rir?: number;
 }
 
-export interface TaskDataJson {
+export interface ExerciseDataJson {
   sets?: StrengthSetData[];
   distance?: number;
   distanceUnit?: "km" | "mi" | "m";

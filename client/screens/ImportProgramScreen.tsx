@@ -761,12 +761,12 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
       ) : null}
 
       <View style={styles.section}>
-        <ThemedText type="body" style={styles.fieldLabel}>Program Name</ThemedText>
+        <ThemedText type="body" style={styles.fieldLabel}>Plan Name</ThemedText>
         <TextInput
           style={[styles.programNameInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
           value={programName}
           onChangeText={setProgramName}
-          placeholder="Enter program name"
+          placeholder="Enter plan name"
           placeholderTextColor={theme.textMuted}
         />
       </View>
@@ -780,7 +780,7 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
           disabled={importing || parsedData.filter((r) => !r.error).length === 0}
           style={styles.flexButton}
         >
-          {importing ? "Importing..." : "Import Program"}
+          {importing ? "Importing..." : "Import Plan"}
         </Button>
       </View>
     </ScrollView>

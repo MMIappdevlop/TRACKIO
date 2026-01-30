@@ -179,25 +179,25 @@ export default function TrainingHomeScreen() {
           ) : activeProgram ? (
             <>
               <ThemedText type="secondary" style={styles.noSessionText}>
-                No sessions in this program yet
+                No days in this plan yet
               </ThemedText>
               <Button
                 onPress={() => navigation.navigate("SessionTemplateDetail" as any, { programId: activeProgram.id })}
                 style={styles.startButton}
               >
-                Add Session
+                Add Day
               </Button>
             </>
           ) : (
             <>
               <ThemedText type="secondary" style={styles.noSessionText}>
-                No program selected
+                No plan selected
               </ThemedText>
               <Button
                 onPress={() => navigation.navigate("ProgramBuilder" as any)}
                 style={styles.startButton}
               >
-                Create Program
+                Create Plan
               </Button>
               <Pressable
                 onPress={() => navigation.navigate("ImportProgram" as any)}
@@ -220,7 +220,7 @@ export default function TrainingHomeScreen() {
             <View style={[styles.quickActionIcon, { backgroundColor: theme.link + "20" }]}>
               <Feather name="plus" size={20} color={theme.link} />
             </View>
-            <ThemedText type="body" style={styles.quickActionLabel}>New Program</ThemedText>
+            <ThemedText type="body" style={styles.quickActionLabel}>New Plan</ThemedText>
           </Pressable>
 
           <Pressable
@@ -230,7 +230,7 @@ export default function TrainingHomeScreen() {
             <View style={[styles.quickActionIcon, { backgroundColor: Colors.dark.success + "20" }]}>
               <Feather name="folder" size={20} color={Colors.dark.success} />
             </View>
-            <ThemedText type="body" style={styles.quickActionLabel}>Programs</ThemedText>
+            <ThemedText type="body" style={styles.quickActionLabel}>Plans</ThemedText>
           </Pressable>
 
           <Pressable
