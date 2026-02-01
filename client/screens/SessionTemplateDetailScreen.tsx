@@ -12,7 +12,6 @@ import { TaskCard } from "@/components/TaskCard";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
 import { MoveExerciseModal } from "@/components/MoveExerciseModal";
-import { ActionSheet, ActionSheetOption } from "@/components/ActionSheet";
 import { useTheme } from "@/hooks/useTheme";
 import { useTaskTemplates } from "@/hooks/useData";
 import { sessionTemplatesStorage, taskTemplatesStorage } from "@/lib/storage";
@@ -39,7 +38,6 @@ export default function SessionTemplateDetailScreen() {
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
   const [allDays, setAllDays] = useState<SessionTemplate[]>([]);
   const [movingExercise, setMovingExercise] = useState<TaskTemplate | null>(null);
-  const [actionSheetExercise, setActionSheetExercise] = useState<TaskTemplate | null>(null);
 
   useEffect(() => {
     const loadSessionData = async () => {
@@ -86,38 +84,9 @@ export default function SessionTemplateDetailScreen() {
     navigation.navigate("AddTask", { sessionTemplateId: templateId, taskId: task.id });
   };
 
-  const handleExerciseOptions = (task: TaskTemplate) => {
+  const handleMoveTask = (task: TaskTemplate) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setActionSheetExercise(task);
-  };
-
-  const getActionSheetOptions = (): ActionSheetOption[] => {
-    if (!actionSheetExercise) return [];
-    
-    const options: ActionSheetOption[] = [
-      {
-        label: "Edit",
-        icon: "edit-2",
-        onPress: () => handleEditTask(actionSheetExercise),
-      },
-    ];
-    
-    if (allDays.length > 1) {
-      options.push({
-        label: "Move to Another Day",
-        icon: "move",
-        onPress: () => setMovingExercise(actionSheetExercise),
-      });
-    }
-    
-    options.push({
-      label: "Delete",
-      icon: "trash-2",
-      destructive: true,
-      onPress: () => handleDeleteTask(actionSheetExercise),
-    });
-    
-    return options;
+    setMovingExercise(task);
   };
 
   const handleDeleteTask = (task: TaskTemplate) => {
@@ -241,8 +210,8 @@ export default function SessionTemplateDetailScreen() {
                 key={task.id}
                 task={task}
                 onPress={() => handleEditTask(task)}
-                onLongPress={() => handleExerciseOptions(task)}
-                onOptionsPress={() => handleExerciseOptions(task)}
+                onMove={allDays.length > 1 ? () => handleMoveTask(task) : undefined}
+                onDelete={() => handleDeleteTask(task)}
               />
             ))}
           </View>
@@ -279,14 +248,6 @@ export default function SessionTemplateDetailScreen() {
             </View>
           ) : null
         }
-      />
-
-      <ActionSheet
-        visible={actionSheetExercise !== null}
-        title={actionSheetExercise?.name || ""}
-        subtitle="What would you like to do?"
-        options={getActionSheetOptions()}
-        onClose={() => setActionSheetExercise(null)}
       />
 
       <MoveExerciseModal

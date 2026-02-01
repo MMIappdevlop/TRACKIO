@@ -1,11 +1,12 @@
-import React from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import React, { useState } from "react";
+import { View, StyleSheet, Pressable, Linking } from "react-native";
 import { Feather } from "@expo/vector-icons";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
 } from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
@@ -15,9 +16,10 @@ import type { TaskTemplate } from "@/types";
 interface TaskCardProps {
   task: TaskTemplate;
   onPress?: () => void;
-  onLongPress?: () => void;
-  onOptionsPress?: () => void;
+  onMove?: () => void;
+  onDelete?: () => void;
   showDragHandle?: boolean;
+  showActions?: boolean;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -25,12 +27,14 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function TaskCard({
   task,
   onPress,
-  onLongPress,
-  onOptionsPress,
+  onMove,
+  onDelete,
   showDragHandle = false,
+  showActions = true,
 }: TaskCardProps) {
   const { theme } = useTheme();
   const scale = useSharedValue(1);
+  const [expanded, setExpanded] = useState(false);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -42,6 +46,22 @@ export function TaskCard({
 
   const handlePressOut = () => {
     scale.value = withSpring(1, { damping: 15, stiffness: 150 });
+  };
+
+  const handleToggleExpand = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setExpanded(!expanded);
+  };
+
+  const handleOpenLink = async () => {
+    if (task.referenceLink) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      try {
+        await Linking.openURL(task.referenceLink);
+      } catch (error) {
+        console.log("Failed to open link:", error);
+      }
+    }
   };
 
   const modeConfig = TaskModes[task.mode];
@@ -75,70 +95,114 @@ export function TaskCard({
   };
 
   return (
-    <AnimatedPressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      style={[
-        styles.card,
-        { backgroundColor: theme.backgroundDefault },
-        animatedStyle,
-      ]}
-    >
-      {showDragHandle ? (
-        <View style={styles.dragHandle}>
-          <Feather name="menu" size={18} color={theme.textMuted} />
-        </View>
-      ) : null}
-      <View
+    <View style={styles.cardWrapper}>
+      <AnimatedPressable
+        onPress={onPress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
         style={[
-          styles.modeIndicator,
-          { backgroundColor: modeConfig.color + "20" },
+          styles.card,
+          { backgroundColor: theme.backgroundDefault },
+          animatedStyle,
         ]}
+        testID={`card-exercise-${task.id}`}
       >
-        <Feather name={modeConfig.icon as any} size={18} color={modeConfig.color} />
-      </View>
-      <View style={styles.content}>
-        <ThemedText type="h4" numberOfLines={1}>
-          {task.name}
-        </ThemedText>
-        {task.groupLabel ? (
-          <View style={[styles.groupBadge, { backgroundColor: theme.linkBackground }]}>
-            <ThemedText type="small" style={{ color: theme.link }}>
-              {task.groupLabel}
-            </ThemedText>
+        {showDragHandle ? (
+          <View style={styles.dragHandle}>
+            <Feather name="menu" size={18} color={theme.textMuted} />
           </View>
         ) : null}
-        <ThemedText type="muted" numberOfLines={1} style={styles.details}>
-          {getTaskDetails()}
-        </ThemedText>
-      </View>
-      {onOptionsPress ? (
-        <Pressable
-          onPress={(e) => {
-            e.stopPropagation();
-            onOptionsPress();
-          }}
-          style={styles.optionsButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          testID={`button-options-${task.id}`}
+        <View
+          style={[
+            styles.modeIndicator,
+            { backgroundColor: modeConfig.color + "20" },
+          ]}
         >
-          <Feather name="more-vertical" size={20} color={theme.textMuted} />
-        </Pressable>
-      ) : (
-        <Feather name="chevron-right" size={18} color={theme.textMuted} />
-      )}
-    </AnimatedPressable>
+          <Feather name={modeConfig.icon as any} size={18} color={modeConfig.color} />
+        </View>
+        <View style={styles.content}>
+          <ThemedText type="h4" numberOfLines={1}>
+            {task.name}
+          </ThemedText>
+          {task.groupLabel ? (
+            <View style={[styles.groupBadge, { backgroundColor: theme.linkBackground }]}>
+              <ThemedText type="small" style={{ color: theme.link }}>
+                {task.groupLabel}
+              </ThemedText>
+            </View>
+          ) : null}
+          <ThemedText type="muted" numberOfLines={1} style={styles.details}>
+            {getTaskDetails()}
+          </ThemedText>
+        </View>
+        {showActions ? (
+          <Pressable
+            onPress={handleToggleExpand}
+            style={styles.expandButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            testID={`button-expand-${task.id}`}
+          >
+            <Feather 
+              name={expanded ? "chevron-up" : "chevron-down"} 
+              size={20} 
+              color={theme.textMuted} 
+            />
+          </Pressable>
+        ) : (
+          <Feather name="chevron-right" size={18} color={theme.textMuted} />
+        )}
+      </AnimatedPressable>
+
+      {expanded && showActions ? (
+        <View style={[styles.actionsRow, { backgroundColor: theme.backgroundSecondary }]}>
+          {task.referenceLink ? (
+            <Pressable
+              onPress={handleOpenLink}
+              style={[styles.actionButton, { backgroundColor: theme.backgroundDefault }]}
+              testID={`button-link-${task.id}`}
+            >
+              <Feather name="external-link" size={16} color={theme.link} />
+              <ThemedText type="small" style={{ color: theme.link }}>
+                Reference
+              </ThemedText>
+            </Pressable>
+          ) : null}
+          {onMove ? (
+            <Pressable
+              onPress={onMove}
+              style={[styles.actionButton, { backgroundColor: theme.backgroundDefault }]}
+              testID={`button-move-${task.id}`}
+            >
+              <Feather name="move" size={16} color={theme.textSecondary} />
+              <ThemedText type="small">Move</ThemedText>
+            </Pressable>
+          ) : null}
+          {onDelete ? (
+            <Pressable
+              onPress={onDelete}
+              style={[styles.actionButton, { backgroundColor: theme.backgroundDefault }]}
+              testID={`button-delete-${task.id}`}
+            >
+              <Feather name="trash-2" size={16} color={theme.error} />
+              <ThemedText type="small" style={{ color: theme.error }}>
+                Delete
+              </ThemedText>
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  cardWrapper: {
+    marginBottom: Spacing.sm,
+  },
   card: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: BorderRadius.md,
-    marginBottom: Spacing.sm,
     padding: Spacing.md,
     gap: Spacing.md,
   },
@@ -165,8 +229,26 @@ const styles = StyleSheet.create({
   details: {
     marginTop: 2,
   },
-  optionsButton: {
+  expandButton: {
     padding: Spacing.xs,
     marginRight: -Spacing.xs,
+  },
+  actionsRow: {
+    flexDirection: "row",
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderBottomLeftRadius: BorderRadius.md,
+    borderBottomRightRadius: BorderRadius.md,
+    marginTop: -BorderRadius.md,
+    paddingTop: BorderRadius.md + Spacing.sm,
+    gap: Spacing.sm,
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.sm,
   },
 });

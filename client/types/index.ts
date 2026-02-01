@@ -32,6 +32,7 @@ export interface ExerciseTemplate {
   defaultRestSeconds?: number;
   config: ExerciseConfig;
   trackMilestones: boolean;
+  referenceLink?: string;
   createdAt: string;
   updatedAt: string;
 }

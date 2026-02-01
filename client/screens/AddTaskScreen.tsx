@@ -35,6 +35,7 @@ export default function AddTaskScreen() {
   const [name, setName] = useState("");
   const [mode, setMode] = useState<TaskMode>("strength");
   const [groupLabel, setGroupLabel] = useState("");
+  const [referenceLink, setReferenceLink] = useState("");
   const [trackMilestones, setTrackMilestones] = useState(false);
   const [config, setConfig] = useState<TaskConfig>({
     sets: 3,
@@ -60,6 +61,7 @@ export default function AddTaskScreen() {
       setName(task.name);
       setMode(task.mode);
       setGroupLabel(task.groupLabel || "");
+      setReferenceLink(task.referenceLink || "");
       setTrackMilestones(task.trackMilestones);
       setConfig(task.config);
     }
@@ -73,6 +75,7 @@ export default function AddTaskScreen() {
         name: name.trim(),
         mode,
         groupLabel: groupLabel.trim() || undefined,
+        referenceLink: referenceLink.trim() || undefined,
         trackMilestones,
         config,
       });
@@ -81,6 +84,7 @@ export default function AddTaskScreen() {
         name: name.trim(),
         mode,
         groupLabel: groupLabel.trim() || undefined,
+        referenceLink: referenceLink.trim() || undefined,
         trackMilestones,
         config,
       });
@@ -290,6 +294,23 @@ export default function AddTaskScreen() {
           placeholder="e.g., Superset A"
           placeholderTextColor={theme.textMuted}
         />
+      </View>
+
+      <View style={styles.field}>
+        <ThemedText type="secondary" style={styles.label}>Reference Link (optional)</ThemedText>
+        <TextInput
+          style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text, borderColor: theme.border }]}
+          value={referenceLink}
+          onChangeText={setReferenceLink}
+          placeholder="https://youtube.com/watch?v=..."
+          placeholderTextColor={theme.textMuted}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+        />
+        <ThemedText type="muted" style={styles.hint}>
+          Add a video or article link for exercise reference
+        </ThemedText>
       </View>
 
       {(mode === "strength" || mode === "distance") ? (
