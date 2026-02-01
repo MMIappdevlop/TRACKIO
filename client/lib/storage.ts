@@ -264,6 +264,24 @@ export const taskTemplatesStorage = {
       tasks.filter((t) => t.sessionTemplateId !== sessionTemplateId)
     );
   },
+
+  async moveToDay(taskId: string, newSessionTemplateId: string): Promise<TaskTemplate | null> {
+    const tasks = await this.getAll();
+    const taskIndex = tasks.findIndex((t) => t.id === taskId);
+    if (taskIndex === -1) return null;
+
+    const targetDayTasks = tasks.filter((t) => t.sessionTemplateId === newSessionTemplateId);
+    const newOrder = targetDayTasks.length;
+
+    tasks[taskIndex] = {
+      ...tasks[taskIndex],
+      sessionTemplateId: newSessionTemplateId,
+      order: newOrder,
+      updatedAt: new Date().toISOString(),
+    };
+    await setItem(STORAGE_KEYS.TASK_TEMPLATES, tasks);
+    return tasks[taskIndex];
+  },
 };
 
 export const completedSessionsStorage = {
