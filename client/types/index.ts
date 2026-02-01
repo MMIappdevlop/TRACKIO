@@ -122,6 +122,9 @@ export interface Settings {
   autoBackupEnabled: boolean;
   backupUri?: string;
   userName?: string;
+  userWeight?: number;
+  userHeight?: number;
+  userAge?: number;
 }
 
 export interface WeeklyStats {

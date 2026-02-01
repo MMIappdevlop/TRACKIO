@@ -32,6 +32,9 @@ export default function ProfileHomeScreen() {
   const { settings, refresh: refreshSettings, updateSettings } = useSettings();
   const { badges, refresh: refreshBadges } = useBadges();
   const [showNameModal, setShowNameModal] = useState(false);
+  const [showWeightModal, setShowWeightModal] = useState(false);
+  const [showHeightModal, setShowHeightModal] = useState(false);
+  const [showAgeModal, setShowAgeModal] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -46,6 +49,36 @@ export default function ProfileHomeScreen() {
     setShowNameModal(false);
   };
 
+  const handleUpdateWeight = async (value: string) => {
+    const weight = parseFloat(value);
+    if (!isNaN(weight) && weight > 0) {
+      await updateSettings({ userWeight: weight });
+      await refreshSettings();
+    }
+    setShowWeightModal(false);
+  };
+
+  const handleUpdateHeight = async (value: string) => {
+    const height = parseFloat(value);
+    if (!isNaN(height) && height > 0) {
+      await updateSettings({ userHeight: height });
+      await refreshSettings();
+    }
+    setShowHeightModal(false);
+  };
+
+  const handleUpdateAge = async (value: string) => {
+    const age = parseInt(value);
+    if (!isNaN(age) && age > 0) {
+      await updateSettings({ userAge: age });
+      await refreshSettings();
+    }
+    setShowAgeModal(false);
+  };
+
+  const weightUnit = settings?.weightUnit || "kg";
+  const heightUnit = settings?.weightUnit === "lb" ? "ft" : "cm";
+
   const recentBadges = badges.slice(0, 3);
 
   return (
@@ -56,16 +89,41 @@ export default function ProfileHomeScreen() {
         { paddingTop: headerHeight + Spacing.xl, paddingBottom: tabBarHeight + Spacing["4xl"] },
       ]}
     >
-      <Pressable
-        style={[styles.profileCard, { backgroundColor: theme.backgroundDefault }]}
-        onPress={() => setShowNameModal(true)}
-      >
-        <View style={styles.profileInfo}>
-          <ThemedText type="h2">{settings?.userName || "Athlete"}</ThemedText>
-          <ThemedText type="muted">Tap to edit name</ThemedText>
+      <View style={[styles.profileCard, { backgroundColor: theme.backgroundDefault }]}>
+        <Pressable
+          style={styles.profileNameRow}
+          onPress={() => setShowNameModal(true)}
+        >
+          <View style={styles.profileInfo}>
+            <ThemedText type="h2">{settings?.userName || "Athlete"}</ThemedText>
+            <ThemedText type="muted">Tap to edit name</ThemedText>
+          </View>
+          <Feather name="edit-2" size={18} color={theme.textSecondary} />
+        </Pressable>
+
+        <View style={[styles.statsRow, { borderTopColor: theme.border }]}>
+          <Pressable style={styles.statItem} onPress={() => setShowWeightModal(true)}>
+            <ThemedText type="h3">
+              {settings?.userWeight ? `${settings.userWeight}` : "--"}
+            </ThemedText>
+            <ThemedText type="muted">{weightUnit}</ThemedText>
+          </Pressable>
+          <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
+          <Pressable style={styles.statItem} onPress={() => setShowHeightModal(true)}>
+            <ThemedText type="h3">
+              {settings?.userHeight ? `${settings.userHeight}` : "--"}
+            </ThemedText>
+            <ThemedText type="muted">{heightUnit}</ThemedText>
+          </Pressable>
+          <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
+          <Pressable style={styles.statItem} onPress={() => setShowAgeModal(true)}>
+            <ThemedText type="h3">
+              {settings?.userAge ? `${settings.userAge}` : "--"}
+            </ThemedText>
+            <ThemedText type="muted">years</ThemedText>
+          </Pressable>
         </View>
-        <Feather name="edit-2" size={18} color={theme.textSecondary} />
-      </Pressable>
+      </View>
 
       {recentBadges.length > 0 ? (
         <View style={styles.section}>
@@ -127,6 +185,39 @@ export default function ProfileHomeScreen() {
         onSubmit={handleUpdateName}
         onClose={() => setShowNameModal(false)}
       />
+
+      <InputModal
+        visible={showWeightModal}
+        title={`Weight (${weightUnit})`}
+        placeholder={`Enter weight in ${weightUnit}`}
+        initialValue={settings?.userWeight?.toString() || ""}
+        submitLabel="Save"
+        keyboardType="decimal-pad"
+        onSubmit={handleUpdateWeight}
+        onClose={() => setShowWeightModal(false)}
+      />
+
+      <InputModal
+        visible={showHeightModal}
+        title={`Height (${heightUnit})`}
+        placeholder={`Enter height in ${heightUnit}`}
+        initialValue={settings?.userHeight?.toString() || ""}
+        submitLabel="Save"
+        keyboardType="decimal-pad"
+        onSubmit={handleUpdateHeight}
+        onClose={() => setShowHeightModal(false)}
+      />
+
+      <InputModal
+        visible={showAgeModal}
+        title="Age"
+        placeholder="Enter your age"
+        initialValue={settings?.userAge?.toString() || ""}
+        submitLabel="Save"
+        keyboardType="number-pad"
+        onSubmit={handleUpdateAge}
+        onClose={() => setShowAgeModal(false)}
+      />
     </ScrollView>
   );
 }
@@ -139,14 +230,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
   },
   profileCard: {
+    borderRadius: BorderRadius.xl,
+    marginBottom: Spacing.xl,
+    overflow: "hidden",
+  },
+  profileNameRow: {
     flexDirection: "row",
     alignItems: "center",
-    borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
-    marginBottom: Spacing.xl,
   },
   profileInfo: {
     flex: 1,
+  },
+  statsRow: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    paddingVertical: Spacing.md,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: Spacing.sm,
+  },
+  statDivider: {
+    width: 1,
+    alignSelf: "stretch",
   },
   section: {
     marginBottom: Spacing.xl,

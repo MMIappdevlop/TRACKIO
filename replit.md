@@ -6,6 +6,9 @@ Trackio is a mobile-first personal training log built with React Native + Expo (
 **Core Promise**: "Bring your plan. Trackio records your training."
 
 ## Recent Changes
+- **2026-02-01**: Added profile fields for weight, height, and age (optional)
+- **2026-02-01**: Exercise cards now expand to show Move/Delete actions directly (removed long press)
+- **2026-02-01**: Added optional reference link field to exercises (video/article URL)
 - **2025-01-25**: Redesigned program creation with one-screen Program Builder - inline session/task creation, no modals
 - **2024-01-24**: Initial MVP implementation with full offline-first functionality
 

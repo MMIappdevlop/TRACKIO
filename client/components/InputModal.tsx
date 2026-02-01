@@ -7,6 +7,7 @@ import {
   Pressable,
   KeyboardAvoidingView,
   Platform,
+  KeyboardTypeOptions,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 
@@ -21,6 +22,7 @@ interface InputModalProps {
   placeholder?: string;
   initialValue?: string;
   submitLabel?: string;
+  keyboardType?: KeyboardTypeOptions;
   onSubmit: (value: string) => void;
   onClose: () => void;
 }
@@ -31,6 +33,7 @@ export function InputModal({
   placeholder = "",
   initialValue = "",
   submitLabel = "Save",
+  keyboardType = "default",
   onSubmit,
   onClose,
 }: InputModalProps) {
@@ -81,6 +84,7 @@ export function InputModal({
             placeholderTextColor={theme.textMuted}
             value={value}
             onChangeText={setValue}
+            keyboardType={keyboardType}
             autoFocus
             returnKeyType="done"
             onSubmitEditing={handleSubmit}
