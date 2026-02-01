@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: BorderRadius.xl,
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: Spacing["2xl"],
     maxHeight: "60%",
   },
   header: {

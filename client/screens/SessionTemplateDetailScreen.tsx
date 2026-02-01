@@ -11,13 +11,14 @@ import { ThemedText } from "@/components/ThemedText";
 import { TaskCard } from "@/components/TaskCard";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
+import { MoveExerciseModal } from "@/components/MoveExerciseModal";
 import { useTheme } from "@/hooks/useTheme";
 import { useTaskTemplates } from "@/hooks/useData";
-import { sessionTemplatesStorage } from "@/lib/storage";
+import { sessionTemplatesStorage, taskTemplatesStorage } from "@/lib/storage";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { TrainingStackParamList } from "@/navigation/TrainingStackNavigator";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import type { TaskTemplate, DayOfWeek } from "@/types";
+import type { TaskTemplate, DayOfWeek, SessionTemplate } from "@/types";
 
 const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -35,16 +36,20 @@ export default function SessionTemplateDetailScreen() {
 
   const { tasks, loading, refresh, deleteTask } = useTaskTemplates(templateId);
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
+  const [allDays, setAllDays] = useState<SessionTemplate[]>([]);
+  const [movingExercise, setMovingExercise] = useState<TaskTemplate | null>(null);
 
   useEffect(() => {
-    const loadSessionDays = async () => {
+    const loadSessionData = async () => {
       const session = await sessionTemplatesStorage.getById(templateId);
       if (session?.days) {
         setSelectedDays(session.days);
       }
+      const days = await sessionTemplatesStorage.getByProgramId(programId);
+      setAllDays(days);
     };
-    loadSessionDays();
-  }, [templateId]);
+    loadSessionData();
+  }, [templateId, programId]);
 
   const handleToggleDay = async (day: DayOfWeek) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -79,6 +84,32 @@ export default function SessionTemplateDetailScreen() {
     navigation.navigate("AddTask", { sessionTemplateId: templateId, taskId: task.id });
   };
 
+  const handleExerciseOptions = (task: TaskTemplate) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const options: { text: string; style?: "cancel" | "destructive"; onPress?: () => void }[] = [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Edit",
+        onPress: () => handleEditTask(task),
+      },
+    ];
+    
+    if (allDays.length > 1) {
+      options.push({
+        text: "Move to Another Day",
+        onPress: () => setMovingExercise(task),
+      });
+    }
+    
+    options.push({
+      text: "Delete",
+      style: "destructive",
+      onPress: () => handleDeleteTask(task),
+    });
+    
+    Alert.alert(task.name, "What would you like to do?", options);
+  };
+
   const handleDeleteTask = (task: TaskTemplate) => {
     Alert.alert(
       "Delete Exercise",
@@ -95,6 +126,15 @@ export default function SessionTemplateDetailScreen() {
         },
       ]
     );
+  };
+
+  const handleMoveExercise = async (targetDayId: string) => {
+    if (!movingExercise) return;
+    
+    await taskTemplatesStorage.moveToDay(movingExercise.id, targetDayId);
+    setMovingExercise(null);
+    await refresh();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const groupedTasks = tasks.reduce(
@@ -191,7 +231,7 @@ export default function SessionTemplateDetailScreen() {
                 key={task.id}
                 task={task}
                 onPress={() => handleEditTask(task)}
-                onLongPress={() => handleDeleteTask(task)}
+                onLongPress={() => handleExerciseOptions(task)}
               />
             ))}
           </View>
@@ -228,6 +268,15 @@ export default function SessionTemplateDetailScreen() {
             </View>
           ) : null
         }
+      />
+
+      <MoveExerciseModal
+        visible={movingExercise !== null}
+        exerciseName={movingExercise?.name || ""}
+        currentDayId={templateId}
+        days={allDays}
+        onMove={handleMoveExercise}
+        onClose={() => setMovingExercise(null)}
       />
     </View>
   );
