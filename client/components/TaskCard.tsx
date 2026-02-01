@@ -16,6 +16,7 @@ interface TaskCardProps {
   task: TaskTemplate;
   onPress?: () => void;
   onLongPress?: () => void;
+  onOptionsPress?: () => void;
   showDragHandle?: boolean;
 }
 
@@ -25,6 +26,7 @@ export function TaskCard({
   task,
   onPress,
   onLongPress,
+  onOptionsPress,
   showDragHandle = false,
 }: TaskCardProps) {
   const { theme } = useTheme();
@@ -112,7 +114,21 @@ export function TaskCard({
           {getTaskDetails()}
         </ThemedText>
       </View>
-      <Feather name="chevron-right" size={18} color={theme.textMuted} />
+      {onOptionsPress ? (
+        <Pressable
+          onPress={(e) => {
+            e.stopPropagation();
+            onOptionsPress();
+          }}
+          style={styles.optionsButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          testID={`button-options-${task.id}`}
+        >
+          <Feather name="more-vertical" size={20} color={theme.textMuted} />
+        </Pressable>
+      ) : (
+        <Feather name="chevron-right" size={18} color={theme.textMuted} />
+      )}
     </AnimatedPressable>
   );
 }
@@ -148,5 +164,9 @@ const styles = StyleSheet.create({
   },
   details: {
     marginTop: 2,
+  },
+  optionsButton: {
+    padding: Spacing.xs,
+    marginRight: -Spacing.xs,
   },
 });
