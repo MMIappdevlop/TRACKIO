@@ -10,6 +10,7 @@ import {
   Platform,
   UIManager,
 } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -287,7 +288,7 @@ export default function ProgramBuilderScreen() {
     return (
       <View style={[styles.taskForm, { backgroundColor: theme.backgroundSecondary }]}>
         <ThemedText type="body" style={[styles.formLabel, { color: theme.text }]}>
-          {session.selectedTaskType?.charAt(0).toUpperCase() + session.selectedTaskType?.slice(1)} Task
+          {session.selectedTaskType ? session.selectedTaskType.charAt(0).toUpperCase() + session.selectedTaskType.slice(1) : ""} Task
         </ThemedText>
 
         <TextInput
@@ -442,7 +443,11 @@ export default function ProgramBuilderScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
+      behavior="padding"
+      keyboardVerticalOffset={0}
+    >
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
@@ -552,7 +557,7 @@ export default function ProgramBuilderScreen() {
           {saving ? "Creating..." : "Finish & Start Training"}
         </Button>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

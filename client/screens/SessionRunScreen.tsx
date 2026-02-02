@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, ScrollView, StyleSheet, Pressable, TextInput, Alert } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -276,7 +277,11 @@ export default function SessionRunScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
+      behavior="padding"
+      keyboardVerticalOffset={0}
+    >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -503,7 +508,7 @@ export default function SessionRunScreen() {
         initialSeconds={restSeconds}
         onClose={() => setShowRestTimer(false)}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

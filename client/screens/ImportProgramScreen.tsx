@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, ScrollView, FlatList, Alert, Pressable, TextInput, Platform } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -502,13 +503,19 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
   };
 
   const renderSelectStep = () => (
-    <ScrollView
+    <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: headerHeight + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
-      ]}
+      behavior="padding"
+      keyboardVerticalOffset={0}
     >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: headerHeight + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
       <View style={styles.section}>
         <ThemedText type="h2" style={styles.sectionTitle}>Example Templates</ThemedText>
         <ThemedText type="secondary" style={styles.description}>
@@ -569,17 +576,24 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
           Choose File
         </Button>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 
   const renderMappingStep = () => (
-    <ScrollView
+    <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: headerHeight + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
-      ]}
+      behavior="padding"
+      keyboardVerticalOffset={0}
     >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: headerHeight + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
       <View style={styles.section}>
         <View style={styles.sectionHeaderRow}>
           <ThemedText type="h2">Column Mapping</ThemedText>
@@ -673,17 +687,24 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
           Preview Import
         </Button>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 
   const renderPreviewStep = () => (
-    <ScrollView
+    <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: headerHeight + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
-      ]}
+      behavior="padding"
+      keyboardVerticalOffset={0}
     >
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: headerHeight + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
+        ]}
+        keyboardShouldPersistTaps="handled"
+      >
       <View style={styles.section}>
         <ThemedText type="body" style={styles.fieldLabel}>Plan Name</ThemedText>
         <TextInput
@@ -783,7 +804,8 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
           {importing ? "Importing..." : "Import Plan"}
         </Button>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 
   return step === "select" ? renderSelectStep() : step === "mapping" ? renderMappingStep() : renderPreviewStep();
@@ -791,6 +813,9 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  scrollView: {
     flex: 1,
   },
   content: {
