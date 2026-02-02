@@ -685,6 +685,17 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
       ]}
     >
       <View style={styles.section}>
+        <ThemedText type="body" style={styles.fieldLabel}>Plan Name</ThemedText>
+        <TextInput
+          style={[styles.programNameInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+          value={programName}
+          onChangeText={setProgramName}
+          placeholder="Enter plan name"
+          placeholderTextColor={theme.textMuted}
+        />
+      </View>
+
+      <View style={styles.section}>
         <ThemedText type="h2" style={styles.sectionTitle}>Preview</ThemedText>
         <ThemedText type="secondary" style={styles.description}>
           {parsedData.length} rows found, {errors.length} with errors
@@ -759,17 +770,6 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
           ) : null}
         </View>
       ) : null}
-
-      <View style={styles.section}>
-        <ThemedText type="body" style={styles.fieldLabel}>Plan Name</ThemedText>
-        <TextInput
-          style={[styles.programNameInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-          value={programName}
-          onChangeText={setProgramName}
-          placeholder="Enter plan name"
-          placeholderTextColor={theme.textMuted}
-        />
-      </View>
 
       <View style={styles.buttonRow}>
         <Button variant="secondary" onPress={() => setStep("mapping")} style={styles.flexButton}>
