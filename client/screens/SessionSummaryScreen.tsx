@@ -4,7 +4,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -199,8 +199,8 @@ export default function SessionSummaryScreen() {
         <View style={styles.ratingStars}>
           {[1, 2, 3, 4, 5].map((value) => (
             <Pressable key={value} onPress={() => handleRating(value)} style={styles.starButton}>
-              <Feather
-                name={value <= rating ? "star" : "star"}
+              <Ionicons
+                name={value <= rating ? "star" : "star-outline"}
                 size={36}
                 color={value <= rating ? Colors.dark.gold : theme.textMuted}
               />

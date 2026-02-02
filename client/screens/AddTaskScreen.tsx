@@ -249,7 +249,7 @@ export default function AddTaskScreen() {
         keyboardShouldPersistTaps="handled"
       >
       <View style={styles.field}>
-        <ThemedText type="secondary" style={styles.label}>Task Name</ThemedText>
+        <ThemedText type="secondary" style={styles.label}>Exercise Name</ThemedText>
         <TextInput
           style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text, borderColor: theme.border }]}
           value={name}

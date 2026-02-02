@@ -288,14 +288,14 @@ export default function ProgramBuilderScreen() {
     return (
       <View style={[styles.taskForm, { backgroundColor: theme.backgroundSecondary }]}>
         <ThemedText type="body" style={[styles.formLabel, { color: theme.text }]}>
-          {session.selectedTaskType ? session.selectedTaskType.charAt(0).toUpperCase() + session.selectedTaskType.slice(1) : ""} Task
+          {session.selectedTaskType ? session.selectedTaskType.charAt(0).toUpperCase() + session.selectedTaskType.slice(1) : ""} Exercise
         </ThemedText>
 
         <TextInput
           style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
           value={newTaskName}
           onChangeText={setNewTaskName}
-          placeholder="Task name (e.g. Bench Press)"
+          placeholder="Exercise name (e.g. Bench Press)"
           placeholderTextColor={theme.textMuted}
           autoCapitalize="words"
         />
@@ -372,7 +372,7 @@ export default function ProgramBuilderScreen() {
           </ThemedText>
           <View style={[styles.taskCount, { backgroundColor: theme.backgroundSecondary }]}>
             <ThemedText type="body" style={{ color: theme.textSecondary }}>
-              {session.tasks.length} {session.tasks.length === 1 ? "task" : "tasks"}
+              {session.tasks.length} {session.tasks.length === 1 ? "exercise" : "exercises"}
             </ThemedText>
           </View>
         </View>

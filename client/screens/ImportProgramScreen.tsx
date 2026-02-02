@@ -108,6 +108,25 @@ const TEMPLATE_INFO = [
   },
 ];
 
+const formatFieldLabel = (field: string): string => {
+  const labelMap: Record<string, string> = {
+    session: "Day",
+    task: "Exercise",
+    mode: "Mode",
+    sets: "Sets",
+    reps: "Reps",
+    weight: "Weight",
+    distance: "Distance",
+    distance_unit: "Distance Unit",
+    duration_minutes: "Duration (min)",
+    work_seconds: "Work (sec)",
+    rest_seconds: "Rest (sec)",
+    rounds: "Rounds",
+    notes: "Notes",
+  };
+  return labelMap[field] || field.replace(/_/g, " ");
+};
+
 export default function ImportProgramScreen() {
   const navigation = useNavigation();
   const { theme } = useTheme();
@@ -650,14 +669,14 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
         {Object.entries(columnMapping).map(([field, value]) => (
           <View key={field} style={styles.mappingRow}>
             <ThemedText type="body" style={styles.fieldLabel}>
-              {field.replace(/_/g, " ")}
+              {formatFieldLabel(field)}
             </ThemedText>
             <View style={[styles.dropdown, { backgroundColor: theme.backgroundSecondary }]}>
               <Pressable
                 style={styles.dropdownButton}
                 onPress={() => {
                   Alert.alert(
-                    `Select column for ${field}`,
+                    `Select column for ${formatFieldLabel(field)}`,
                     "Choose a column from your file",
                     [
                       { text: "(none)", onPress: () => setColumnMapping(prev => ({ ...prev, [field]: "" })) },
@@ -727,10 +746,10 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
             <ThemedText type="small" style={{ fontWeight: "600" }}>Row</ThemedText>
           </View>
           <View style={styles.previewCellWide}>
-            <ThemedText type="small" style={{ fontWeight: "600" }}>Session</ThemedText>
+            <ThemedText type="small" style={{ fontWeight: "600" }}>Day</ThemedText>
           </View>
           <View style={styles.previewCellWide}>
-            <ThemedText type="small" style={{ fontWeight: "600" }}>Task</ThemedText>
+            <ThemedText type="small" style={{ fontWeight: "600" }}>Exercise</ThemedText>
           </View>
           <View style={styles.previewCell}>
             <ThemedText type="small" style={{ fontWeight: "600" }}>Status</ThemedText>

@@ -130,17 +130,11 @@ export default function TrainingHomeScreen() {
               {getGreeting()}, {settings?.userName || "Athlete"}
             </ThemedText>
             {activeProgram ? (
-              <ThemedText type="secondary" style={styles.programLabel}>
-                Program: {activeProgram.name}
+              <ThemedText type="secondary" style={styles.planLabel}>
+                Active Plan: {activeProgram.name}
               </ThemedText>
             ) : null}
           </View>
-          <Pressable
-            onPress={() => navigation.navigate("Settings" as any)}
-            style={[styles.settingsButton, { backgroundColor: theme.backgroundDefault }]}
-          >
-            <Feather name="settings" size={20} color={theme.textSecondary} />
-          </Pressable>
         </View>
 
         {/* Today's Session Card */}
@@ -294,14 +288,7 @@ const styles = StyleSheet.create({
   greeting: {
     marginBottom: Spacing.xs,
   },
-  programLabel: {},
-  settingsButton: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.full,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  planLabel: {},
   sessionCard: {
     borderRadius: BorderRadius.lg,
     padding: Spacing.xl,
