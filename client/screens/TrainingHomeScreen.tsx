@@ -84,23 +84,23 @@ export default function TrainingHomeScreen() {
   const lastSession = sessions.length > 0 ? sessions[0] : null;
   
   const todayDayOfWeek = new Date().getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  const todaySessions = templates.filter((t) => t.days?.includes(todayDayOfWeek));
-  const displaySessions = todaySessions.length > 0 ? todaySessions : templates;
   
-  const safeIndex = Math.min(selectedSessionIndex, Math.max(0, displaySessions.length - 1));
-  const selectedSession = displaySessions.length > 0 ? displaySessions[safeIndex] : null;
+  // Always show all days, but start on today's assigned day if available
+  const safeIndex = Math.min(selectedSessionIndex, Math.max(0, templates.length - 1));
+  const selectedSession = templates.length > 0 ? templates[safeIndex] : null;
+  const isSelectedForToday = selectedSession?.days?.includes(todayDayOfWeek);
 
   const handlePrevSession = () => {
-    if (displaySessions.length > 1) {
+    if (templates.length > 1) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setSelectedSessionIndex((prev) => (prev === 0 ? displaySessions.length - 1 : prev - 1));
+      setSelectedSessionIndex((prev) => (prev === 0 ? templates.length - 1 : prev - 1));
     }
   };
 
   const handleNextSession = () => {
-    if (displaySessions.length > 1) {
+    if (templates.length > 1) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setSelectedSessionIndex((prev) => (prev === displaySessions.length - 1 ? 0 : prev + 1));
+      setSelectedSessionIndex((prev) => (prev === templates.length - 1 ? 0 : prev + 1));
     }
   };
 
@@ -144,23 +144,23 @@ export default function TrainingHomeScreen() {
               <View style={styles.sessionPicker}>
                 <Pressable 
                   onPress={handlePrevSession} 
-                  style={[styles.arrowButton, displaySessions.length <= 1 && styles.arrowButtonDisabled]}
-                  disabled={displaySessions.length <= 1}
+                  style={[styles.arrowButton, templates.length <= 1 && styles.arrowButtonDisabled]}
+                  disabled={templates.length <= 1}
                 >
-                  <Feather name="chevron-left" size={28} color={displaySessions.length > 1 ? theme.link : theme.textMuted} />
+                  <Feather name="chevron-left" size={28} color={templates.length > 1 ? theme.link : theme.textMuted} />
                 </Pressable>
                 <View style={styles.sessionNameContainer}>
                   <ThemedText type="h2" style={styles.sessionName}>{selectedSession.name}</ThemedText>
                   <ThemedText type="muted" style={styles.sessionCounter}>
-                    {todaySessions.length > 0 ? "Today" : `${safeIndex + 1} of ${displaySessions.length}`}
+                    {isSelectedForToday ? "Scheduled for today" : `${safeIndex + 1} of ${templates.length}`}
                   </ThemedText>
                 </View>
                 <Pressable 
                   onPress={handleNextSession} 
-                  style={[styles.arrowButton, displaySessions.length <= 1 && styles.arrowButtonDisabled]}
-                  disabled={displaySessions.length <= 1}
+                  style={[styles.arrowButton, templates.length <= 1 && styles.arrowButtonDisabled]}
+                  disabled={templates.length <= 1}
                 >
-                  <Feather name="chevron-right" size={28} color={displaySessions.length > 1 ? theme.link : theme.textMuted} />
+                  <Feather name="chevron-right" size={28} color={templates.length > 1 ? theme.link : theme.textMuted} />
                 </Pressable>
               </View>
               <Button
