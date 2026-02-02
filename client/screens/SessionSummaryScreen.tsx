@@ -158,7 +158,7 @@ export default function SessionSummaryScreen() {
         <View style={styles.statRow}>
           <View style={styles.stat}>
             <ThemedText type="stat">{stats.tasksCompleted}</ThemedText>
-            <ThemedText type="muted">Tasks</ThemedText>
+            <ThemedText type="muted">Exercises</ThemedText>
           </View>
           {stats.setsCompleted > 0 ? (
             <View style={styles.stat}>
