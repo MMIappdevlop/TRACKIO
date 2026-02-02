@@ -21,6 +21,7 @@ import type {
 
 export function usePrograms() {
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [archivedPrograms, setArchivedPrograms] = useState<Program[]>([]);
   const [activeProgram, setActiveProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,6 +30,7 @@ export function usePrograms() {
     try {
       const all = await programsStorage.getAll();
       setPrograms(all.filter((p) => !p.isArchived));
+      setArchivedPrograms(all.filter((p) => p.isArchived));
       const active = await programsStorage.getActive();
       setActiveProgram(active);
     } finally {
@@ -73,14 +75,33 @@ export function usePrograms() {
     [refresh]
   );
 
+  const deleteProgram = useCallback(
+    async (id: string) => {
+      await programsStorage.delete(id);
+      await refresh();
+    },
+    [refresh]
+  );
+
+  const unarchiveProgram = useCallback(
+    async (id: string) => {
+      await programsStorage.update(id, { isArchived: false });
+      await refresh();
+    },
+    [refresh]
+  );
+
   return {
     programs,
+    archivedPrograms,
     activeProgram,
     loading,
     refresh,
     createProgram,
     setActive,
     archiveProgram,
+    unarchiveProgram,
+    deleteProgram,
     updateProgram,
   };
 }
