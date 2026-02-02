@@ -48,7 +48,11 @@ export function InputModal({
 
   const handleSubmit = () => {
     if (value.trim()) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      try {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      } catch (e) {
+        // Haptics may not be available on web
+      }
       onSubmit(value.trim());
       onClose();
     }
