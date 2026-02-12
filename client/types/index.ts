@@ -5,6 +5,7 @@ export interface Plan {
   name: string;
   isActive: boolean;
   isArchived: boolean;
+  trackBadges: boolean;
   createdAt: string;
   updatedAt: string;
 }

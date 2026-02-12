@@ -55,6 +55,7 @@ export const programsStorage = {
       name,
       isActive: programs.length === 0,
       isArchived: false,
+      trackBadges: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

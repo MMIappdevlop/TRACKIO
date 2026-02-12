@@ -11,8 +11,8 @@ import { ThemedText } from "@/components/ThemedText";
 import { EmptyState } from "@/components/EmptyState";
 import { InputModal } from "@/components/InputModal";
 import { useTheme } from "@/hooks/useTheme";
-import { useSessionTemplates } from "@/hooks/useData";
-import { Spacing, BorderRadius } from "@/constants/theme";
+import { useSessionTemplates, usePrograms } from "@/hooks/useData";
+import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { TrainingStackParamList } from "@/navigation/TrainingStackNavigator";
 import type { SessionTemplate } from "@/types";
 
@@ -28,12 +28,15 @@ export default function ProgramDetailScreen() {
   const { programId } = route.params;
 
   const { templates, loading, refresh, createTemplate, updateTemplate, deleteTemplate } = useSessionTemplates(programId);
+  const { programs, updateProgram, refresh: refreshPrograms } = usePrograms();
+  const program = programs.find(p => p.id === programId);
   const [showCreate, setShowCreate] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<SessionTemplate | null>(null);
 
   useFocusEffect(
     useCallback(() => {
       refresh();
+      refreshPrograms();
     }, [])
   );
 
@@ -69,6 +72,13 @@ export default function ProgramDetailScreen() {
         },
       ]
     );
+  };
+
+  const handleToggleBadges = async () => {
+    if (!program) return;
+    const newValue = !program.trackBadges;
+    await updateProgram(program.id, { trackBadges: newValue });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const renderTemplate = ({ item }: { item: SessionTemplate }) => (
@@ -108,6 +118,38 @@ export default function ProgramDetailScreen() {
     />
   );
 
+  const renderHeader = () => (
+    <View>
+      <Pressable
+        onPress={handleToggleBadges}
+        style={[styles.badgeToggle, { backgroundColor: theme.backgroundDefault }]}
+      >
+        <View style={styles.badgeToggleContent}>
+          <View style={[styles.badgeIcon, { backgroundColor: (program?.trackBadges ? Colors.dark.gold : theme.textMuted) + "20" }]}>
+            <Feather name="award" size={20} color={program?.trackBadges ? Colors.dark.gold : theme.textMuted} />
+          </View>
+          <View style={styles.badgeToggleText}>
+            <ThemedText type="body" style={{ fontWeight: "600" }}>Track Badges</ThemedText>
+            <ThemedText type="muted">
+              {program?.trackBadges 
+                ? "All exercises count toward badges" 
+                : "Badge tracking is off for this plan"}
+            </ThemedText>
+          </View>
+        </View>
+        <View style={[
+          styles.toggleSwitch, 
+          { backgroundColor: program?.trackBadges ? theme.link : theme.backgroundSecondary }
+        ]}>
+          <View style={[
+            styles.toggleKnob, 
+            program?.trackBadges && styles.toggleKnobActive
+          ]} />
+        </View>
+      </Pressable>
+    </View>
+  );
+
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
       <FlatList
@@ -123,6 +165,7 @@ export default function ProgramDetailScreen() {
           },
           templates.length === 0 && styles.emptyContent,
         ]}
+        ListHeaderComponent={renderHeader}
         ListFooterComponent={
           templates.length > 0 ? (
             <Pressable
@@ -169,6 +212,47 @@ const styles = StyleSheet.create({
   emptyContent: {
     flex: 1,
     justifyContent: "center",
+  },
+  badgeToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  badgeToggleContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+    gap: Spacing.md,
+  },
+  badgeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeToggleText: {
+    flex: 1,
+    gap: 2,
+  },
+  toggleSwitch: {
+    width: 48,
+    height: 28,
+    borderRadius: 14,
+    padding: 2,
+    justifyContent: "center",
+  },
+  toggleKnob: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+  },
+  toggleKnobActive: {
+    alignSelf: "flex-end",
   },
   templateCard: {
     flexDirection: "row",
