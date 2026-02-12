@@ -55,14 +55,16 @@ export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
             style={StyleSheet.absoluteFillObject}
           />
 
-          <View style={styles.topSection}>
-            <View style={styles.iconCircle}>
-              {renderPlanIcon(planKind, S(80))}
-            </View>
-            <Text style={styles.completedTitle}>Session completed!</Text>
-          </View>
+          <View style={styles.topSpacer} />
 
-          <View style={styles.centerSection}>
+          <View style={styles.bottomContent}>
+            <View style={styles.completedRow}>
+              <View style={styles.iconCircle}>
+                {renderPlanIcon(planKind, S(72))}
+              </View>
+              <Text style={styles.completedTitle}>Session completed!</Text>
+            </View>
+
             <View style={styles.statsBox}>
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
@@ -76,23 +78,26 @@ export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
                 </View>
               </View>
             </View>
-          </View>
 
-          <View style={styles.logoSection}>
-            <TrackioLogo
-              width={S(520)}
-              height={S(130)}
-              color="#FFFFFF"
-              accentColor="#4C7DFF"
-            />
-          </View>
+            <View style={styles.logoWrap}>
+              <TrackioLogo
+                width={S(440)}
+                height={S(110)}
+                color="#FFFFFF"
+                accentColor="#4C7DFF"
+              />
+            </View>
 
-          <View style={styles.bottomBanner} />
+            <View style={styles.bottomBanner} />
+          </View>
         </View>
       </View>
     );
   }
 );
+
+const BOTTOM_PERCENT = 0.35;
+const BOTTOM_HEIGHT = CARD_HEIGHT * BOTTOM_PERCENT;
 
 const styles = StyleSheet.create({
   outerWrapper: {
@@ -108,43 +113,45 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     overflow: "hidden",
   },
-  topSection: {
+  topSpacer: {
+    flex: 65,
+  },
+  bottomContent: {
+    flex: 35,
     alignItems: "center",
     justifyContent: "flex-end",
-    paddingBottom: S(40),
-    flex: 3.5,
+  },
+  completedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: S(16),
+    marginBottom: S(28),
   },
   iconCircle: {
-    width: S(120),
-    height: S(120),
-    borderRadius: S(60),
+    width: S(88),
+    height: S(88),
+    borderRadius: S(44),
     backgroundColor: "rgba(255, 255, 255, 0.08)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: S(28),
   },
   completedTitle: {
-    fontSize: S(44),
+    fontSize: S(40),
     fontWeight: "600",
     color: "#FFFFFF",
     fontFamily: Typography.h1.fontFamily,
     textAlign: "center",
-    letterSpacing: S(1),
-  },
-  centerSection: {
-    alignItems: "center",
-    paddingHorizontal: S(80),
-    flex: 2,
-    justifyContent: "flex-start",
+    letterSpacing: S(0.5),
   },
   statsBox: {
     backgroundColor: "rgba(15, 17, 33, 0.80)",
-    borderRadius: S(28),
-    paddingVertical: S(44),
-    paddingHorizontal: S(56),
-    width: "100%",
+    borderRadius: S(24),
+    paddingVertical: S(36),
+    paddingHorizontal: S(48),
+    width: S(CARD_WIDTH - 160),
     borderWidth: S(1),
     borderColor: "rgba(255, 255, 255, 0.06)",
+    marginBottom: S(36),
   },
   statsRow: {
     flexDirection: "row",
@@ -157,31 +164,30 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: S(1.5),
-    height: S(70),
+    height: S(60),
     backgroundColor: "rgba(255, 255, 255, 0.15)",
   },
   statValue: {
-    fontSize: S(64),
+    fontSize: S(56),
     fontWeight: "700",
     color: "#FFFFFF",
     fontFamily: Typography.stat.fontFamily,
   },
   statLabel: {
-    fontSize: S(22),
+    fontSize: S(20),
     fontWeight: "400",
     color: "rgba(255, 255, 255, 0.50)",
     fontFamily: Typography.body.fontFamily,
-    marginTop: S(8),
+    marginTop: S(6),
     textTransform: "uppercase",
     letterSpacing: S(2),
   },
-  logoSection: {
-    flex: 3,
+  logoWrap: {
     alignItems: "center",
-    justifyContent: "center",
+    marginBottom: S(36),
   },
   bottomBanner: {
-    height: S(80),
+    height: S(72),
     backgroundColor: "#4C7DFF",
     width: "100%",
   },
