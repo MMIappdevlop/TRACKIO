@@ -79,7 +79,7 @@ export default function SessionSummaryScreen() {
   };
 
   const calculateStats = () => {
-    let tasksCompleted = 0;
+    const tasksCompleted = tasks.length;
     let setsCompleted = 0;
     let totalVolume = 0;
     let totalDistance = 0;
@@ -88,31 +88,23 @@ export default function SessionSummaryScreen() {
     for (const task of tasks) {
       if (task.mode === "strength" && task.dataJson.sets) {
         const completedSets = task.dataJson.sets.filter((s) => s.isCompleted);
-        if (completedSets.length > 0) {
-          tasksCompleted++;
-          setsCompleted += completedSets.length;
-          for (const set of completedSets) {
-            if (set.weight && set.reps) {
-              totalVolume += set.weight * set.reps;
-            }
+        setsCompleted += completedSets.length;
+        for (const set of completedSets) {
+          if (set.weight && set.reps) {
+            totalVolume += set.weight * set.reps;
           }
         }
       } else if (task.mode === "distance" && task.dataJson.distance) {
-        tasksCompleted++;
         totalDistance += task.dataJson.distance;
         if (task.dataJson.durationSeconds) {
           totalActivityDuration += task.dataJson.durationSeconds;
         }
-      } else if (task.mode === "interval" && task.dataJson.roundsCompleted) {
-        tasksCompleted++;
+      } else if (task.mode === "interval") {
         if (task.dataJson.durationSeconds) {
           totalActivityDuration += task.dataJson.durationSeconds;
         }
       } else if (task.mode === "time" && task.dataJson.durationSeconds) {
-        tasksCompleted++;
         totalActivityDuration += task.dataJson.durationSeconds;
-      } else if (task.mode === "notes" && task.dataJson.notes) {
-        tasksCompleted++;
       }
     }
 
