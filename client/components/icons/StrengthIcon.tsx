@@ -10,20 +10,39 @@ export function StrengthIcon({ size = 24, color = "#FFFFFF" }: StrengthIconProps
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M5.2 14.4C4 13.5 3.2 12 3.2 10.4c0-2.6 2.2-4.8 4.8-4.8 1 0 2 .3 2.8.9l2.4 1.6c.8.5 1.7.8 2.6.8h1.4c1.6 0 2.8 1.2 2.8 2.8 0 1.6-1.2 2.8-2.8 2.8h-3.4l1.6 2.4c.8 1.2.4 2.8-.8 3.6-1.2.8-2.8.4-3.6-.8L7.6 15.2"
+        d="M6 17L4.5 15.5C3.5 14.5 3 13 3 11.5C3 9 5 7 7.5 7C8.5 7 9.5 7.3 10.3 7.9"
         stroke={color}
-        strokeWidth={2}
+        strokeWidth={1.8}
         strokeLinecap="round"
         strokeLinejoin="round"
-        fill="none"
       />
       <Path
-        d="M3 16.5L5.2 14.4L7.6 15.2L5.5 17.5"
+        d="M10.3 7.9L14 10.5C14.5 10.8 15 11 15.5 11H16.5C17.9 11 19 12.1 19 13.5C19 14.9 17.9 16 16.5 16H13"
         stroke={color}
-        strokeWidth={2}
+        strokeWidth={1.8}
         strokeLinecap="round"
         strokeLinejoin="round"
-        fill="none"
+      />
+      <Path
+        d="M13 16L15.5 19.5"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M8 12C9.5 11.2 10.5 9.5 10.3 7.9"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M8 12L10 15L8 17"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );
