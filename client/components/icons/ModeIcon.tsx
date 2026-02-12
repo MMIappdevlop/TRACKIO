@@ -3,6 +3,7 @@ import { Feather } from "@expo/vector-icons";
 import { StrengthIcon } from "./StrengthIcon";
 import { EnduranceIcon } from "./EnduranceIcon";
 import { IntervalIcon } from "./IntervalIcon";
+import { StopwatchIcon } from "./StopwatchIcon";
 import { SportIcon } from "./SportIcon";
 import type { TaskMode } from "@/types";
 
@@ -21,7 +22,7 @@ export function ModeIcon({ mode, size = 24, color = "#FFFFFF" }: ModeIconProps) 
     case "interval":
       return <IntervalIcon size={size} color={color} />;
     case "time":
-      return <Feather name="watch" size={size} color={color} />;
+      return <StopwatchIcon size={size} color={color} />;
     case "notes":
       return <Feather name="file-text" size={size} color={color} />;
     default:
