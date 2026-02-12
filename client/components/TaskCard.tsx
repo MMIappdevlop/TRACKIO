@@ -9,6 +9,7 @@ import Animated, {
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
+import { ModeIcon } from "@/components/icons/ModeIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius, TaskModes } from "@/constants/theme";
 import type { TaskTemplate } from "@/types";
@@ -118,7 +119,7 @@ export function TaskCard({
             { backgroundColor: modeConfig.color + "20" },
           ]}
         >
-          <Feather name={modeConfig.icon as any} size={18} color={modeConfig.color} />
+          <ModeIcon mode={task.mode} size={18} color={modeConfig.color} />
         </View>
         <View style={styles.content}>
           <ThemedText type="h4" numberOfLines={1}>

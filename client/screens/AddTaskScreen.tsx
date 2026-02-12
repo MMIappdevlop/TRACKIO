@@ -9,6 +9,7 @@ import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
+import { ModeIcon } from "@/components/icons/ModeIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { taskTemplatesStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, TaskModes, Typography } from "@/constants/theme";
@@ -17,12 +18,12 @@ import type { TaskMode, TaskConfig, TaskTemplate } from "@/types";
 
 type RoutePropType = RouteProp<RootStackParamList, "AddTask">;
 
-const TASK_MODE_OPTIONS: { mode: TaskMode; label: string; icon: string }[] = [
-  { mode: "strength", label: "Strength", icon: "target" },
-  { mode: "distance", label: "Distance", icon: "navigation" },
-  { mode: "interval", label: "Interval", icon: "clock" },
-  { mode: "time", label: "Time", icon: "watch" },
-  { mode: "notes", label: "Notes", icon: "file-text" },
+const TASK_MODE_OPTIONS: { mode: TaskMode; label: string }[] = [
+  { mode: "strength", label: "Strength" },
+  { mode: "distance", label: "Distance" },
+  { mode: "interval", label: "Interval" },
+  { mode: "time", label: "Time" },
+  { mode: "notes", label: "Notes" },
 ];
 
 export default function AddTaskScreen() {
@@ -274,7 +275,7 @@ export default function AddTaskScreen() {
                   isSelected && { borderColor: modeConfig.color, borderWidth: 2 },
                 ]}
               >
-                <Feather name={option.icon as any} size={20} color={isSelected ? modeConfig.color : theme.textSecondary} />
+                <ModeIcon mode={option.mode} size={20} color={isSelected ? modeConfig.color : theme.textSecondary} />
                 <ThemedText type="small" style={isSelected && { color: modeConfig.color }}>
                   {option.label}
                 </ThemedText>
