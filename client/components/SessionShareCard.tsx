@@ -3,7 +3,7 @@ import { View, StyleSheet, Text, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { Typography } from "@/constants/theme";
-import trackioLogo from "../assets/trackio-logo.png";
+import splashIcon from "../../assets/images/splash-icon.png";
 
 type PlanKind = "strength" | "endurance" | "interval" | "sport";
 
@@ -81,7 +81,7 @@ export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
 
             <Text style={styles.quoteText}>"{quote}"</Text>
 
-            <Image source={trackioLogo} style={styles.logoImage} resizeMode="contain" />
+            <Image source={splashIcon} style={styles.logoImage} resizeMode="contain" />
 
             <View style={styles.blueBanner} />
           </View>
@@ -204,8 +204,8 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   logoImage: {
-    width: S(48),
-    height: S(48),
+    width: S(180),
+    height: S(50),
     marginBottom: S(16),
   },
   blueBanner: {
