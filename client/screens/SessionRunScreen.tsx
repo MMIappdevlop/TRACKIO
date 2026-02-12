@@ -12,11 +12,12 @@ import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { RestTimerSheet } from "@/components/RestTimerSheet";
 import { EmptyState } from "@/components/EmptyState";
+import { ExerciseTimer } from "@/components/ExerciseTimer";
 import { useTheme } from "@/hooks/useTheme";
 import { taskTemplatesStorage, completedSessionsStorage, completedTasksStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, TaskModes, Colors } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import type { TaskTemplate, StrengthSetData, TaskDataJson } from "@/types";
+import type { TaskTemplate, StrengthSetData, TaskDataJson, SplitTime } from "@/types";
 
 type RoutePropType = RouteProp<RootStackParamList, "SessionRun">;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -160,28 +161,18 @@ export default function SessionRunScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const handleStartInterval = (task: TaskTemplate) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(
-      "Start Interval Timer",
-      `${task.config.rounds} rounds of ${task.config.workSeconds}s work / ${task.config.restSeconds}s rest`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Start",
-          onPress: () => {
-            const log = taskLogs.find((l) => l.taskId === task.id);
-            if (log) {
-              updateTaskLog(task.id, {
-                roundsCompleted: task.config.rounds || 5,
-                durationSeconds: ((task.config.workSeconds || 30) + (task.config.restSeconds || 30)) * (task.config.rounds || 5),
-              });
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            }
-          },
-        },
-      ]
-    );
+  const handleTimerComplete = (taskId: string, data: {
+    durationSeconds: number;
+    splits: SplitTime[];
+    breakSeconds: number;
+    roundsCompleted?: number;
+  }) => {
+    updateTaskLog(taskId, {
+      durationSeconds: data.durationSeconds,
+      splits: data.splits,
+      breakSeconds: data.breakSeconds,
+      roundsCompleted: data.roundsCompleted,
+    });
   };
 
   const handleCancel = () => {
@@ -419,36 +410,26 @@ export default function SessionRunScreen() {
             <ThemedText type="secondary" style={styles.intervalInfo}>
               {currentTask.config.rounds} rounds: {currentTask.config.workSeconds}s work / {currentTask.config.restSeconds}s rest
             </ThemedText>
-            {currentLog?.data.roundsCompleted ? (
-              <View style={[styles.completedBadge, { backgroundColor: Colors.dark.success + "20" }]}>
-                <Feather name="check-circle" size={20} color={Colors.dark.success} />
-                <ThemedText type="body" style={{ color: Colors.dark.success }}>
-                  Completed {currentLog.data.roundsCompleted} rounds
-                </ThemedText>
-              </View>
-            ) : (
-              <Pressable
-                onPress={() => handleStartInterval(currentTask)}
-                style={[styles.startButton, { backgroundColor: Colors.dark.effort }]}
-              >
-                <Feather name="play" size={20} color="#FFF" />
-                <ThemedText type="body" style={styles.startButtonText}>Start Timer</ThemedText>
-              </Pressable>
-            )}
+            <ExerciseTimer
+              key={`interval-${currentTask.id}`}
+              mode="interval"
+              intervalConfig={{
+                workSeconds: currentTask.config.workSeconds || 30,
+                restSeconds: currentTask.config.restSeconds || 30,
+                rounds: currentTask.config.rounds || 5,
+              }}
+              onComplete={(data) => handleTimerComplete(currentTask.id, data)}
+            />
           </View>
         ) : null}
 
         {/* Time Mode */}
         {currentTask.mode === "time" ? (
           <View style={styles.modeSection}>
-            <ThemedText type="muted" style={styles.fieldLabel}>Duration (minutes)</ThemedText>
-            <TextInput
-              style={[styles.largeInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-              value={currentLog?.data.durationSeconds ? String(Math.floor(currentLog.data.durationSeconds / 60)) : ""}
-              onChangeText={(v) => updateTaskLog(currentTask.id, { durationSeconds: (parseInt(v) || 0) * 60 })}
-              keyboardType="number-pad"
-              placeholder="0"
-              placeholderTextColor={theme.textMuted}
+            <ExerciseTimer
+              key={`time-${currentTask.id}`}
+              mode="time"
+              onComplete={(data) => handleTimerComplete(currentTask.id, data)}
             />
           </View>
         ) : null}
@@ -639,26 +620,6 @@ const styles = StyleSheet.create({
   },
   intervalInfo: {
     marginBottom: Spacing.md,
-  },
-  completedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.md,
-  },
-  startButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.sm,
-    height: 56,
-    borderRadius: BorderRadius.md,
-  },
-  startButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 16,
   },
   notesInput: {
     minHeight: 120,
