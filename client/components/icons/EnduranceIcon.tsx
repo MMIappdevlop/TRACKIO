@@ -10,61 +10,62 @@ export function EnduranceIcon({ size = 24, color = "#FFFFFF" }: EnduranceIconPro
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Circle
-        cx={10}
-        cy={11}
-        r={7.5}
+        cx={14}
+        cy={4.5}
+        r={2}
         stroke={color}
         strokeWidth={1.8}
       />
-      <Line
-        x1={9}
-        y1={2.2}
-        x2={11}
-        y2={2.2}
+      <Path
+        d="M9 21L11.5 14L14 16V21"
         stroke={color}
         strokeWidth={1.8}
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <Line
-        x1={10}
-        y1={2.2}
-        x2={10}
-        y2={3.5}
+      <Path
+        d="M11.5 14L8.5 10.5L13 8L16 10"
         stroke={color}
         strokeWidth={1.8}
         strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M13 8L16.5 7"
+        stroke={color}
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <Line
-        x1={10}
+        x1={3}
         y1={11}
-        x2={10}
-        y2={7}
-        stroke={color}
-        strokeWidth={1.8}
-        strokeLinecap="round"
-      />
-      <Line
-        x1={10}
-        y1={11}
-        x2={13}
+        x2={6}
         y2={11}
         stroke={color}
-        strokeWidth={1.8}
+        strokeWidth={1.5}
         strokeLinecap="round"
+        opacity={0.5}
       />
-      <Path
-        d="M19 17L21 15.5L22 17.5L20 19C19.5 20 19 20.5 18 21L17 20"
+      <Line
+        x1={4}
+        y1={14}
+        x2={7}
+        y2={14}
         stroke={color}
-        strokeWidth={1.8}
+        strokeWidth={1.5}
         strokeLinecap="round"
-        strokeLinejoin="round"
+        opacity={0.4}
       />
-      <Path
-        d="M17 20L18.5 17L20 19"
+      <Line
+        x1={3}
+        y1={17}
+        x2={5.5}
+        y2={17}
         stroke={color}
-        strokeWidth={1.2}
+        strokeWidth={1.5}
         strokeLinecap="round"
-        strokeLinejoin="round"
+        opacity={0.3}
       />
     </Svg>
   );

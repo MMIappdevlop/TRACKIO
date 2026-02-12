@@ -10,35 +10,35 @@ export function StrengthIcon({ size = 24, color = "#FFFFFF" }: StrengthIconProps
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <Path
-        d="M6 17L4.5 15.5C3.5 14.5 3 13 3 11.5C3 9 5 7 7.5 7C8.5 7 9.5 7.3 10.3 7.9"
+        d="M7 18C5.5 17 4.5 15.5 4.5 13.5C4.5 11 6.5 9 9 9C9.5 9 10 9.1 10.5 9.3"
         stroke={color}
         strokeWidth={1.8}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <Path
-        d="M10.3 7.9L14 10.5C14.5 10.8 15 11 15.5 11H16.5C17.9 11 19 12.1 19 13.5C19 14.9 17.9 16 16.5 16H13"
+        d="M10.5 9.3C11.5 7 13.5 5.5 15.5 5C16.5 4.8 17.5 5 18 5.5C18.8 6.3 19 7.5 18.5 8.5C18 9.5 16.5 10.5 15 11"
         stroke={color}
         strokeWidth={1.8}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <Path
-        d="M13 16L15.5 19.5"
+        d="M15 11C16 11 17 11.5 17.5 12.5C18 13.5 17.5 14.5 16.5 15L13.5 16.5"
         stroke={color}
         strokeWidth={1.8}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <Path
-        d="M8 12C9.5 11.2 10.5 9.5 10.3 7.9"
+        d="M13.5 16.5L11 19.5"
         stroke={color}
         strokeWidth={1.8}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <Path
-        d="M8 12L10 15L8 17"
+        d="M7 18L9 16L10.5 17.5L8.5 19.5"
         stroke={color}
         strokeWidth={1.8}
         strokeLinecap="round"
