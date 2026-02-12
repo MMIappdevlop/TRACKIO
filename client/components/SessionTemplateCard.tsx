@@ -8,6 +8,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { ThemedText } from "@/components/ThemedText";
+import { ModeIcon } from "@/components/icons/ModeIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius, TaskModes } from "@/constants/theme";
 import type { SessionTemplate, TaskTemplate } from "@/types";
@@ -76,8 +77,8 @@ export function SessionTemplateCard({
               if (!modeConfig) return null;
               return (
                 <View key={mode} style={styles.taskBadge}>
-                  <Feather
-                    name={modeConfig.icon as any}
+                  <ModeIcon
+                    mode={mode as any}
                     size={12}
                     color={modeConfig.color}
                   />
