@@ -41,7 +41,7 @@ const renderPlanIcon = (planKind: PlanKind, iconSize: number) => {
 export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
   ({ exercisesCompleted, duration, planKind }, ref) => {
     return (
-      <View style={styles.outerWrapper} pointerEvents="none">
+      <View style={styles.outerWrapper}>
         <View ref={ref} style={styles.canvas} collapsable={false}>
           <LinearGradient
             colors={[
@@ -100,6 +100,7 @@ const styles = StyleSheet.create({
     left: -9999,
     top: -9999,
     opacity: 1,
+    pointerEvents: "none",
   },
   canvas: {
     width: S(CARD_WIDTH),
