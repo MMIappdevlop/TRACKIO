@@ -3,6 +3,7 @@ import { View, StyleSheet, Text, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { Typography } from "@/constants/theme";
+import { StrengthIcon } from "./icons/StrengthIcon";
 import splashIcon from "../../assets/images/splash-icon.png";
 
 type PlanKind = "strength" | "endurance" | "interval" | "sport";
@@ -21,17 +22,22 @@ const CARD_HEIGHT = 1920;
 const SCALE = 0.3;
 const S = (v: number) => v / SCALE;
 
-const PLAN_KIND_ICONS: Record<PlanKind, { name: string; lib: "feather" | "ionicons" }> = {
-  strength: { name: "target", lib: "feather" },
-  endurance: { name: "navigation", lib: "feather" },
-  interval: { name: "clock", lib: "feather" },
-  sport: { name: "activity", lib: "feather" },
+const renderPlanIcon = (planKind: PlanKind, iconSize: number) => {
+  switch (planKind) {
+    case "strength":
+      return <StrengthIcon size={iconSize} color="#FFFFFF" />;
+    case "endurance":
+      return <Feather name="navigation" size={iconSize} color="#FFFFFF" />;
+    case "interval":
+      return <Feather name="clock" size={iconSize} color="#FFFFFF" />;
+    case "sport":
+    default:
+      return <Feather name="activity" size={iconSize} color="#FFFFFF" />;
+  }
 };
 
 export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
   ({ exercisesCompleted, duration, rating, quote, sessionName, planKind }, ref) => {
-    const icon = PLAN_KIND_ICONS[planKind] || PLAN_KIND_ICONS.strength;
-
     return (
       <View style={styles.outerWrapper} pointerEvents="none">
         <View ref={ref} style={styles.canvas} collapsable={false}>
@@ -45,7 +51,7 @@ export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
 
           <View style={styles.bottomContent}>
             <View style={styles.iconCircle}>
-              <Feather name={icon.name as any} size={S(28)} color="#FFFFFF" />
+              {renderPlanIcon(planKind, S(32))}
             </View>
 
             <Text style={styles.completedTitle}>Session Completed!</Text>
