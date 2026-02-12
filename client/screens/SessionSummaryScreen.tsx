@@ -67,7 +67,6 @@ export default function SessionSummaryScreen() {
   const [session, setSession] = useState<CompletedSession | null>(null);
   const [tasks, setTasks] = useState<CompletedTask[]>([]);
   const [rating, setRating] = useState(0);
-  const [showShareOptions, setShowShareOptions] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const shareCardRef = useRef<View>(null);
 
@@ -179,7 +178,6 @@ export default function SessionSummaryScreen() {
       }
     } finally {
       setIsCapturing(false);
-      setShowShareOptions(false);
     }
   };
 
@@ -203,7 +201,6 @@ export default function SessionSummaryScreen() {
       Alert.alert("Error", "Could not save image. Please try again.");
     } finally {
       setIsCapturing(false);
-      setShowShareOptions(false);
     }
   };
 
@@ -242,7 +239,6 @@ export default function SessionSummaryScreen() {
       Alert.alert("Error", "Could not copy image. Please try again.");
     } finally {
       setIsCapturing(false);
-      setShowShareOptions(false);
     }
   };
 
@@ -341,54 +337,20 @@ export default function SessionSummaryScreen() {
           <ThemedText type="secondary" style={styles.quoteText}>"{quote}"</ThemedText>
         </View>
 
-        <Pressable
-          onPress={() => setShowShareOptions(!showShareOptions)}
-          style={[styles.shareButton, { backgroundColor: theme.link }]}
-        >
-          <Feather name="share" size={20} color="#FFFFFF" />
-          <ThemedText type="body" style={styles.shareButtonText}>Share</ThemedText>
-        </Pressable>
-
-        {showShareOptions ? (
-          <View style={[styles.shareOptionsCard, { backgroundColor: theme.backgroundDefault }]}>
-            <Pressable onPress={handleShare} style={styles.shareOption} disabled={isCapturing}>
-              <View style={[styles.shareOptionIcon, { backgroundColor: "rgba(76, 125, 255, 0.15)" }]}>
-                <Feather name="send" size={20} color={theme.link} />
-              </View>
-              <View style={styles.shareOptionText}>
-                <ThemedText type="body" style={{ fontWeight: "600" }}>Share to Story</ThemedText>
-                <ThemedText type="muted">Instagram, Messages, and more</ThemedText>
-              </View>
-              <Feather name="chevron-right" size={18} color={theme.textMuted} />
+        <View style={[styles.shareCard, { backgroundColor: theme.backgroundDefault }]}>
+          <ThemedText type="h3" style={styles.shareTitle}>Share Session</ThemedText>
+          <ThemedText type="muted" style={styles.shareSubtitle}>{session.sessionTemplateName}</ThemedText>
+          <View style={styles.shareButtons}>
+            <Pressable onPress={handleSaveToPhotos} style={[styles.shareBtn, { backgroundColor: theme.backgroundSecondary }]} disabled={isCapturing}>
+              <Feather name="download" size={18} color={theme.text} />
+              <ThemedText type="body">Save PNG</ThemedText>
             </Pressable>
-
-            <View style={[styles.shareOptionDivider, { backgroundColor: theme.border }]} />
-
-            <Pressable onPress={handleSaveToPhotos} style={styles.shareOption} disabled={isCapturing}>
-              <View style={[styles.shareOptionIcon, { backgroundColor: "rgba(48, 209, 88, 0.15)" }]}>
-                <Feather name="download" size={20} color={Colors.dark.success} />
-              </View>
-              <View style={styles.shareOptionText}>
-                <ThemedText type="body" style={{ fontWeight: "600" }}>Save as PNG</ThemedText>
-                <ThemedText type="muted">Save to your photo library</ThemedText>
-              </View>
-              <Feather name="chevron-right" size={18} color={theme.textMuted} />
-            </Pressable>
-
-            <View style={[styles.shareOptionDivider, { backgroundColor: theme.border }]} />
-
-            <Pressable onPress={handleCopyImage} style={styles.shareOption} disabled={isCapturing}>
-              <View style={[styles.shareOptionIcon, { backgroundColor: "rgba(255, 159, 10, 0.15)" }]}>
-                <Feather name="copy" size={20} color={Colors.dark.warning} />
-              </View>
-              <View style={styles.shareOptionText}>
-                <ThemedText type="body" style={{ fontWeight: "600" }}>Copy Image</ThemedText>
-                <ThemedText type="muted">Copy to clipboard</ThemedText>
-              </View>
-              <Feather name="chevron-right" size={18} color={theme.textMuted} />
+            <Pressable onPress={handleShare} style={[styles.shareBtn, { backgroundColor: theme.link }]} disabled={isCapturing}>
+              <Feather name="share" size={18} color="#FFFFFF" />
+              <ThemedText type="body" style={{ color: "#FFFFFF" }}>Share</ThemedText>
             </Pressable>
           </View>
-        ) : null}
+        </View>
 
         <Button onPress={handleSave} style={styles.saveButton}>
           Save Session
@@ -480,44 +442,31 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     textAlign: "center",
   },
-  shareButton: {
+  shareCard: {
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
+    alignItems: "center",
+  },
+  shareTitle: {
+    marginBottom: Spacing.xs,
+  },
+  shareSubtitle: {
+    marginBottom: Spacing.lg,
+  },
+  shareButtons: {
+    flexDirection: "row",
+    gap: Spacing.md,
+    width: "100%",
+  },
+  shareBtn: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.sm,
-    height: Spacing.buttonHeight,
-    borderRadius: BorderRadius.full,
-    marginBottom: Spacing.md,
-  },
-  shareButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
-  shareOptionsCard: {
-    borderRadius: BorderRadius.xl,
-    overflow: "hidden",
-    marginBottom: Spacing.lg,
-  },
-  shareOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.lg,
-    gap: Spacing.md,
-  },
-  shareOptionIcon: {
-    width: 44,
-    height: 44,
+    height: 48,
     borderRadius: BorderRadius.lg,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  shareOptionText: {
-    flex: 1,
-    gap: 2,
-  },
-  shareOptionDivider: {
-    height: 1,
-    marginHorizontal: Spacing.lg,
   },
   saveButton: {
     marginTop: Spacing.sm,
