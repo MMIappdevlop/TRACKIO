@@ -1,12 +1,12 @@
 import React, { forwardRef } from "react";
-import { View, StyleSheet, Text, Image } from "react-native";
+import { View, StyleSheet, Text } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Typography } from "@/constants/theme";
 import { StrengthIcon } from "./icons/StrengthIcon";
 import { IntervalIcon } from "./icons/IntervalIcon";
 import { EnduranceIcon } from "./icons/EnduranceIcon";
 import { SportIcon } from "./icons/SportIcon";
-import trackioLogo from "../../assets/images/trackio-logo.png";
+import { TrackioLogo } from "./icons/TrackioLogo";
 
 type PlanKind = "strength" | "endurance" | "interval" | "sport";
 
@@ -20,9 +20,9 @@ interface SessionShareCardProps {
 }
 
 const CARD_WIDTH = 1080;
-const CARD_HEIGHT = 1080;
-const SCALE = 0.3;
-const S = (v: number) => v / SCALE;
+const CARD_HEIGHT = 1920;
+const SCALE = 0.25;
+const S = (v: number) => v * SCALE;
 
 const renderPlanIcon = (planKind: PlanKind, iconSize: number) => {
   switch (planKind) {
@@ -44,19 +44,25 @@ export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
       <View style={styles.outerWrapper} pointerEvents="none">
         <View ref={ref} style={styles.canvas} collapsable={false}>
           <LinearGradient
-            colors={["#5B8BFF", "#4C7DFF", "#2A4FCC", "#0F1530"]}
-            locations={[0, 0.25, 0.55, 1]}
+            colors={[
+              "rgba(10, 15, 40, 0)",
+              "rgba(10, 15, 40, 0)",
+              "rgba(10, 15, 40, 0.15)",
+              "rgba(10, 15, 40, 0.40)",
+              "rgba(10, 15, 40, 0.60)",
+            ]}
+            locations={[0, 0.35, 0.55, 0.75, 1]}
             style={StyleSheet.absoluteFillObject}
           />
 
-          <View style={styles.topSpacer} />
-
-          <View style={styles.centerContent}>
-            <View style={styles.completedRow}>
-              {renderPlanIcon(planKind, S(48))}
-              <Text style={styles.completedTitle}>Session completed!</Text>
+          <View style={styles.topSection}>
+            <View style={styles.iconCircle}>
+              {renderPlanIcon(planKind, S(80))}
             </View>
+            <Text style={styles.completedTitle}>Session completed!</Text>
+          </View>
 
+          <View style={styles.centerSection}>
             <View style={styles.statsBox}>
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
@@ -72,9 +78,16 @@ export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
             </View>
           </View>
 
-          <View style={styles.bottomSection}>
-            <Image source={trackioLogo} style={styles.logoImage} resizeMode="contain" />
+          <View style={styles.logoSection}>
+            <TrackioLogo
+              width={S(520)}
+              height={S(130)}
+              color="#FFFFFF"
+              accentColor="#4C7DFF"
+            />
           </View>
+
+          <View style={styles.bottomBanner} />
         </View>
       </View>
     );
@@ -91,39 +104,46 @@ const styles = StyleSheet.create({
   canvas: {
     width: S(CARD_WIDTH),
     height: S(CARD_HEIGHT),
-    backgroundColor: "#0F1530",
-    transform: [{ scale: SCALE }],
+    backgroundColor: "transparent",
     overflow: "hidden",
   },
-  topSpacer: {
-    flex: 1.2,
-  },
-  centerContent: {
+  topSection: {
     alignItems: "center",
-    paddingHorizontal: S(64),
-    flex: 2,
+    justifyContent: "flex-end",
+    paddingBottom: S(40),
+    flex: 3.5,
+  },
+  iconCircle: {
+    width: S(120),
+    height: S(120),
+    borderRadius: S(60),
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
+    alignItems: "center",
     justifyContent: "center",
-  },
-  completedRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: S(16),
-    marginBottom: S(32),
+    marginBottom: S(28),
   },
   completedTitle: {
-    fontSize: S(36),
-    fontWeight: "700",
+    fontSize: S(44),
+    fontWeight: "600",
     color: "#FFFFFF",
     fontFamily: Typography.h1.fontFamily,
     textAlign: "center",
+    letterSpacing: S(1),
+  },
+  centerSection: {
+    alignItems: "center",
+    paddingHorizontal: S(80),
+    flex: 2,
+    justifyContent: "flex-start",
   },
   statsBox: {
-    backgroundColor: "rgba(15, 17, 30, 0.75)",
-    borderRadius: S(24),
-    paddingVertical: S(32),
-    paddingHorizontal: S(48),
-    width: "80%",
-    maxWidth: S(700),
+    backgroundColor: "rgba(15, 17, 33, 0.80)",
+    borderRadius: S(28),
+    paddingVertical: S(44),
+    paddingHorizontal: S(56),
+    width: "100%",
+    borderWidth: S(1),
+    borderColor: "rgba(255, 255, 255, 0.06)",
   },
   statsRow: {
     flexDirection: "row",
@@ -135,30 +155,33 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statDivider: {
-    width: 1,
-    height: S(56),
-    backgroundColor: "rgba(255,255,255,0.2)",
+    width: S(1.5),
+    height: S(70),
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
   },
   statValue: {
-    fontSize: S(48),
+    fontSize: S(64),
     fontWeight: "700",
     color: "#FFFFFF",
     fontFamily: Typography.stat.fontFamily,
   },
   statLabel: {
-    fontSize: S(16),
+    fontSize: S(22),
     fontWeight: "400",
-    color: "rgba(255,255,255,0.55)",
+    color: "rgba(255, 255, 255, 0.50)",
     fontFamily: Typography.body.fontFamily,
-    marginTop: S(4),
+    marginTop: S(8),
+    textTransform: "uppercase",
+    letterSpacing: S(2),
   },
-  bottomSection: {
-    flex: 1.5,
+  logoSection: {
+    flex: 3,
     alignItems: "center",
     justifyContent: "center",
   },
-  logoImage: {
-    width: S(360),
-    height: S(100),
+  bottomBanner: {
+    height: S(80),
+    backgroundColor: "#4C7DFF",
+    width: "100%",
   },
 });
