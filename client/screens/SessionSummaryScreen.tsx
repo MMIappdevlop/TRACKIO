@@ -9,8 +9,6 @@ import * as Haptics from "expo-haptics";
 import * as Sharing from "expo-sharing";
 import * as MediaLibrary from "expo-media-library";
 import { captureRef } from "react-native-view-shot";
-import * as FileSystem from "expo-file-system";
-
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { SessionShareCard } from "@/components/SessionShareCard";
@@ -210,9 +208,6 @@ export default function SessionSummaryScreen() {
           Alert.alert("Error", "Could not copy image on this browser.");
         }
       } else {
-        const base64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
         const isAvailable = await Sharing.isAvailableAsync();
         if (isAvailable) {
           await Sharing.shareAsync(uri, {
