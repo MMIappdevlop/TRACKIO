@@ -59,9 +59,7 @@ export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
 
           <View style={styles.bottomContent}>
             <View style={styles.completedRow}>
-              <View style={styles.iconCircle}>
-                {renderPlanIcon(planKind, S(72))}
-              </View>
+              {renderPlanIcon(planKind, S(64))}
               <Text style={styles.completedTitle}>Session completed!</Text>
             </View>
 
@@ -125,15 +123,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: S(16),
-    marginBottom: S(28),
-  },
-  iconCircle: {
-    width: S(88),
-    height: S(88),
-    borderRadius: S(44),
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    alignItems: "center",
-    justifyContent: "center",
+    marginBottom: S(56),
   },
   completedTitle: {
     fontSize: S(40),
@@ -148,10 +138,10 @@ const styles = StyleSheet.create({
     borderRadius: S(24),
     paddingVertical: S(36),
     paddingHorizontal: S(48),
-    width: S(CARD_WIDTH - 160),
+    width: S(CARD_WIDTH - 360),
     borderWidth: S(1),
     borderColor: "rgba(255, 255, 255, 0.06)",
-    marginBottom: S(36),
+    marginBottom: S(64),
   },
   statsRow: {
     flexDirection: "row",
@@ -184,7 +174,7 @@ const styles = StyleSheet.create({
   },
   logoWrap: {
     alignItems: "center",
-    marginBottom: S(36),
+    marginBottom: S(56),
   },
   bottomBanner: {
     height: S(72),
