@@ -1,5 +1,5 @@
 import React from "react";
-import Svg, { Circle, Line, Rect, Path } from "react-native-svg";
+import Svg, { Circle, Line, Rect } from "react-native-svg";
 
 interface StopwatchIconProps {
   size?: number;

@@ -361,9 +361,6 @@ export default function SessionSummaryScreen() {
         ref={shareCardRef}
         exercisesCompleted={stats.tasksCompleted}
         duration={durationStr}
-        rating={rating}
-        quote={quote}
-        sessionName={session.sessionTemplateName}
         planKind={getDominantPlanKind()}
       />
     </View>

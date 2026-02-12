@@ -8,14 +8,11 @@ import { EnduranceIcon } from "./icons/EnduranceIcon";
 import { SportIcon } from "./icons/SportIcon";
 import { TrackioLogo } from "./icons/TrackioLogo";
 
-type PlanKind = "strength" | "endurance" | "interval" | "sport";
+export type PlanKind = "strength" | "endurance" | "interval" | "sport";
 
 interface SessionShareCardProps {
   exercisesCompleted: number;
   duration: string;
-  rating: number;
-  quote: string;
-  sessionName: string;
   planKind: PlanKind;
 }
 
@@ -93,9 +90,6 @@ export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
     );
   }
 );
-
-const BOTTOM_PERCENT = 0.35;
-const BOTTOM_HEIGHT = CARD_HEIGHT * BOTTOM_PERCENT;
 
 const styles = StyleSheet.create({
   outerWrapper: {
