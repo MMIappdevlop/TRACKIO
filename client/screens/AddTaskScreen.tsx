@@ -37,7 +37,6 @@ export default function AddTaskScreen() {
   const [mode, setMode] = useState<TaskMode>("strength");
   const [groupLabel, setGroupLabel] = useState("");
   const [referenceLink, setReferenceLink] = useState("");
-  const [trackMilestones, setTrackMilestones] = useState(false);
   const [config, setConfig] = useState<TaskConfig>({
     sets: 3,
     reps: 10,
@@ -63,7 +62,6 @@ export default function AddTaskScreen() {
       setMode(task.mode);
       setGroupLabel(task.groupLabel || "");
       setReferenceLink(task.referenceLink || "");
-      setTrackMilestones(task.trackMilestones);
       setConfig(task.config);
     }
   };
@@ -77,7 +75,7 @@ export default function AddTaskScreen() {
         mode,
         groupLabel: groupLabel.trim() || undefined,
         referenceLink: referenceLink.trim() || undefined,
-        trackMilestones,
+        trackMilestones: false,
         config,
       });
     } else {
@@ -86,7 +84,7 @@ export default function AddTaskScreen() {
         mode,
         groupLabel: groupLabel.trim() || undefined,
         referenceLink: referenceLink.trim() || undefined,
-        trackMilestones,
+        trackMilestones: false,
         config,
       });
     }
@@ -318,18 +316,6 @@ export default function AddTaskScreen() {
           Add a video or article link for exercise reference
         </ThemedText>
       </View>
-
-      {(mode === "strength" || mode === "distance") ? (
-        <Pressable
-          style={styles.toggle}
-          onPress={() => setTrackMilestones(!trackMilestones)}
-        >
-          <View style={[styles.checkbox, trackMilestones && { backgroundColor: theme.link, borderColor: theme.link }]}>
-            {trackMilestones ? <Feather name="check" size={14} color="#FFF" /> : null}
-          </View>
-          <ThemedText type="body">Track milestones for badges</ThemedText>
-        </Pressable>
-      ) : null}
 
       <Button onPress={handleSave} disabled={!name.trim()} style={styles.saveButton}>
         {isEditing ? "Update Exercise" : "Add Exercise"}
