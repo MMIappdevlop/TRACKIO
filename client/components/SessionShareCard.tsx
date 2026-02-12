@@ -6,6 +6,7 @@ import { Typography } from "@/constants/theme";
 import { StrengthIcon } from "./icons/StrengthIcon";
 import { IntervalIcon } from "./icons/IntervalIcon";
 import { EnduranceIcon } from "./icons/EnduranceIcon";
+import { SportIcon } from "./icons/SportIcon";
 import splashIcon from "../../assets/images/splash-icon.png";
 
 type PlanKind = "strength" | "endurance" | "interval" | "sport";
@@ -34,7 +35,7 @@ const renderPlanIcon = (planKind: PlanKind, iconSize: number) => {
       return <IntervalIcon size={iconSize} color="#FFFFFF" />;
     case "sport":
     default:
-      return <Feather name="activity" size={iconSize} color="#FFFFFF" />;
+      return <SportIcon size={iconSize} color="#FFFFFF" />;
   }
 };
 
