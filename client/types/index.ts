@@ -92,6 +92,12 @@ export interface StrengthSetData {
   rir?: number;
 }
 
+export interface SplitTime {
+  label?: string;
+  elapsedSeconds: number;
+  timestamp: string;
+}
+
 export interface ExerciseDataJson {
   sets?: StrengthSetData[];
   distance?: number;
@@ -102,6 +108,8 @@ export interface ExerciseDataJson {
   totalRounds?: number;
   notes?: string;
   rating?: number;
+  splits?: SplitTime[];
+  breakSeconds?: number;
 }
 
 export interface BadgeAward {
