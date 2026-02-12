@@ -122,6 +122,26 @@ export default function SessionSummaryScreen() {
     return { tasksCompleted, setsCompleted, totalVolume, totalDistance, totalActivityDuration };
   };
 
+  const getDominantPlanKind = (): "strength" | "endurance" | "interval" | "sport" => {
+    const counts: Record<string, number> = {};
+    for (const task of tasks) {
+      const mode = task.mode;
+      if (mode === "strength") counts["strength"] = (counts["strength"] || 0) + 1;
+      else if (mode === "distance" || mode === "time") counts["endurance"] = (counts["endurance"] || 0) + 1;
+      else if (mode === "interval") counts["interval"] = (counts["interval"] || 0) + 1;
+      else counts["sport"] = (counts["sport"] || 0) + 1;
+    }
+    let max = 0;
+    let kind: "strength" | "endurance" | "interval" | "sport" = "strength";
+    for (const [k, v] of Object.entries(counts)) {
+      if (v > max) {
+        max = v;
+        kind = k as typeof kind;
+      }
+    }
+    return kind;
+  };
+
   const captureShareImage = async (): Promise<string | null> => {
     if (!shareCardRef.current) return null;
     try {
@@ -382,6 +402,7 @@ export default function SessionSummaryScreen() {
         rating={rating}
         quote={quote}
         sessionName={session.sessionTemplateName}
+        planKind={getDominantPlanKind()}
       />
     </View>
   );
