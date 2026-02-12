@@ -6,6 +6,7 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
+import { ModeIcon } from "@/components/icons/ModeIcon";
 import { Paths, File } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
@@ -82,28 +83,28 @@ const TEMPLATE_INFO = [
     id: "strength", 
     name: "Strength Template", 
     description: "For weight training plans",
-    icon: "target" as const,
+    mode: "strength" as const,
     color: "#4C7DFF",
   },
   { 
     id: "endurance", 
     name: "Endurance Template", 
     description: "For running and cardio",
-    icon: "activity" as const,
+    mode: "distance" as const,
     color: Colors.dark.success,
   },
   { 
     id: "interval", 
     name: "Interval Template", 
     description: "For HIIT and tabata workouts",
-    icon: "zap" as const,
+    mode: "interval" as const,
     color: Colors.dark.effort,
   },
   { 
     id: "sports-drill", 
     name: "Sports Drill Template", 
     description: "For sport-specific training",
-    icon: "award" as const,
+    mode: "time" as const,
     color: Colors.dark.warning,
   },
 ];
@@ -551,7 +552,7 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
               }}
             >
               <View style={[styles.templateIcon, { backgroundColor: template.color + "20" }]}>
-                <Feather name={template.icon} size={20} color={template.color} />
+                <ModeIcon mode={template.mode} size={20} color={template.color} />
               </View>
               <View style={styles.templateInfo}>
                 <ThemedText type="body" style={{ fontWeight: "600" }}>{template.name}</ThemedText>

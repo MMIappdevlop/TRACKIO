@@ -19,6 +19,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
+import { ModeIcon } from "@/components/icons/ModeIcon";
 import { ThemedView } from "@/components/ThemedView";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
@@ -55,12 +56,12 @@ interface SessionDraft {
   tasks: TaskDraft[];
 }
 
-const TASK_TYPES: { mode: TaskMode; label: string; icon: string }[] = [
-  { mode: "strength", label: "Strength", icon: "target" },
-  { mode: "distance", label: "Distance", icon: "map-pin" },
-  { mode: "interval", label: "Interval", icon: "zap" },
-  { mode: "time", label: "Time", icon: "clock" },
-  { mode: "notes", label: "Notes", icon: "file-text" },
+const TASK_TYPES: { mode: TaskMode; label: string }[] = [
+  { mode: "strength", label: "Strength" },
+  { mode: "distance", label: "Distance" },
+  { mode: "interval", label: "Interval" },
+  { mode: "time", label: "Time" },
+  { mode: "notes", label: "Notes" },
 ];
 
 export default function ProgramBuilderScreen() {
@@ -272,7 +273,7 @@ export default function ProgramBuilderScreen() {
             ]}
             onPress={() => handleSelectTaskType(sessionId, type.mode)}
           >
-            <Feather name={type.icon as any} size={18} color="#4C7DFF" />
+            <ModeIcon mode={type.mode} size={18} color="#4C7DFF" />
             <ThemedText type="body" style={[styles.taskTypeText, { color: theme.text }]}>
               {type.label}
             </ThemedText>
@@ -395,11 +396,7 @@ export default function ProgramBuilderScreen() {
                   style={[styles.taskItem, { backgroundColor: theme.backgroundSecondary }]}
                 >
                   <View style={styles.taskInfo}>
-                    <Feather
-                      name={TASK_TYPES.find((t) => t.mode === task.mode)?.icon as any || "circle"}
-                      size={14}
-                      color="#4C7DFF"
-                    />
+                    <ModeIcon mode={task.mode} size={14} color="#4C7DFF" />
                     <ThemedText type="body" style={styles.taskName}>
                       {task.name}
                     </ThemedText>

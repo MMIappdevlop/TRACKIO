@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
+import { ModeIcon } from "@/components/icons/ModeIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { completedSessionsStorage, completedTasksStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, TaskModes, Colors } from "@/constants/theme";
@@ -134,7 +135,7 @@ export default function SessionDetailScreen() {
       <View style={[styles.taskCard, { backgroundColor: theme.backgroundDefault }]}>
         <View style={styles.taskHeader}>
           <View style={[styles.modeIndicator, { backgroundColor: modeConfig.color + "20" }]}>
-            <Feather name={modeConfig.icon as any} size={16} color={modeConfig.color} />
+            <ModeIcon mode={task.mode} size={16} color={modeConfig.color} />
           </View>
           <ThemedText type="h4">{task.taskTemplateName}</ThemedText>
         </View>
