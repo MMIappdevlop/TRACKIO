@@ -5,6 +5,7 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import { Typography } from "@/constants/theme";
 import { StrengthIcon } from "./icons/StrengthIcon";
 import { IntervalIcon } from "./icons/IntervalIcon";
+import { EnduranceIcon } from "./icons/EnduranceIcon";
 import splashIcon from "../../assets/images/splash-icon.png";
 
 type PlanKind = "strength" | "endurance" | "interval" | "sport";
@@ -28,7 +29,7 @@ const renderPlanIcon = (planKind: PlanKind, iconSize: number) => {
     case "strength":
       return <StrengthIcon size={iconSize} color="#FFFFFF" />;
     case "endurance":
-      return <Feather name="navigation" size={iconSize} color="#FFFFFF" />;
+      return <EnduranceIcon size={iconSize} color="#FFFFFF" />;
     case "interval":
       return <IntervalIcon size={iconSize} color="#FFFFFF" />;
     case "sport":
