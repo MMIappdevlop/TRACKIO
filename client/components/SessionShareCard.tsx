@@ -4,6 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { Typography } from "@/constants/theme";
 import { StrengthIcon } from "./icons/StrengthIcon";
+import { IntervalIcon } from "./icons/IntervalIcon";
 import splashIcon from "../../assets/images/splash-icon.png";
 
 type PlanKind = "strength" | "endurance" | "interval" | "sport";
@@ -29,7 +30,7 @@ const renderPlanIcon = (planKind: PlanKind, iconSize: number) => {
     case "endurance":
       return <Feather name="navigation" size={iconSize} color="#FFFFFF" />;
     case "interval":
-      return <Feather name="clock" size={iconSize} color="#FFFFFF" />;
+      return <IntervalIcon size={iconSize} color="#FFFFFF" />;
     case "sport":
     default:
       return <Feather name="activity" size={iconSize} color="#FFFFFF" />;
