@@ -236,7 +236,7 @@ export default function ImportProgramScreen() {
     }
   };
 
-  const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const getTemplateContent = (templateId: string): string => {
     switch (templateId) {
@@ -537,48 +537,7 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
         keyboardShouldPersistTaps="handled"
       >
       <View style={styles.section}>
-        <ThemedText type="h2" style={styles.sectionTitle}>Example Templates</ThemedText>
-        <ThemedText type="secondary" style={styles.description}>
-          Tap a template to see the expected format for your data
-        </ThemedText>
-
-        {TEMPLATE_INFO.map((template) => (
-          <View key={template.id}>
-            <Pressable
-              style={[styles.templateCard, { backgroundColor: theme.backgroundDefault }]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setExpandedTemplate(expandedTemplate === template.id ? null : template.id);
-              }}
-            >
-              <View style={[styles.templateIcon, { backgroundColor: template.color + "20" }]}>
-                <ModeIcon mode={template.mode} size={20} color={template.color} />
-              </View>
-              <View style={styles.templateInfo}>
-                <ThemedText type="body" style={{ fontWeight: "600" }}>{template.name}</ThemedText>
-                <ThemedText type="muted">{template.description}</ThemedText>
-              </View>
-              <Feather 
-                name={expandedTemplate === template.id ? "chevron-up" : "chevron-down"} 
-                size={20} 
-                color={theme.link} 
-              />
-            </Pressable>
-            {expandedTemplate === template.id ? (
-              <View style={[styles.templatePreview, { backgroundColor: theme.backgroundSecondary }]}>
-                <Button
-                  onPress={() => handleDownloadTemplate(template.id)}
-                >
-                  Download Template
-                </Button>
-              </View>
-            ) : null}
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.section}>
-        <ThemedText type="h2" style={styles.sectionTitle}>Import Your File</ThemedText>
+        <ThemedText type="h2" style={styles.sectionTitle}>Import Your Plan</ThemedText>
         <ThemedText type="secondary" style={styles.description}>
           Select a CSV or Excel file with your workout plan
         </ThemedText>
@@ -586,6 +545,50 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
         <Button onPress={handlePickFile} style={styles.pickButton}>
           Choose File
         </Button>
+      </View>
+
+      <View style={styles.templateHelpSection}>
+        <ThemedText type="secondary" style={styles.templateHelpText}>
+          Not sure how to format your file?
+        </ThemedText>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowTemplates(!showTemplates);
+          }}
+          style={styles.templateToggle}
+        >
+          <Feather name="download" size={16} color={theme.link} />
+          <ThemedText type="body" style={{ color: theme.link, fontWeight: "500" }}>
+            Download a template
+          </ThemedText>
+          <Feather
+            name={showTemplates ? "chevron-up" : "chevron-down"}
+            size={16}
+            color={theme.link}
+          />
+        </Pressable>
+
+        {showTemplates ? (
+          <View style={styles.templateList}>
+            {TEMPLATE_INFO.map((template) => (
+              <Pressable
+                key={template.id}
+                style={[styles.templateCard, { backgroundColor: theme.backgroundDefault }]}
+                onPress={() => handleDownloadTemplate(template.id)}
+              >
+                <View style={[styles.templateIcon, { backgroundColor: template.color + "20" }]}>
+                  <ModeIcon mode={template.mode} size={20} color={template.color} />
+                </View>
+                <View style={styles.templateInfo}>
+                  <ThemedText type="body" style={{ fontWeight: "600" }}>{template.name}</ThemedText>
+                  <ThemedText type="muted">{template.description}</ThemedText>
+                </View>
+                <Feather name="download" size={18} color={theme.textMuted} />
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
       </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -866,11 +869,22 @@ const styles = StyleSheet.create({
   templateInfo: {
     flex: 1,
   },
-  templatePreview: {
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.md,
-    marginTop: -Spacing.xs,
+  templateHelpSection: {
+    alignItems: "center",
+    marginTop: Spacing.xl,
+  },
+  templateHelpText: {
+    marginBottom: Spacing.sm,
+  },
+  templateToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+  },
+  templateList: {
+    marginTop: Spacing.md,
+    width: "100%",
   },
   pickButton: {
     marginTop: 0,
