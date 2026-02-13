@@ -1,132 +1,29 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, FlatList, Alert, Pressable, TextInput, Platform } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { Alert, Platform } from "react-native";
 import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-import { ModeIcon } from "@/components/icons/ModeIcon";
 import { Paths, File } from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
 import * as XLSX from "xlsx";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { ThemedText } from "@/components/ThemedText";
-import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { programsStorage, sessionTemplatesStorage, taskTemplatesStorage } from "@/lib/storage";
-import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { TaskMode } from "@/types";
 
-const MAPPING_PRESETS_KEY = "@trakio/mapping_presets";
-
-interface ColumnMapping {
-  session: string;
-  task: string;
-  mode: string;
-  sets: string;
-  reps: string;
-  weight: string;
-  distance: string;
-  distance_unit: string;
-  duration_minutes: string;
-  work_seconds: string;
-  rest_seconds: string;
-  rounds: string;
-  notes: string;
-}
-
-interface MappingPreset {
-  id: string;
-  name: string;
-  mapping: ColumnMapping;
-}
-
-interface ParsedRow {
-  session: string;
-  task: string;
-  mode: TaskMode;
-  sets?: number;
-  reps?: number;
-  weight?: number;
-  distance?: number;
-  distanceUnit?: string;
-  durationMinutes?: number;
-  workSeconds?: number;
-  restSeconds?: number;
-  rounds?: number;
-  notes?: string;
-  error?: string;
-  rowNumber: number;
-}
-
-const DEFAULT_MAPPING: ColumnMapping = {
-  session: "session",
-  task: "task",
-  mode: "mode",
-  sets: "sets",
-  reps: "reps",
-  weight: "weight",
-  distance: "distance",
-  distance_unit: "distance_unit",
-  duration_minutes: "duration_minutes",
-  work_seconds: "work_seconds",
-  rest_seconds: "rest_seconds",
-  rounds: "rounds",
-  notes: "notes",
-};
-
-const TEMPLATE_INFO = [
-  { 
-    id: "strength", 
-    name: "Strength Template", 
-    description: "For weight training plans",
-    mode: "strength" as const,
-    color: "#4C7DFF",
-  },
-  { 
-    id: "endurance", 
-    name: "Endurance Template", 
-    description: "For running and cardio",
-    mode: "distance" as const,
-    color: Colors.dark.success,
-  },
-  { 
-    id: "interval", 
-    name: "Interval Template", 
-    description: "For HIIT and tabata workouts",
-    mode: "interval" as const,
-    color: Colors.dark.effort,
-  },
-  { 
-    id: "sports-drill", 
-    name: "Sports Drill Template", 
-    description: "For sport-specific training",
-    mode: "time" as const,
-    color: Colors.dark.warning,
-  },
-];
-
-const formatFieldLabel = (field: string): string => {
-  const labelMap: Record<string, string> = {
-    session: "Day",
-    task: "Exercise",
-    mode: "Mode",
-    sets: "Sets",
-    reps: "Reps",
-    weight: "Weight",
-    distance: "Distance",
-    distance_unit: "Distance Unit",
-    duration_minutes: "Duration (min)",
-    work_seconds: "Work (sec)",
-    rest_seconds: "Rest (sec)",
-    rounds: "Rounds",
-    notes: "Notes",
-  };
-  return labelMap[field] || field.replace(/_/g, " ");
-};
+import { SelectStep } from "./import-steps/SelectStep";
+import { MappingStep } from "./import-steps/MappingStep";
+import { PreviewStep } from "./import-steps/PreviewStep";
+import {
+  MAPPING_PRESETS_KEY,
+  DEFAULT_MAPPING,
+  type ColumnMapping,
+  type MappingPreset,
+  type ParsedRow,
+} from "./import-steps/types";
 
 export default function ImportProgramScreen() {
   const navigation = useNavigation();
@@ -518,475 +415,55 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
     }
   };
 
-  const renderSelectStep = () => (
-    <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
-      <KeyboardAwareScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: headerHeight + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        bottomOffset={20}
-      >
-      <View style={styles.section}>
-        <ThemedText type="h2" style={styles.sectionTitle}>Import Your Plan</ThemedText>
-        <ThemedText type="secondary" style={styles.description}>
-          Select a CSV or Excel file with your workout plan
-        </ThemedText>
+  if (step === "select") {
+    return (
+      <SelectStep
+        theme={theme}
+        headerHeight={headerHeight}
+        insets={insets}
+        handlePickFile={handlePickFile}
+        handleDownloadTemplate={handleDownloadTemplate}
+        showTemplates={showTemplates}
+        setShowTemplates={setShowTemplates}
+      />
+    );
+  }
 
-        <Button onPress={handlePickFile} style={styles.pickButton}>
-          Choose File
-        </Button>
-      </View>
+  if (step === "mapping") {
+    return (
+      <MappingStep
+        theme={theme}
+        headerHeight={headerHeight}
+        insets={insets}
+        columnMapping={columnMapping}
+        setColumnMapping={setColumnMapping}
+        detectedColumns={detectedColumns}
+        showPresetInput={showPresetInput}
+        setShowPresetInput={setShowPresetInput}
+        presetName={presetName}
+        setPresetName={setPresetName}
+        savePreset={savePreset}
+        presets={presets}
+        applyPreset={applyPreset}
+        deletePreset={deletePreset}
+        handleProceedToPreview={handleProceedToPreview}
+        setStep={setStep}
+      />
+    );
+  }
 
-      <View style={styles.templateHelpSection}>
-        <ThemedText type="secondary" style={styles.templateHelpText}>
-          Not sure how to format your file?
-        </ThemedText>
-        <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setShowTemplates(!showTemplates);
-          }}
-          style={styles.templateToggle}
-        >
-          <Feather name="download" size={16} color={theme.link} />
-          <ThemedText type="body" style={{ color: theme.link, fontWeight: "500" }}>
-            Download a template
-          </ThemedText>
-          <Feather
-            name={showTemplates ? "chevron-up" : "chevron-down"}
-            size={16}
-            color={theme.link}
-          />
-        </Pressable>
-
-        {showTemplates ? (
-          <View style={styles.templateList}>
-            {TEMPLATE_INFO.map((template) => (
-              <Pressable
-                key={template.id}
-                style={[styles.templateCard, { backgroundColor: theme.backgroundDefault }]}
-                onPress={() => handleDownloadTemplate(template.id)}
-              >
-                <View style={[styles.templateIcon, { backgroundColor: template.color + "20" }]}>
-                  <ModeIcon mode={template.mode} size={20} color={template.color} />
-                </View>
-                <View style={styles.templateInfo}>
-                  <ThemedText type="body" style={{ fontWeight: "600" }}>{template.name}</ThemedText>
-                  <ThemedText type="muted">{template.description}</ThemedText>
-                </View>
-                <Feather name="download" size={18} color={theme.textMuted} />
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
-      </View>
-      </KeyboardAwareScrollView>
-    </View>
+  return (
+    <PreviewStep
+      theme={theme}
+      headerHeight={headerHeight}
+      insets={insets}
+      programName={programName}
+      setProgramName={setProgramName}
+      parsedData={parsedData}
+      errors={errors}
+      handleImport={handleImport}
+      importing={importing}
+      setStep={setStep}
+    />
   );
-
-  const renderMappingStep = () => (
-    <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
-      <KeyboardAwareScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: headerHeight + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        bottomOffset={20}
-      >
-      <View style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
-          <ThemedText type="h2">Column Mapping</ThemedText>
-          <Pressable
-            onPress={() => setShowPresetInput(true)}
-            style={[styles.smallButton, { backgroundColor: theme.linkBackground }]}
-          >
-            <Feather name="save" size={16} color={theme.link} />
-            <ThemedText type="small" style={{ color: theme.link }}>Save</ThemedText>
-          </Pressable>
-        </View>
-        <ThemedText type="secondary" style={styles.description}>
-          Map your file columns to the required fields
-        </ThemedText>
-
-        {showPresetInput ? (
-          <View style={[styles.presetInput, { backgroundColor: theme.backgroundDefault }]}>
-            <TextInput
-              style={[styles.input, { color: theme.text }]}
-              value={presetName}
-              onChangeText={setPresetName}
-              placeholder="Preset name..."
-              placeholderTextColor={theme.textMuted}
-            />
-            <Pressable onPress={savePreset} style={[styles.saveBtn, { backgroundColor: "#4C7DFF" }]}>
-              <ThemedText type="small" style={{ color: "#FFF" }}>Save</ThemedText>
-            </Pressable>
-            <Pressable onPress={() => setShowPresetInput(false)}>
-              <Feather name="x" size={20} color={theme.textMuted} />
-            </Pressable>
-          </View>
-        ) : null}
-
-        {presets.length > 0 ? (
-          <View style={styles.presetsRow}>
-            {presets.map((preset) => (
-              <Pressable
-                key={preset.id}
-                onPress={() => applyPreset(preset)}
-                onLongPress={() => {
-                  Alert.alert("Delete Preset", `Delete "${preset.name}"?`, [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Delete", style: "destructive", onPress: () => deletePreset(preset.id) },
-                  ]);
-                }}
-                style={[styles.presetChip, { backgroundColor: theme.linkBackground }]}
-              >
-                <ThemedText type="small" style={{ color: theme.link }}>{preset.name}</ThemedText>
-              </Pressable>
-            ))}
-          </View>
-        ) : null}
-
-        {Object.entries(columnMapping).map(([field, value]) => (
-          <View key={field} style={styles.mappingRow}>
-            <ThemedText type="body" style={styles.fieldLabel}>
-              {formatFieldLabel(field)}
-            </ThemedText>
-            <View style={[styles.dropdown, { backgroundColor: theme.backgroundSecondary }]}>
-              <Pressable
-                style={styles.dropdownButton}
-                onPress={() => {
-                  Alert.alert(
-                    `Select column for ${formatFieldLabel(field)}`,
-                    "Choose a column from your file",
-                    [
-                      { text: "(none)", onPress: () => setColumnMapping(prev => ({ ...prev, [field]: "" })) },
-                      ...detectedColumns.map((col) => ({
-                        text: col,
-                        onPress: () => setColumnMapping(prev => ({ ...prev, [field]: col })),
-                      })),
-                    ]
-                  );
-                }}
-              >
-                <ThemedText type="body" numberOfLines={1}>
-                  {value || "(not mapped)"}
-                </ThemedText>
-                <Feather name="chevron-down" size={16} color={theme.textMuted} />
-              </Pressable>
-            </View>
-          </View>
-        ))}
-      </View>
-
-      <View style={styles.buttonRow}>
-        <Button variant="secondary" onPress={() => setStep("select")} style={styles.flexButton}>
-          Back
-        </Button>
-        <Button onPress={handleProceedToPreview} style={styles.flexButton}>
-          Preview Import
-        </Button>
-      </View>
-      </KeyboardAwareScrollView>
-    </View>
-  );
-
-  const renderPreviewStep = () => (
-    <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
-      <KeyboardAwareScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: headerHeight + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        bottomOffset={20}
-      >
-      <View style={styles.section}>
-        <ThemedText type="body" style={styles.fieldLabel}>Plan Name</ThemedText>
-        <TextInput
-          style={[styles.programNameInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-          value={programName}
-          onChangeText={setProgramName}
-          placeholder="Enter plan name"
-          placeholderTextColor={theme.textMuted}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <ThemedText type="h2" style={styles.sectionTitle}>Preview</ThemedText>
-        <ThemedText type="secondary" style={styles.description}>
-          {parsedData.length} rows found, {errors.length} with errors
-        </ThemedText>
-
-        <View style={[styles.previewHeader, { backgroundColor: theme.backgroundSecondary }]}>
-          <View style={styles.previewCell}>
-            <ThemedText type="small" style={{ fontWeight: "600" }}>Row</ThemedText>
-          </View>
-          <View style={styles.previewCellWide}>
-            <ThemedText type="small" style={{ fontWeight: "600" }}>Day</ThemedText>
-          </View>
-          <View style={styles.previewCellWide}>
-            <ThemedText type="small" style={{ fontWeight: "600" }}>Exercise</ThemedText>
-          </View>
-          <View style={styles.previewCell}>
-            <ThemedText type="small" style={{ fontWeight: "600" }}>Status</ThemedText>
-          </View>
-        </View>
-
-        {parsedData.slice(0, 15).map((row, index) => (
-          <View
-            key={index}
-            style={[
-              styles.previewRow,
-              { backgroundColor: row.error ? Colors.dark.error + "15" : theme.backgroundDefault },
-            ]}
-          >
-            <View style={styles.previewCell}>
-              <ThemedText type="small">{row.rowNumber}</ThemedText>
-            </View>
-            <View style={styles.previewCellWide}>
-              <ThemedText type="small" numberOfLines={1}>{row.session}</ThemedText>
-            </View>
-            <View style={styles.previewCellWide}>
-              <ThemedText type="small" numberOfLines={1}>{row.task}</ThemedText>
-            </View>
-            <View style={styles.previewCell}>
-              {row.error ? (
-                <Feather name="alert-circle" size={14} color={Colors.dark.error} />
-              ) : (
-                <Feather name="check-circle" size={14} color={Colors.dark.success} />
-              )}
-            </View>
-          </View>
-        ))}
-
-        {parsedData.length > 15 ? (
-          <ThemedText type="muted" style={styles.moreText}>
-            ...and {parsedData.length - 15} more rows
-          </ThemedText>
-        ) : null}
-      </View>
-
-      {errors.length > 0 ? (
-        <View style={[styles.errorSection, { backgroundColor: Colors.dark.error + "10" }]}>
-          <View style={styles.errorHeader}>
-            <Feather name="alert-triangle" size={18} color={Colors.dark.error} />
-            <ThemedText type="body" style={{ color: Colors.dark.error, fontWeight: "600" }}>
-              {errors.length} Error{errors.length > 1 ? "s" : ""} Found
-            </ThemedText>
-          </View>
-          {errors.slice(0, 5).map((err, i) => (
-            <ThemedText key={i} type="small" style={styles.errorText}>
-              {err}
-            </ThemedText>
-          ))}
-          {errors.length > 5 ? (
-            <ThemedText type="muted" style={{ marginTop: Spacing.sm }}>
-              ...and {errors.length - 5} more errors
-            </ThemedText>
-          ) : null}
-        </View>
-      ) : null}
-
-      <View style={styles.buttonRow}>
-        <Button variant="secondary" onPress={() => setStep("mapping")} style={styles.flexButton}>
-          Back
-        </Button>
-        <Button
-          onPress={handleImport}
-          disabled={importing || parsedData.filter((r) => !r.error).length === 0}
-          style={styles.flexButton}
-        >
-          {importing ? "Importing..." : "Import Plan"}
-        </Button>
-      </View>
-      </KeyboardAwareScrollView>
-    </View>
-  );
-
-  return step === "select" ? renderSelectStep() : step === "mapping" ? renderMappingStep() : renderPreviewStep();
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: Spacing.lg,
-    flexGrow: 1,
-  },
-  section: {
-    marginBottom: Spacing.xl,
-  },
-  sectionTitle: {
-    marginBottom: Spacing.sm,
-  },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: Spacing.sm,
-  },
-  description: {
-    marginBottom: Spacing.lg,
-  },
-  templateCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.sm,
-    gap: Spacing.md,
-  },
-  templateIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: BorderRadius.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  templateInfo: {
-    flex: 1,
-  },
-  templateHelpSection: {
-    alignItems: "center",
-    marginTop: Spacing.xl,
-  },
-  templateHelpText: {
-    marginBottom: Spacing.sm,
-  },
-  templateToggle: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    paddingVertical: Spacing.sm,
-  },
-  templateList: {
-    marginTop: Spacing.md,
-    width: "100%",
-  },
-  pickButton: {
-    marginTop: 0,
-  },
-  smallButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-  },
-  presetInput: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.md,
-  },
-  input: {
-    flex: 1,
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
-  },
-  saveBtn: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-  },
-  presetsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.sm,
-    marginBottom: Spacing.lg,
-  },
-  presetChip: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-  },
-  mappingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: Spacing.sm,
-    gap: Spacing.md,
-  },
-  fieldLabel: {
-    width: 100,
-    textTransform: "capitalize",
-  },
-  dropdown: {
-    flex: 1,
-    borderRadius: BorderRadius.sm,
-  },
-  dropdownButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    gap: Spacing.md,
-    marginTop: Spacing.lg,
-  },
-  flexButton: {
-    flex: 1,
-  },
-  previewHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.sm,
-    borderRadius: BorderRadius.sm,
-    marginBottom: Spacing.xs,
-  },
-  previewRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: Spacing.sm,
-    borderRadius: BorderRadius.xs,
-    marginBottom: 2,
-  },
-  previewCell: {
-    width: 40,
-    alignItems: "center",
-  },
-  previewCellWide: {
-    flex: 1,
-    paddingRight: Spacing.sm,
-  },
-  moreText: {
-    textAlign: "center",
-    marginTop: Spacing.sm,
-  },
-  errorSection: {
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.xl,
-  },
-  errorHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    marginBottom: Spacing.sm,
-  },
-  errorText: {
-    marginTop: 4,
-  },
-  programNameInput: {
-    height: 48,
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.lg,
-    fontSize: 16,
-    fontFamily: "Inter_500Medium",
-  },
-});

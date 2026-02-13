@@ -18,7 +18,6 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
-import { ModeIcon } from "@/components/icons/ModeIcon";
 import { ThemedView } from "@/components/ThemedView";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
@@ -26,42 +25,12 @@ import { programsStorage, sessionTemplatesStorage, taskTemplatesStorage } from "
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { TaskMode } from "@/types";
+import { SessionCard } from "./program-builder/SessionCard";
+import type { TaskDraft, SessionDraft } from "./program-builder/types";
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-
-interface TaskDraft {
-  id: string;
-  name: string;
-  mode: TaskMode;
-  sets?: number;
-  reps?: number;
-  weight?: number;
-  distance?: number;
-  distanceUnit?: string;
-  durationMinutes?: number;
-  workSeconds?: number;
-  restSeconds?: number;
-  rounds?: number;
-}
-
-interface SessionDraft {
-  id: string;
-  name: string;
-  isExpanded: boolean;
-  isAddingTask: boolean;
-  selectedTaskType: TaskMode | null;
-  tasks: TaskDraft[];
-}
-
-const TASK_TYPES: { mode: TaskMode; label: string }[] = [
-  { mode: "strength", label: "Strength" },
-  { mode: "distance", label: "Distance" },
-  { mode: "interval", label: "Interval" },
-  { mode: "time", label: "Time" },
-  { mode: "notes", label: "Notes" },
-];
 
 export default function ProgramBuilderScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -256,187 +225,6 @@ export default function ProgramBuilderScreen() {
     }
   };
 
-  const renderTaskTypeSelector = (sessionId: string) => (
-    <View style={styles.taskTypeSelector}>
-      <ThemedText type="body" style={[styles.taskTypeLabel, { color: theme.text }]}>
-        Select task type:
-      </ThemedText>
-      <View style={styles.taskTypeGrid}>
-        {TASK_TYPES.map((type) => (
-          <Pressable
-            key={type.mode}
-            style={[
-              styles.taskTypeButton,
-              { backgroundColor: theme.backgroundSecondary },
-            ]}
-            onPress={() => handleSelectTaskType(sessionId, type.mode)}
-          >
-            <ModeIcon mode={type.mode} size={18} color="#4C7DFF" />
-            <ThemedText type="body" style={[styles.taskTypeText, { color: theme.text }]}>
-              {type.label}
-            </ThemedText>
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  );
-
-  const renderTaskForm = (session: SessionDraft) => {
-    const isStrength = session.selectedTaskType === "strength";
-
-    return (
-      <View style={[styles.taskForm, { backgroundColor: theme.backgroundSecondary }]}>
-        <ThemedText type="body" style={[styles.formLabel, { color: theme.text }]}>
-          {session.selectedTaskType ? session.selectedTaskType.charAt(0).toUpperCase() + session.selectedTaskType.slice(1) : ""} Exercise
-        </ThemedText>
-
-        <TextInput
-          style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
-          value={newTaskName}
-          onChangeText={setNewTaskName}
-          placeholder="Exercise name (e.g. Bench Press)"
-          placeholderTextColor={theme.textMuted}
-          autoCapitalize="words"
-        />
-
-        {isStrength ? (
-          <View style={styles.inputRow}>
-            <View style={styles.inputHalf}>
-              <ThemedText type="body" style={[styles.inputLabel, { color: theme.textSecondary }]}>Sets</ThemedText>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
-                value={newTaskSets}
-                onChangeText={setNewTaskSets}
-                placeholder="3"
-                placeholderTextColor={theme.textMuted}
-                keyboardType="number-pad"
-              />
-            </View>
-            <View style={styles.inputHalf}>
-              <ThemedText type="body" style={[styles.inputLabel, { color: theme.textSecondary }]}>Reps</ThemedText>
-              <TextInput
-                style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
-                value={newTaskReps}
-                onChangeText={setNewTaskReps}
-                placeholder="10"
-                placeholderTextColor={theme.textMuted}
-                keyboardType="number-pad"
-              />
-            </View>
-          </View>
-        ) : null}
-
-        <View style={styles.formActions}>
-          <Pressable
-            style={[styles.formButton, styles.cancelButton]}
-            onPress={() => handleCancelTask(session.id)}
-          >
-            <ThemedText type="body" style={{ color: theme.textSecondary }}>Cancel</ThemedText>
-          </Pressable>
-          <Pressable
-            style={[
-              styles.formButton,
-              styles.saveButton,
-              { backgroundColor: "#4C7DFF", opacity: newTaskName.trim() ? 1 : 0.5 },
-            ]}
-            onPress={() => handleSaveTask(session.id)}
-            disabled={!newTaskName.trim()}
-          >
-            <ThemedText type="body" style={{ color: "#FFFFFF" }}>
-              Save Task
-            </ThemedText>
-          </Pressable>
-        </View>
-      </View>
-    );
-  };
-
-  const renderSession = (session: SessionDraft) => (
-    <View
-      key={session.id}
-      style={[styles.sessionCard, { backgroundColor: theme.backgroundDefault }]}
-    >
-      <Pressable
-        style={styles.sessionHeader}
-        onPress={() => toggleSessionExpanded(session.id)}
-      >
-        <View style={styles.sessionTitleRow}>
-          <Feather
-            name={session.isExpanded ? "chevron-down" : "chevron-right"}
-            size={20}
-            color={theme.text}
-          />
-          <ThemedText type="body" style={styles.sessionName}>
-            {session.name}
-          </ThemedText>
-          <View style={[styles.taskCount, { backgroundColor: theme.backgroundSecondary }]}>
-            <ThemedText type="body" style={{ color: theme.textSecondary }}>
-              {session.tasks.length} {session.tasks.length === 1 ? "exercise" : "exercises"}
-            </ThemedText>
-          </View>
-        </View>
-        <Pressable
-          onPress={() => handleDeleteSession(session.id)}
-          hitSlop={8}
-          style={styles.deleteButton}
-        >
-          <Feather name="trash-2" size={16} color={Colors.dark.error} />
-        </Pressable>
-      </Pressable>
-
-      {session.isExpanded ? (
-        <View style={styles.sessionContent}>
-          {session.tasks.length > 0 ? (
-            <View style={styles.taskList}>
-              {session.tasks.map((task) => (
-                <View
-                  key={task.id}
-                  style={[styles.taskItem, { backgroundColor: theme.backgroundSecondary }]}
-                >
-                  <View style={styles.taskInfo}>
-                    <ModeIcon mode={task.mode} size={14} color="#4C7DFF" />
-                    <ThemedText type="body" style={styles.taskName}>
-                      {task.name}
-                    </ThemedText>
-                    {task.sets || task.reps ? (
-                      <ThemedText type="body" style={[styles.taskDetails, { color: theme.textSecondary }]}>
-                        {task.sets ? `${task.sets} sets` : ""}{task.sets && task.reps ? " x " : ""}{task.reps ? `${task.reps} reps` : ""}
-                      </ThemedText>
-                    ) : null}
-                  </View>
-                  <Pressable
-                    onPress={() => handleDeleteTask(session.id, task.id)}
-                    hitSlop={8}
-                  >
-                    <Feather name="x" size={16} color={theme.text} />
-                  </Pressable>
-                </View>
-              ))}
-            </View>
-          ) : null}
-
-          {session.isAddingTask ? (
-            session.selectedTaskType ? (
-              renderTaskForm(session)
-            ) : (
-              renderTaskTypeSelector(session.id)
-            )
-          ) : (
-            <Pressable
-              style={[styles.addTaskButton, { backgroundColor: "#4C7DFF" }]}
-              onPress={() => handleStartAddTask(session.id)}
-            >
-              <Feather name="plus" size={16} color="#FFFFFF" />
-              <ThemedText type="body" style={{ color: "#FFFFFF" }}>
-                Add Exercise
-              </ThemedText>
-            </Pressable>
-          )}
-        </View>
-      ) : null}
-    </View>
-  );
-
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
       <KeyboardAwareScrollView
@@ -482,7 +270,26 @@ export default function ProgramBuilderScreen() {
             </View>
           ) : null}
 
-          {sessions.map(renderSession)}
+          {sessions.map((session) => (
+            <SessionCard
+              key={session.id}
+              session={session}
+              theme={theme}
+              onToggleExpand={toggleSessionExpanded}
+              onDeleteSession={handleDeleteSession}
+              onStartAddTask={handleStartAddTask}
+              onSelectTaskType={handleSelectTaskType}
+              onSaveTask={handleSaveTask}
+              onCancelTask={handleCancelTask}
+              onDeleteTask={handleDeleteTask}
+              newTaskName={newTaskName}
+              setNewTaskName={setNewTaskName}
+              newTaskSets={newTaskSets}
+              setNewTaskSets={setNewTaskSets}
+              newTaskReps={newTaskReps}
+              setNewTaskReps={setNewTaskReps}
+            />
+          ))}
 
           {isAddingSession ? (
             <View style={[styles.addSessionCard, { backgroundColor: theme.backgroundDefault }]}>
@@ -599,115 +406,10 @@ const styles = StyleSheet.create({
   emptyHint: {
     textAlign: "center",
   },
-  sessionCard: {
-    borderRadius: BorderRadius.lg,
-    overflow: "hidden",
-  },
-  sessionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: Spacing.md,
-  },
-  sessionTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    gap: Spacing.sm,
-  },
-  sessionName: {
-    fontWeight: "600",
-    flex: 1,
-  },
-  taskCount: {
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.sm,
-  },
-  deleteButton: {
-    padding: Spacing.xs,
-  },
-  sessionContent: {
-    padding: Spacing.md,
-    paddingTop: 0,
-    gap: Spacing.sm,
-  },
-  taskList: {
-    gap: Spacing.xs,
-  },
-  taskItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: Spacing.sm,
-    borderRadius: BorderRadius.md,
-  },
-  taskInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
-    flex: 1,
-  },
-  taskName: {
-    flex: 1,
-  },
-  taskDetails: {
-    fontSize: 12,
-  },
-  addTaskButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: Spacing.sm,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-  },
-  taskTypeSelector: {
-    gap: Spacing.sm,
-  },
-  taskTypeLabel: {
-    marginBottom: Spacing.xs,
-  },
-  taskTypeGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: Spacing.sm,
-  },
-  taskTypeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.xs,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.md,
-  },
-  taskTypeText: {
-    fontWeight: "500",
-  },
-  taskForm: {
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    gap: Spacing.sm,
-  },
-  formLabel: {
-    fontWeight: "600",
-    marginBottom: Spacing.xs,
-  },
   input: {
     fontSize: 14,
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
-  },
-  inputRow: {
-    flexDirection: "row",
-    gap: Spacing.sm,
-  },
-  inputHalf: {
-    flex: 1,
-  },
-  inputLabel: {
-    marginBottom: Spacing.xs,
-    fontSize: 12,
   },
   formActions: {
     flexDirection: "row",
