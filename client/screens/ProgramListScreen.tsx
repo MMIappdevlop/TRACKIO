@@ -8,7 +8,6 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
 import { InputModal } from "@/components/InputModal";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";

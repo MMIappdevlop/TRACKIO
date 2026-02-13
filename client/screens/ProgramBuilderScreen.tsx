@@ -4,7 +4,6 @@ import {
   StyleSheet,
   TextInput,
   Pressable,
-  Animated,
   LayoutAnimation,
   Platform,
   UIManager,
@@ -18,11 +17,10 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
-import { ThemedView } from "@/components/ThemedView";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { programsStorage, sessionTemplatesStorage, taskTemplatesStorage } from "@/lib/storage";
-import { Spacing, BorderRadius, Colors } from "@/constants/theme";
+import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { TaskMode } from "@/types";
 import { SessionCard } from "./program-builder/SessionCard";
