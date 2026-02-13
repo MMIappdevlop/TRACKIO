@@ -566,17 +566,8 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
             </Pressable>
             {expandedTemplate === template.id ? (
               <View style={[styles.templatePreview, { backgroundColor: theme.backgroundSecondary }]}>
-                <ThemedText type="muted" style={{ marginBottom: Spacing.sm }}>
-                  Required columns: {getTemplateContent(template.id).split('\n')[0]}
-                </ThemedText>
-                <ScrollView horizontal showsHorizontalScrollIndicator={true}>
-                  <ThemedText type="body" style={styles.templateCode}>
-                    {getTemplateContent(template.id)}
-                  </ThemedText>
-                </ScrollView>
                 <Button
                   onPress={() => handleDownloadTemplate(template.id)}
-                  style={{ marginTop: Spacing.md }}
                 >
                   Download Template
                 </Button>
@@ -880,11 +871,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.md,
     marginTop: -Spacing.xs,
-  },
-  templateCode: {
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-    fontSize: 11,
-    lineHeight: 18,
   },
   pickButton: {
     marginTop: 0,
