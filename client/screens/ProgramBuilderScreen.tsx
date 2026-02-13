@@ -1,8 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
   View,
   StyleSheet,
-  ScrollView,
   TextInput,
   Pressable,
   Animated,
@@ -10,7 +9,7 @@ import {
   Platform,
   UIManager,
 } from "react-native";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -80,7 +79,6 @@ export default function ProgramBuilderScreen() {
   const [newTaskSets, setNewTaskSets] = useState("");
   const [newTaskReps, setNewTaskReps] = useState("");
 
-  const scrollViewRef = useRef<ScrollView>(null);
 
   const canFinish =
     programName.trim().length > 0 &&
@@ -440,19 +438,15 @@ export default function ProgramBuilderScreen() {
   );
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
-      behavior="padding"
-      keyboardVerticalOffset={0}
-    >
-      <ScrollView
-        ref={scrollViewRef}
+    <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+      <KeyboardAwareScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.content,
           { paddingTop: headerHeight + Spacing.lg, paddingBottom: 120 },
         ]}
         keyboardShouldPersistTaps="handled"
+        bottomOffset={20}
       >
         <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
           <ThemedText type="h2" style={styles.sectionTitle}>
@@ -538,7 +532,7 @@ export default function ProgramBuilderScreen() {
             </Pressable>
           )}
         </View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md, backgroundColor: theme.backgroundRoot }]}>
         {!canFinish ? (
@@ -554,7 +548,7 @@ export default function ProgramBuilderScreen() {
           {saving ? "Creating..." : "Finish & Start Training"}
         </Button>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 

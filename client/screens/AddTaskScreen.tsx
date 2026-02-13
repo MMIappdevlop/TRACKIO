@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, ScrollView, TextInput, Pressable } from "react-native";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { View, StyleSheet, TextInput, Pressable } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -234,19 +234,15 @@ export default function AddTaskScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
-      behavior="padding"
-      keyboardVerticalOffset={0}
+      contentContainerStyle={[
+        styles.content,
+        { paddingTop: headerHeight + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
+      ]}
+      keyboardShouldPersistTaps="handled"
+      bottomOffset={20}
     >
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: headerHeight + Spacing.xl, paddingBottom: insets.bottom + Spacing.xl },
-        ]}
-        keyboardShouldPersistTaps="handled"
-      >
       <View style={styles.field}>
         <ThemedText type="secondary" style={styles.label}>Exercise Name</ThemedText>
         <TextInput
@@ -321,8 +317,7 @@ export default function AddTaskScreen() {
       <Button onPress={handleSave} disabled={!name.trim()} style={styles.saveButton}>
         {isEditing ? "Update Exercise" : "Add Exercise"}
       </Button>
-      </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareScrollView>
   );
 }
 

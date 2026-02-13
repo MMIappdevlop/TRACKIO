@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, ScrollView, StyleSheet, Pressable, TextInput, Alert } from "react-native";
-import { KeyboardAvoidingView } from "react-native-keyboard-controller";
+import { View, StyleSheet, Pressable, TextInput, Alert } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -268,18 +268,15 @@ export default function SessionRunScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
-      behavior="padding"
-      keyboardVerticalOffset={0}
-    >
-      <ScrollView
+    <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+      <KeyboardAwareScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.content,
           { paddingTop: headerHeight + Spacing.lg, paddingBottom: 100 + insets.bottom },
         ]}
         keyboardShouldPersistTaps="handled"
+        bottomOffset={20}
       >
         {/* Task Counter */}
         <ThemedText type="secondary" style={styles.taskCounter}>
@@ -447,7 +444,7 @@ export default function SessionRunScreen() {
             />
           </View>
         ) : null}
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Bottom Navigation */}
       <View style={[styles.bottomNav, { paddingBottom: insets.bottom + Spacing.md, backgroundColor: theme.backgroundRoot }]}>
@@ -489,7 +486,7 @@ export default function SessionRunScreen() {
         initialSeconds={restSeconds}
         onClose={() => setShowRestTimer(false)}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
