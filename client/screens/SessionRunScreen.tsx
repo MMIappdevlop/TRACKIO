@@ -550,7 +550,7 @@ export default function SessionRunScreen() {
               style={styles.modalSecondaryBtn}
               testID="button-finish-anyway"
             >
-              <ThemedText type="secondary">Finish Session</ThemedText>
+              <ThemedText type="secondary" style={styles.modalDestructiveText}>Finish Session</ThemedText>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -767,5 +767,8 @@ const styles = StyleSheet.create({
     height: 48,
     alignItems: "center",
     justifyContent: "center",
+  },
+  modalDestructiveText: {
+    color: "#EF4444",
   },
 });
