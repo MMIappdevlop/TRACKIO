@@ -67,11 +67,6 @@ export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
                   <Text style={styles.statValue}>{exercisesCompleted}</Text>
                   <Text style={styles.statLabel}>Exercises</Text>
                 </View>
-                <View style={styles.statDivider} />
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{duration}</Text>
-                  <Text style={styles.statLabel}>Duration</Text>
-                </View>
                 {estimatedCalories && estimatedCalories > 0 ? (
                   <>
                     <View style={styles.statDivider} />
@@ -81,6 +76,11 @@ export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
                     </View>
                   </>
                 ) : null}
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{duration}</Text>
+                  <Text style={styles.statLabel}>Duration</Text>
+                </View>
               </View>
             </View>
 
