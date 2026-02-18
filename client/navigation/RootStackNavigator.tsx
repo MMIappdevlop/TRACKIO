@@ -22,6 +22,7 @@ export type RootStackParamList = {
   };
   SessionSummary: {
     completedSessionId: string;
+    completionRatio?: number;
   };
   AddTask: {
     sessionTemplateId: string;

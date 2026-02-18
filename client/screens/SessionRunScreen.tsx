@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
-import { View, StyleSheet, Pressable, TextInput, Alert } from "react-native";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { View, StyleSheet, Pressable, TextInput, Alert, Modal } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -40,6 +40,7 @@ export default function SessionRunScreen() {
   const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
   const [showRestTimer, setShowRestTimer] = useState(false);
   const [restSeconds, setRestSeconds] = useState(90);
+  const [showFinishModal, setShowFinishModal] = useState(false);
   const startTimeRef = useRef(new Date());
   const taskLogsRef = useRef<TaskLogState[]>([]);
   const tasksRef = useRef<TaskTemplate[]>([]);
@@ -175,6 +176,25 @@ export default function SessionRunScreen() {
     });
   };
 
+  const isExerciseComplete = useCallback((task: TaskTemplate, log: TaskLogState): boolean => {
+    switch (task.mode) {
+      case "strength":
+        return (log.data.sets || []).some((s) => s.isCompleted);
+      case "distance":
+        return (log.data.distance !== undefined && log.data.distance > 0) ||
+          (log.data.durationSeconds !== undefined && log.data.durationSeconds > 0);
+      case "interval":
+        return (log.data.roundsCompleted !== undefined && log.data.roundsCompleted > 0) ||
+          (log.data.durationSeconds !== undefined && log.data.durationSeconds > 0);
+      case "time":
+        return log.data.durationSeconds !== undefined && log.data.durationSeconds > 0;
+      case "notes":
+        return log.data.notes !== undefined && log.data.notes.trim().length > 0;
+      default:
+        return false;
+    }
+  }, []);
+
   const handleCancel = () => {
     Alert.alert("End Session", "Are you sure you want to end this session? Your progress will not be saved.", [
       { text: "Cancel", style: "cancel" },
@@ -182,9 +202,32 @@ export default function SessionRunScreen() {
     ]);
   };
 
-  const handleFinish = async () => {
+  const handleFinish = () => {
+    const currentTaskLogs = taskLogsRef.current;
+    const currentTasks = tasksRef.current;
+
+    const hasIncomplete = currentTasks.some((task) => {
+      const log = currentTaskLogs.find((l) => l.taskId === task.id);
+      return !log || !isExerciseComplete(task, log);
+    });
+
+    if (hasIncomplete) {
+      setShowFinishModal(true);
+    } else {
+      saveAndFinish();
+    }
+  };
+
+  const saveAndFinish = async () => {
+    setShowFinishModal(false);
     const endTime = new Date();
     const durationSeconds = Math.floor((endTime.getTime() - startTimeRef.current.getTime()) / 1000);
+
+    const currentTaskLogs = taskLogsRef.current;
+    const currentTasks = tasksRef.current;
+
+    let completedCount = 0;
+    const totalCount = currentTasks.length;
 
     const completedSession = await completedSessionsStorage.create({
       programId,
@@ -196,25 +239,29 @@ export default function SessionRunScreen() {
       completedAt: endTime.toISOString(),
     });
 
-    const currentTaskLogs = taskLogsRef.current;
-    const currentTasks = tasksRef.current;
-
     for (const log of currentTaskLogs) {
       const task = currentTasks.find((t) => t.id === log.taskId);
       if (!task) continue;
 
-      await completedTasksStorage.create({
-        completedSessionId: completedSession.id,
-        taskTemplateId: task.id,
-        taskTemplateName: task.name,
-        mode: task.mode,
-        dataJson: log.data,
-        completedAt: new Date().toISOString(),
-      });
+      const completed = isExerciseComplete(task, log);
+      if (completed) completedCount++;
+
+      if (completed) {
+        await completedTasksStorage.create({
+          completedSessionId: completedSession.id,
+          taskTemplateId: task.id,
+          taskTemplateName: task.name,
+          mode: task.mode,
+          dataJson: log.data,
+          completedAt: new Date().toISOString(),
+        });
+      }
     }
 
+    const completionRatio = totalCount > 0 ? completedCount / totalCount : 1;
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    navigation.replace("SessionSummary", { completedSessionId: completedSession.id });
+    navigation.replace("SessionSummary", { completedSessionId: completedSession.id, completionRatio });
   };
 
   const handlePrevious = () => {
@@ -481,6 +528,34 @@ export default function SessionRunScreen() {
         </Pressable>
       </View>
 
+      <Modal
+        visible={showFinishModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowFinishModal(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowFinishModal(false)}>
+          <Pressable style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
+            <Feather name="alert-circle" size={40} color={theme.link} style={styles.modalIcon} />
+            <ThemedText type="h2" style={styles.modalTitle}>Some exercises still need your input</ThemedText>
+            <Pressable
+              onPress={() => setShowFinishModal(false)}
+              style={[styles.modalPrimaryBtn, { backgroundColor: theme.link }]}
+              testID="button-not-done-yet"
+            >
+              <ThemedText type="body" style={styles.modalPrimaryText}>I'm Not Done Yet</ThemedText>
+            </Pressable>
+            <Pressable
+              onPress={saveAndFinish}
+              style={styles.modalSecondaryBtn}
+              testID="button-finish-anyway"
+            >
+              <ThemedText type="secondary">Finish Session</ThemedText>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <RestTimerSheet
         visible={showRestTimer}
         initialSeconds={restSeconds}
@@ -653,5 +728,44 @@ const styles = StyleSheet.create({
   },
   navButtonText: {
     fontWeight: "600",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: Spacing.xl,
+  },
+  modalContent: {
+    width: "100%",
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    alignItems: "center",
+  },
+  modalIcon: {
+    marginBottom: Spacing.lg,
+  },
+  modalTitle: {
+    textAlign: "center",
+    marginBottom: Spacing.xl,
+  },
+  modalPrimaryBtn: {
+    width: "100%",
+    height: 52,
+    borderRadius: BorderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: Spacing.md,
+  },
+  modalPrimaryText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  modalSecondaryBtn: {
+    width: "100%",
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

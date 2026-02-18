@@ -63,7 +63,8 @@ export default function SessionSummaryScreen() {
   const { theme } = useTheme();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
-  const { completedSessionId } = route.params;
+  const { completedSessionId, completionRatio } = route.params;
+  const isLowCompletion = completionRatio !== undefined && completionRatio < 0.6;
 
   const [session, setSession] = useState<CompletedSession | null>(null);
   const [tasks, setTasks] = useState<CompletedTask[]>([]);
@@ -355,7 +356,16 @@ export default function SessionSummaryScreen() {
         </View>
 
         <View style={[styles.quoteCard, { backgroundColor: theme.backgroundDefault }]}>
-          <ThemedText type="secondary" style={styles.quoteText}>"{quote}"</ThemedText>
+          {isLowCompletion ? (
+            <>
+              <Feather name="heart" size={20} color={theme.link} style={styles.caringIcon} />
+              <ThemedText type="body" style={styles.caringText}>
+                We noticed a lighter session today. Everything alright? Rest well — we'll be here when you're ready.
+              </ThemedText>
+            </>
+          ) : (
+            <ThemedText type="secondary" style={styles.quoteText}>"{quote}"</ThemedText>
+          )}
         </View>
 
         <View style={[styles.shareCard, { backgroundColor: theme.backgroundDefault }]}>
@@ -456,10 +466,18 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     padding: Spacing.xl,
     marginBottom: Spacing.xl,
+    alignItems: "center",
   },
   quoteText: {
     fontStyle: "italic",
     textAlign: "center",
+  },
+  caringIcon: {
+    marginBottom: Spacing.sm,
+  },
+  caringText: {
+    textAlign: "center",
+    lineHeight: 22,
   },
   shareCard: {
     borderRadius: BorderRadius.xl,
