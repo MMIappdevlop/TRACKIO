@@ -13,7 +13,8 @@ import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { SessionShareCard } from "@/components/SessionShareCard";
 import { useTheme } from "@/hooks/useTheme";
-import { completedSessionsStorage, completedTasksStorage } from "@/lib/storage";
+import { completedSessionsStorage, completedTasksStorage, settingsStorage } from "@/lib/storage";
+import { estimateCalories } from "@/lib/calories";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { CompletedSession, CompletedTask } from "@/types";
@@ -68,6 +69,7 @@ export default function SessionSummaryScreen() {
   const [tasks, setTasks] = useState<CompletedTask[]>([]);
   const [rating, setRating] = useState(0);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [estCalories, setEstCalories] = useState(0);
   const shareCardRef = useRef<View>(null);
 
   const quote = useMemo(
@@ -85,6 +87,19 @@ export default function SessionSummaryScreen() {
     if (loadedSession) {
       const loadedTasks = await completedTasksStorage.getBySessionId(loadedSession.id);
       setTasks(loadedTasks);
+
+      const settings = await settingsStorage.get();
+      const weightKg = settings.userWeight
+        ? settings.weightUnit === "lb"
+          ? settings.userWeight * 0.4536
+          : settings.userWeight
+        : undefined;
+      const calories = estimateCalories(loadedTasks, loadedSession.durationSeconds, weightKg);
+      setEstCalories(calories);
+
+      if (calories > 0 && !loadedSession.estimatedCalories) {
+        await completedSessionsStorage.update(loadedSession.id, { estimatedCalories: calories });
+      }
     }
   };
 
@@ -295,7 +310,7 @@ export default function SessionSummaryScreen() {
               <ThemedText type="muted">Duration</ThemedText>
             </View>
           </View>
-          {stats.totalVolume > 0 || stats.totalDistance > 0 ? (
+          {stats.totalVolume > 0 || stats.totalDistance > 0 || estCalories > 0 ? (
             <View style={styles.statRow}>
               {stats.totalVolume > 0 ? (
                 <View style={styles.stat}>
@@ -307,6 +322,12 @@ export default function SessionSummaryScreen() {
                 <View style={styles.stat}>
                   <ThemedText type="stat">{stats.totalDistance.toFixed(1)}km</ThemedText>
                   <ThemedText type="muted">Distance</ThemedText>
+                </View>
+              ) : null}
+              {estCalories > 0 ? (
+                <View style={styles.stat}>
+                  <ThemedText type="stat">{estCalories}</ThemedText>
+                  <ThemedText type="muted">Est. Calories</ThemedText>
                 </View>
               ) : null}
             </View>

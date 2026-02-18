@@ -59,6 +59,7 @@ export interface CompletedDay {
   startedAt: string;
   completedAt: string;
   durationSeconds: number;
+  estimatedCalories?: number;
   difficultyRating?: number;
   notes?: string;
 }
