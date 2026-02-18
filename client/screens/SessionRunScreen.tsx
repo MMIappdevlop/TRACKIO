@@ -72,6 +72,7 @@ export default function SessionRunScreen() {
 
   const loadTasks = async () => {
     const loadedTasks = await taskTemplatesStorage.getBySessionTemplateId(sessionTemplateId);
+    tasksRef.current = loadedTasks;
     setTasks(loadedTasks);
     initializeTaskLogs(loadedTasks);
   };
@@ -114,8 +115,10 @@ export default function SessionRunScreen() {
     });
   };
 
+  const getTaskLog = (taskId: string) => taskLogsRef.current.find((l) => l.taskId === taskId);
+
   const handleSetComplete = (taskId: string, setIndex: number, task: TaskTemplate) => {
-    const log = taskLogs.find((l) => l.taskId === taskId);
+    const log = getTaskLog(taskId);
     if (!log?.data.sets) return;
 
     const newSets = [...log.data.sets];
@@ -130,7 +133,7 @@ export default function SessionRunScreen() {
   };
 
   const handleSetUpdate = (taskId: string, setIndex: number, field: "weight" | "reps", value: string) => {
-    const log = taskLogs.find((l) => l.taskId === taskId);
+    const log = getTaskLog(taskId);
     if (!log?.data.sets) return;
 
     const newSets = [...log.data.sets];
@@ -139,7 +142,7 @@ export default function SessionRunScreen() {
   };
 
   const handleAddSet = (taskId: string) => {
-    const log = taskLogs.find((l) => l.taskId === taskId);
+    const log = getTaskLog(taskId);
     if (!log?.data.sets) return;
 
     const newSets = [...log.data.sets];
@@ -155,7 +158,7 @@ export default function SessionRunScreen() {
   };
 
   const handleRemoveSet = (taskId: string, setIndex: number) => {
-    const log = taskLogs.find((l) => l.taskId === taskId);
+    const log = getTaskLog(taskId);
     if (!log?.data.sets || log.data.sets.length <= 1) return;
 
     const newSets = log.data.sets.filter((_, i) => i !== setIndex).map((set, i) => ({
@@ -369,8 +372,21 @@ export default function SessionRunScreen() {
             </View>
 
             {currentLog.data.sets.map((set, index) => (
-              <View key={index} style={[styles.setCard, { backgroundColor: theme.backgroundSecondary }]}>
+              <View key={index} style={[styles.setCard, { backgroundColor: set.isCompleted ? Colors.dark.success + "15" : theme.backgroundSecondary }]}>
                 <View style={styles.setCardInner}>
+                  {/* Completion Toggle */}
+                  <Pressable
+                    onPress={() => handleSetComplete(currentTask.id, index, currentTask)}
+                    style={styles.setCheckbox}
+                    testID={`set-complete-${index}`}
+                  >
+                    <Feather
+                      name={set.isCompleted ? "check-circle" : "circle"}
+                      size={24}
+                      color={set.isCompleted ? Colors.dark.success : theme.textMuted}
+                    />
+                  </Pressable>
+
                   {/* Weight */}
                   <View style={styles.setField}>
                     <ThemedText type="muted" style={styles.setFieldLabel}>Weight</ThemedText>
@@ -383,17 +399,7 @@ export default function SessionRunScreen() {
                     />
                   </View>
 
-                  <ThemedText type="muted" style={styles.separator}>-</ThemedText>
-
-                  {/* Set Number */}
-                  <View style={styles.setField}>
-                    <ThemedText type="muted" style={styles.setFieldLabel}>Set</ThemedText>
-                    <View style={[styles.setNumberBox, { backgroundColor: theme.backgroundDefault }]}>
-                      <ThemedText type="body" style={styles.setNumberText}>{set.setNumber}</ThemedText>
-                    </View>
-                  </View>
-
-                  <ThemedText type="muted" style={styles.separator}>-</ThemedText>
+                  <ThemedText type="muted" style={styles.separator}>x</ThemedText>
 
                   {/* Reps */}
                   <View style={styles.setField}>
@@ -774,5 +780,9 @@ const styles = StyleSheet.create({
   },
   modalDestructiveText: {
     color: "#EF4444",
+  },
+  setCheckbox: {
+    padding: Spacing.xs,
+    marginRight: Spacing.sm,
   },
 });
