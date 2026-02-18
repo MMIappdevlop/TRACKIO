@@ -47,10 +47,6 @@ export default function SessionRunScreen() {
   const handleFinishRef = useRef<() => void>(() => {});
 
   useEffect(() => {
-    taskLogsRef.current = taskLogs;
-  }, [taskLogs]);
-
-  useEffect(() => {
     tasksRef.current = tasks;
   }, [tasks]);
 
@@ -104,15 +100,18 @@ export default function SessionRunScreen() {
       }
       return { taskId: task.id, data };
     });
+    taskLogsRef.current = logs;
     setTaskLogs(logs);
   };
 
   const updateTaskLog = (taskId: string, updates: Partial<TaskDataJson>) => {
-    setTaskLogs((prev) =>
-      prev.map((log) =>
+    setTaskLogs((prev) => {
+      const updated = prev.map((log) =>
         log.taskId === taskId ? { ...log, data: { ...log.data, ...updates } } : log
-      )
-    );
+      );
+      taskLogsRef.current = updated;
+      return updated;
+    });
   };
 
   const handleSetComplete = (taskId: string, setIndex: number, task: TaskTemplate) => {
