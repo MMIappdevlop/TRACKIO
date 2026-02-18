@@ -84,6 +84,14 @@ export function SessionHistoryCard({ session, onPress }: SessionHistoryCardProps
               {formatDuration(session.durationSeconds)}
             </ThemedText>
           </View>
+          {session.estimatedCalories ? (
+            <View style={styles.metaItem}>
+              <Feather name="zap" size={14} color={theme.textSecondary} />
+              <ThemedText type="secondary" style={styles.metaText}>
+                {session.estimatedCalories} cal
+              </ThemedText>
+            </View>
+          ) : null}
           {session.difficultyRating ? (
             <View style={styles.metaItem}>
               <Feather name="activity" size={14} color={theme.textSecondary} />

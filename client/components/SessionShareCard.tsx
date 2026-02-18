@@ -14,6 +14,7 @@ interface SessionShareCardProps {
   exercisesCompleted: number;
   duration: string;
   planKind: PlanKind;
+  estimatedCalories?: number;
 }
 
 const CARD_WIDTH = 1080;
@@ -36,7 +37,7 @@ const renderPlanIcon = (planKind: PlanKind, iconSize: number) => {
 };
 
 export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
-  ({ exercisesCompleted, duration, planKind }, ref) => {
+  ({ exercisesCompleted, duration, planKind, estimatedCalories }, ref) => {
     return (
       <View style={styles.outerWrapper}>
         <View ref={ref} style={styles.canvas} collapsable={false}>
@@ -71,6 +72,15 @@ export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
                   <Text style={styles.statValue}>{duration}</Text>
                   <Text style={styles.statLabel}>Duration</Text>
                 </View>
+                {estimatedCalories && estimatedCalories > 0 ? (
+                  <>
+                    <View style={styles.statDivider} />
+                    <View style={styles.statItem}>
+                      <Text style={styles.statValue}>{estimatedCalories}</Text>
+                      <Text style={styles.statLabel}>Est. Cal</Text>
+                    </View>
+                  </>
+                ) : null}
               </View>
             </View>
 

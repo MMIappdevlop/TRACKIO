@@ -383,6 +383,7 @@ export default function SessionSummaryScreen() {
         exercisesCompleted={stats.tasksCompleted}
         duration={durationStr}
         planKind={getDominantPlanKind()}
+        estimatedCalories={estCalories}
       />
     </View>
   );
