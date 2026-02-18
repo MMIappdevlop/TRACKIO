@@ -44,6 +44,7 @@ export default function SessionRunScreen() {
   const startTimeRef = useRef(new Date());
   const taskLogsRef = useRef<TaskLogState[]>([]);
   const tasksRef = useRef<TaskTemplate[]>([]);
+  const handleFinishRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     taskLogsRef.current = taskLogs;
@@ -54,10 +55,14 @@ export default function SessionRunScreen() {
   }, [tasks]);
 
   useEffect(() => {
+    handleFinishRef.current = handleFinish;
+  });
+
+  useEffect(() => {
     loadTasks();
     navigation.setOptions({
       headerRight: () => (
-        <HeaderButton onPress={handleFinish}>
+        <HeaderButton onPress={() => handleFinishRef.current()}>
           <ThemedText type="link" style={{ fontWeight: "600" }}>Finish</ThemedText>
         </HeaderButton>
       ),
