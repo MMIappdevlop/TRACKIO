@@ -6,6 +6,7 @@ Trackio is a mobile-first personal training log built with React Native + Expo (
 **Core Promise**: "Bring your plan. Trackio records your training."
 
 ## Recent Changes
+- **2026-02-24**: Added previous weight/reps hints on strength exercise set rows during workouts ("Last: X kg x Y reps")
 - **2026-02-18**: Added estimated calorie burn display to session summary and history (MET-based with intensity multipliers)
 - **2026-02-01**: Added profile fields for weight, height, and age (optional)
 - **2026-02-01**: Exercise cards now expand to show Move/Delete actions directly (removed long press)

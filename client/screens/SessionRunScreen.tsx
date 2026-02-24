@@ -14,6 +14,7 @@ import { RestTimerSheet } from "@/components/RestTimerSheet";
 import { EmptyState } from "@/components/EmptyState";
 import { ExerciseTimer } from "@/components/ExerciseTimer";
 import { useTheme } from "@/hooks/useTheme";
+import { useSettings } from "@/hooks/useData";
 import { taskTemplatesStorage, completedSessionsStorage, completedTasksStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, TaskModes, Colors } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -31,6 +32,7 @@ export default function SessionRunScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
   const { theme } = useTheme();
+  const { settings } = useSettings();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const { sessionTemplateId, sessionTemplateName, programId, programName } = route.params;
@@ -41,6 +43,7 @@ export default function SessionRunScreen() {
   const [showRestTimer, setShowRestTimer] = useState(false);
   const [restSeconds, setRestSeconds] = useState(90);
   const [showFinishModal, setShowFinishModal] = useState(false);
+  const [previousData, setPreviousData] = useState<Record<string, StrengthSetData[]>>({});
   const startTimeRef = useRef(new Date());
   const taskLogsRef = useRef<TaskLogState[]>([]);
   const tasksRef = useRef<TaskTemplate[]>([]);
@@ -75,6 +78,24 @@ export default function SessionRunScreen() {
     tasksRef.current = loadedTasks;
     setTasks(loadedTasks);
     initializeTaskLogs(loadedTasks);
+    loadPreviousData(loadedTasks);
+  };
+
+  const loadPreviousData = async (loadedTasks: TaskTemplate[]) => {
+    const prevMap: Record<string, StrengthSetData[]> = {};
+    const strengthTasks = loadedTasks.filter((t) => t.mode === "strength");
+    await Promise.all(
+      strengthTasks.map(async (task) => {
+        const history = await completedTasksStorage.getByTaskTemplateId(task.id);
+        if (history.length > 0 && history[0].dataJson.sets) {
+          const completedSets = history[0].dataJson.sets.filter((s) => s.isCompleted);
+          if (completedSets.length > 0) {
+            prevMap[task.id] = completedSets;
+          }
+        }
+      })
+    );
+    setPreviousData(prevMap);
   };
 
   const initializeTaskLogs = (loadedTasks: TaskTemplate[]) => {
@@ -371,60 +392,66 @@ export default function SessionRunScreen() {
               </Pressable>
             </View>
 
-            {currentLog.data.sets.map((set, index) => (
-              <View key={index} style={[styles.setCard, { backgroundColor: set.isCompleted ? Colors.dark.success + "15" : theme.backgroundSecondary }]}>
-                <View style={styles.setCardInner}>
-                  {/* Completion Toggle */}
-                  <Pressable
-                    onPress={() => handleSetComplete(currentTask.id, index, currentTask)}
-                    style={styles.setCheckbox}
-                    testID={`set-complete-${index}`}
-                  >
-                    <Feather
-                      name={set.isCompleted ? "check-circle" : "circle"}
-                      size={24}
-                      color={set.isCompleted ? Colors.dark.success : theme.textMuted}
-                    />
-                  </Pressable>
-
-                  {/* Weight */}
-                  <View style={styles.setField}>
-                    <ThemedText type="muted" style={styles.setFieldLabel}>Weight</ThemedText>
-                    <TextInput
-                      style={[styles.setInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
-                      value={set.weight ? String(set.weight) : "0"}
-                      onChangeText={(v) => handleSetUpdate(currentTask.id, index, "weight", v)}
-                      keyboardType="decimal-pad"
-                      selectTextOnFocus
-                    />
-                  </View>
-
-                  <ThemedText type="muted" style={styles.separator}>x</ThemedText>
-
-                  {/* Reps */}
-                  <View style={styles.setField}>
-                    <ThemedText type="muted" style={styles.setFieldLabel}>Reps</ThemedText>
-                    <TextInput
-                      style={[styles.setInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
-                      value={set.reps ? String(set.reps) : "0"}
-                      onChangeText={(v) => handleSetUpdate(currentTask.id, index, "reps", v)}
-                      keyboardType="number-pad"
-                      selectTextOnFocus
-                    />
-                  </View>
-
-                  {/* Delete Button - only show if more than 1 set */}
-                  {currentLog.data.sets!.length > 1 ? (
+            {currentLog.data.sets.map((set, index) => {
+              const prevSets = previousData[currentTask.id];
+              const prevSet = prevSets && prevSets[index];
+              const weightUnit = settings?.weightUnit || "kg";
+              return (
+                <View key={index} style={[styles.setCard, { backgroundColor: set.isCompleted ? Colors.dark.success + "15" : theme.backgroundSecondary }]}>
+                  <View style={styles.setCardInner}>
                     <Pressable
-                      onPress={() => handleRemoveSet(currentTask.id, index)}
-                      style={styles.deleteButton}
+                      onPress={() => handleSetComplete(currentTask.id, index, currentTask)}
+                      style={styles.setCheckbox}
+                      testID={`set-complete-${index}`}
                     >
-                      <Feather name="x" size={18} color={Colors.dark.error} />
+                      <Feather
+                        name={set.isCompleted ? "check-circle" : "circle"}
+                        size={24}
+                        color={set.isCompleted ? Colors.dark.success : theme.textMuted}
+                      />
                     </Pressable>
+
+                    <View style={styles.setField}>
+                      <ThemedText type="muted" style={styles.setFieldLabel}>Weight</ThemedText>
+                      <TextInput
+                        style={[styles.setInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
+                        value={set.weight ? String(set.weight) : "0"}
+                        onChangeText={(v) => handleSetUpdate(currentTask.id, index, "weight", v)}
+                        keyboardType="decimal-pad"
+                        selectTextOnFocus
+                      />
+                    </View>
+
+                    <ThemedText type="muted" style={styles.separator}>x</ThemedText>
+
+                    <View style={styles.setField}>
+                      <ThemedText type="muted" style={styles.setFieldLabel}>Reps</ThemedText>
+                      <TextInput
+                        style={[styles.setInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
+                        value={set.reps ? String(set.reps) : "0"}
+                        onChangeText={(v) => handleSetUpdate(currentTask.id, index, "reps", v)}
+                        keyboardType="number-pad"
+                        selectTextOnFocus
+                      />
+                    </View>
+
+                    {currentLog.data.sets!.length > 1 ? (
+                      <Pressable
+                        onPress={() => handleRemoveSet(currentTask.id, index)}
+                        style={styles.deleteButton}
+                      >
+                        <Feather name="x" size={18} color={Colors.dark.error} />
+                      </Pressable>
+                    ) : null}
+                  </View>
+                  {prevSet && (prevSet.weight || prevSet.reps) ? (
+                    <ThemedText style={styles.previousHint}>
+                      Last: {prevSet.weight ? `${prevSet.weight} ${weightUnit}` : ""}{prevSet.weight && prevSet.reps ? " x " : ""}{prevSet.reps ? `${prevSet.reps} reps` : ""}
+                    </ThemedText>
                   ) : null}
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         ) : null}
 
@@ -641,6 +668,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  previousHint: {
+    fontSize: 12,
+    color: Colors.dark.textMuted,
+    marginTop: Spacing.xs,
+    textAlign: "center",
   },
   setField: {
     alignItems: "center",
