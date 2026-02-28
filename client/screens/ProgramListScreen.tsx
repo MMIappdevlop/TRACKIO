@@ -11,8 +11,10 @@ import { ThemedText } from "@/components/ThemedText";
 import { InputModal } from "@/components/InputModal";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
+import { CalorieSetupModal } from "@/components/CalorieSetupModal";
 import { useTheme } from "@/hooks/useTheme";
 import { usePrograms } from "@/hooks/useData";
+import { settingsStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { TrainingStackParamList } from "@/navigation/TrainingStackNavigator";
 import type { Program } from "@/types";
@@ -45,6 +47,7 @@ export default function ProgramListScreen() {
   const [editingProgram, setEditingProgram] = useState<Program | null>(null);
   const [deletingProgram, setDeletingProgram] = useState<Program | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("active");
+  const [showCalorieSetup, setShowCalorieSetup] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -53,8 +56,15 @@ export default function ProgramListScreen() {
   );
 
   const handleCreateProgram = async (name: string) => {
+    const isFirstProgram = programs.length === 0 && archivedPrograms.length === 0;
     await createProgram(name);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (isFirstProgram) {
+      const currentSettings = await settingsStorage.get();
+      if (!currentSettings.calorieTrackingEnabled) {
+        setShowCalorieSetup(true);
+      }
+    }
   };
 
   const handleSetActive = async (program: Program) => {
@@ -302,6 +312,11 @@ export default function ProgramListScreen() {
           </View>
         </Pressable>
       </Modal>
+
+      <CalorieSetupModal
+        visible={showCalorieSetup}
+        onClose={() => setShowCalorieSetup(false)}
+      />
     </View>
   );
 }

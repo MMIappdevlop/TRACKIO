@@ -18,8 +18,10 @@ import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
+import { CalorieSetupModal } from "@/components/CalorieSetupModal";
 import { useTheme } from "@/hooks/useTheme";
 import { programsStorage, sessionTemplatesStorage, taskTemplatesStorage } from "@/lib/storage";
+import { settingsStorage } from "@/lib/storage";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { TaskMode } from "@/types";
@@ -45,6 +47,7 @@ export default function ProgramBuilderScreen() {
   const [newTaskName, setNewTaskName] = useState("");
   const [newTaskSets, setNewTaskSets] = useState("");
   const [newTaskReps, setNewTaskReps] = useState("");
+  const [showCalorieSetup, setShowCalorieSetup] = useState(false);
 
 
   const canFinish =
@@ -190,6 +193,9 @@ export default function ProgramBuilderScreen() {
 
     setSaving(true);
     try {
+      const existingPrograms = await programsStorage.getAll();
+      const isFirstProgram = existingPrograms.length === 0;
+
       const program = await programsStorage.create(programName.trim());
 
       for (const session of sessions) {
@@ -215,6 +221,15 @@ export default function ProgramBuilderScreen() {
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      if (isFirstProgram) {
+        const currentSettings = await settingsStorage.get();
+        if (!currentSettings.calorieTrackingEnabled) {
+          setSaving(false);
+          setShowCalorieSetup(true);
+          return;
+        }
+      }
       navigation.goBack();
     } catch (error) {
       console.error("Failed to create program:", error);
@@ -353,6 +368,13 @@ export default function ProgramBuilderScreen() {
           {saving ? "Creating..." : "Finish & Start Training"}
         </Button>
       </View>
+      <CalorieSetupModal
+        visible={showCalorieSetup}
+        onClose={() => {
+          setShowCalorieSetup(false);
+          navigation.goBack();
+        }}
+      />
     </View>
   );
 }

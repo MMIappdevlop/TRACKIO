@@ -1,4 +1,4 @@
-import type { ExerciseMode, CompletedTask } from "@/types";
+import type { ExerciseMode, CompletedTask, Settings } from "@/types";
 
 interface METRange {
   low: number;
@@ -100,6 +100,16 @@ function getModeDurations(
   }
 
   return durations;
+}
+
+export function isCalorieTrackingReady(settings: Settings | null): boolean {
+  if (!settings) return false;
+  return (
+    settings.calorieTrackingEnabled === true &&
+    typeof settings.userAge === "number" && settings.userAge > 0 &&
+    typeof settings.userHeight === "number" && settings.userHeight > 0 &&
+    typeof settings.userWeight === "number" && settings.userWeight > 0
+  );
 }
 
 export function estimateCalories(

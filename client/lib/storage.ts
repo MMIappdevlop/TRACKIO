@@ -415,6 +415,7 @@ export const settingsStorage = {
       showRPE: false,
       showRIR: false,
       autoBackupEnabled: false,
+      calorieTrackingEnabled: false,
     };
   },
 

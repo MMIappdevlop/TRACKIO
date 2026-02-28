@@ -130,6 +130,7 @@ export interface Settings {
   showRPE: boolean;
   showRIR: boolean;
   autoBackupEnabled: boolean;
+  calorieTrackingEnabled: boolean;
   backupUri?: string;
   userName?: string;
   userWeight?: number;
