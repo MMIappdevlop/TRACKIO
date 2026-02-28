@@ -10,6 +10,7 @@ import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
+import { CalorieSetupModal } from "@/components/CalorieSetupModal";
 import { useTheme } from "@/hooks/useTheme";
 import { usePrograms, useSessionTemplates, useSettings, useCompletedSessions, useWeeklyStats } from "@/hooks/useData";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
@@ -53,6 +54,7 @@ export default function TrainingHomeScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [selectedSessionIndex, setSelectedSessionIndex] = useState(0);
+  const [showCalorieSetup, setShowCalorieSetup] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -62,6 +64,19 @@ export default function TrainingHomeScreen() {
       refreshSessions();
       refreshWeeklyStats();
     }, [activeProgram?.id])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (
+        activeProgram &&
+        settings &&
+        !settings.calorieSetupDismissed &&
+        !settings.calorieTrackingEnabled
+      ) {
+        setShowCalorieSetup(true);
+      }
+    }, [activeProgram?.id, settings?.calorieSetupDismissed, settings?.calorieTrackingEnabled])
   );
 
   const handleRefresh = async () => {
@@ -264,6 +279,13 @@ export default function TrainingHomeScreen() {
           </View>
         ) : null}
       </ScrollView>
+      <CalorieSetupModal
+        visible={showCalorieSetup}
+        onClose={() => {
+          setShowCalorieSetup(false);
+          refreshSettings();
+        }}
+      />
     </View>
   );
 }

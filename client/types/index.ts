@@ -131,6 +131,7 @@ export interface Settings {
   showRIR: boolean;
   autoBackupEnabled: boolean;
   calorieTrackingEnabled: boolean;
+  calorieSetupDismissed: boolean;
   backupUri?: string;
   userName?: string;
   userWeight?: number;

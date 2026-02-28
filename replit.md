@@ -6,6 +6,7 @@ Trackio is a mobile-first personal training log built with React Native + Expo (
 **Core Promise**: "Bring your plan. Trackio records your training."
 
 ## Recent Changes
+- **2026-02-28**: Calorie setup prompt moved to Training home screen — appears once after first plan is created or imported, never again after dismissal
 - **2026-02-28**: Rest timer now starts paused (user presses Start), button changed from "Skip Rest" to "Skip"
 - **2026-02-28**: All numeric inputs (weight, distance, target distance) now support decimal values (e.g., 12.5, 5.5)
 - **2026-02-28**: Duration input for distance exercises changed from minutes-only to mm:ss format (e.g., 12:21)

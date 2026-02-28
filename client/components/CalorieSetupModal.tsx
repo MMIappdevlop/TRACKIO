@@ -42,10 +42,11 @@ export function CalorieSetupModal({ visible, onClose }: CalorieSetupModalProps) 
     setStep("form");
   };
 
-  const handleSkip = () => {
+  const handleSkip = async () => {
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch (e) {}
+    await updateSettings({ calorieSetupDismissed: true });
     setStep("ask");
     setAge("");
     setHeight("");
@@ -68,6 +69,7 @@ export function CalorieSetupModal({ visible, onClose }: CalorieSetupModalProps) 
       userHeight: heightInCm,
       userWeight: parseFloat(weight),
       calorieTrackingEnabled: true,
+      calorieSetupDismissed: true,
     });
 
     setStep("ask");
