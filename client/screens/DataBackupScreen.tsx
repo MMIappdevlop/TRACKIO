@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { View, StyleSheet, ScrollView, Pressable, Alert, Share, Platform, Modal, TouchableWithoutFeedback } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, Alert, Platform, Modal, TouchableWithoutFeedback } from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
-import { Paths, File as ExpoFile } from "expo-file-system";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -40,14 +41,14 @@ export default function DataBackupScreen() {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
         const fileName = `trakio-backup-${new Date().toISOString().split("T")[0]}.json`;
-        const backupFile = new ExpoFile(Paths.cache, fileName);
-        backupFile.create();
-        const writer = backupFile.writableStream().getWriter();
-        await writer.write(new TextEncoder().encode(json));
-        await writer.close();
-        await Share.share({
-          url: backupFile.uri,
-          title: "Trackio Backup",
+        const uri = FileSystem.cacheDirectory + fileName;
+        await FileSystem.writeAsStringAsync(uri, json, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+        await Sharing.shareAsync(uri, {
+          mimeType: "application/json",
+          dialogTitle: "Save Trackio Backup",
+          UTI: "public.json",
         });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
@@ -73,8 +74,9 @@ export default function DataBackupScreen() {
 
       setImporting(true);
       const pickedFile = result.assets[0];
-      const expoFile = new ExpoFile(pickedFile.uri);
-      const content = await expoFile.text();
+      const content = await FileSystem.readAsStringAsync(pickedFile.uri, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
 
       const importResult = await backupStorage.importAll(content);
 
