@@ -210,9 +210,10 @@ export default function SessionRunScreen() {
 
   const handleSetInputChange = (taskId: string, setIndex: number, field: "weight" | "reps", value: string) => {
     const key = getSetInputKey(taskId, setIndex, field);
-    setSetInputStrings((prev) => ({ ...prev, [key]: value }));
+    const normalized = value.replace(",", ".");
+    setSetInputStrings((prev) => ({ ...prev, [key]: normalized }));
 
-    if (value === "" || value.trim() === "") {
+    if (normalized === "" || normalized.trim() === "") {
       const log = getTaskLog(taskId);
       if (!log?.data.sets) return;
       const newSets = [...log.data.sets];
@@ -220,7 +221,7 @@ export default function SessionRunScreen() {
       updateTaskLog(taskId, { sets: newSets });
       return;
     }
-    const parsed = parseFloat(value);
+    const parsed = parseFloat(normalized);
     if (!isNaN(parsed)) {
       const log = getTaskLog(taskId);
       if (!log?.data.sets) return;
