@@ -56,7 +56,7 @@ function TaskTypeSelector({
             ]}
             onPress={() => onSelectTaskType(sessionId, type.mode)}
           >
-            <ModeIcon mode={type.mode} size={18} color="#4C7DFF" />
+            <ModeIcon mode={type.mode} size={18} color="#0f52ba" />
             <ThemedText type="body" style={[styles.taskTypeText, { color: theme.text }]}>
               {type.label}
             </ThemedText>
@@ -145,7 +145,7 @@ function TaskForm({
           style={[
             styles.formButton,
             styles.saveButton,
-            { backgroundColor: "#4C7DFF", opacity: newTaskName.trim() ? 1 : 0.5 },
+            { backgroundColor: "#0f52ba", opacity: newTaskName.trim() ? 1 : 0.5 },
           ]}
           onPress={() => onSaveTask(session.id)}
           disabled={!newTaskName.trim()}
@@ -218,7 +218,7 @@ export function SessionCard({
                   style={[styles.taskItem, { backgroundColor: theme.backgroundSecondary }]}
                 >
                   <View style={styles.taskInfo}>
-                    <ModeIcon mode={task.mode} size={14} color="#4C7DFF" />
+                    <ModeIcon mode={task.mode} size={14} color="#0f52ba" />
                     <ThemedText type="body" style={styles.taskName}>
                       {task.name}
                     </ThemedText>
@@ -262,7 +262,7 @@ export function SessionCard({
             )
           ) : (
             <Pressable
-              style={[styles.addTaskButton, { backgroundColor: "#4C7DFF" }]}
+              style={[styles.addTaskButton, { backgroundColor: "#0f52ba" }]}
               onPress={() => onStartAddTask(session.id)}
             >
               <Feather name="plus" size={16} color="#FFFFFF" />

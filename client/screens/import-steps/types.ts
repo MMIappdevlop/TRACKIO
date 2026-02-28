@@ -65,7 +65,7 @@ export const TEMPLATE_INFO = [
     name: "Strength Template", 
     description: "For weight training plans",
     mode: "strength" as const,
-    color: "#4C7DFF",
+    color: "#0f52ba",
   },
   { 
     id: "endurance", 

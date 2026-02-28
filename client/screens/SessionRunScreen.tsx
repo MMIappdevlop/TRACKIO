@@ -73,7 +73,7 @@ export default function SessionRunScreen() {
       ),
       headerLeft: () => (
         <HeaderButton onPress={handleCancel}>
-          <Feather name="x" size={22} color="#9AA0AA" />
+          <Feather name="x" size={22} color={theme.textSecondary} />
         </HeaderButton>
       ),
     });

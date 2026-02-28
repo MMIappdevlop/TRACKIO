@@ -312,7 +312,7 @@ export default function ProgramBuilderScreen() {
                   style={[
                     styles.formButton,
                     styles.saveButton,
-                    { backgroundColor: "#4C7DFF", opacity: newSessionName.trim() ? 1 : 0.5 },
+                    { backgroundColor: "#0f52ba", opacity: newSessionName.trim() ? 1 : 0.5 },
                   ]}
                   onPress={handleSaveSession}
                   disabled={!newSessionName.trim()}
@@ -325,7 +325,7 @@ export default function ProgramBuilderScreen() {
             </View>
           ) : (
             <Pressable
-              style={[styles.addSessionButton, { backgroundColor: "#4C7DFF" }]}
+              style={[styles.addSessionButton, { backgroundColor: "#0f52ba" }]}
               onPress={handleAddSession}
             >
               <Feather name="plus-circle" size={20} color="#FFFFFF" />
