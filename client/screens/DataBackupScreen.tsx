@@ -5,13 +5,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
-import * as Sharing from "expo-sharing";
+import * as WebBrowser from "expo-web-browser";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
 import { backupStorage } from "@/lib/storage";
+import { getApiUrl } from "@/lib/query-client";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 
 export default function DataBackupScreen() {
@@ -27,40 +28,23 @@ export default function DataBackupScreen() {
     setExporting(true);
     try {
       const json = await backupStorage.exportAll();
-      const fileName = `trakio-backup-${new Date().toISOString().split("T")[0]}.json`;
+      const data = JSON.parse(json);
+      const baseUrl = getApiUrl();
 
-      try {
-        const cacheDir = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
-        if (cacheDir) {
-          const uri = `${cacheDir}${fileName}`;
-          await FileSystem.writeAsStringAsync(uri, json, {
-            encoding: FileSystem.EncodingType.UTF8,
-          });
-          const canShare = await Sharing.isAvailableAsync();
-          if (canShare) {
-            await Sharing.shareAsync(uri, {
-              mimeType: "application/json",
-              dialogTitle: "Save Trackio Backup",
-            });
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            return;
-          }
-        }
-      } catch (_nativeErr) {}
+      const res = await fetch(new URL("/api/backup", baseUrl).href, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
 
-      const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(json)}`;
-      const a = window.document.createElement("a");
-      a.href = dataUri;
-      a.download = fileName;
-      window.document.body.appendChild(a);
-      a.click();
-      window.document.body.removeChild(a);
+      if (!res.ok) throw new Error("Server error");
+
+      const { downloadUrl } = await res.json();
+      const fullUrl = new URL(downloadUrl, baseUrl).href;
+
+      await WebBrowser.openBrowserAsync(fullUrl);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error: any) {
-      const msg: string = error?.message ?? "";
-      if (msg.toLowerCase().includes("cancel") || msg.toLowerCase().includes("dismiss")) {
-        return;
-      }
       console.error("Export failed:", error);
       Alert.alert("Export Failed", "Could not export backup. Please try again.");
     } finally {
@@ -82,15 +66,26 @@ export default function DataBackupScreen() {
       setImporting(true);
       const pickedFile = result.assets[0];
 
-      let content: string;
-      if (Platform.OS === "web") {
-        const response = await fetch(pickedFile.uri);
-        if (!response.ok) throw new Error("Could not read file");
-        content = await response.text();
-      } else {
+      let content: string | null = null;
+
+      try {
         content = await FileSystem.readAsStringAsync(pickedFile.uri, {
           encoding: FileSystem.EncodingType.UTF8,
         });
+      } catch (_fsErr) {}
+
+      if (!content) {
+        try {
+          const response = await fetch(pickedFile.uri);
+          if (response.ok) {
+            content = await response.text();
+          }
+        } catch (_fetchErr) {}
+      }
+
+      if (!content) {
+        Alert.alert("Import Failed", "Could not read the selected file.");
+        return;
       }
 
       const importResult = await backupStorage.importAll(content);
