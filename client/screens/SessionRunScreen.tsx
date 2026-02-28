@@ -73,7 +73,9 @@ export default function SessionRunScreen() {
       ),
       headerLeft: () => (
         <HeaderButton onPress={handleCancel}>
-          <Feather name="x" size={22} color={theme.text} />
+          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: theme.backgroundSecondary, alignItems: "center", justifyContent: "center" }}>
+            <Feather name="x" size={18} color={theme.text} />
+          </View>
         </HeaderButton>
       ),
     });
