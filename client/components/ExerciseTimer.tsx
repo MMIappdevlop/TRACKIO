@@ -378,11 +378,11 @@ export function ExerciseTimer({ mode, intervalConfig, onComplete }: ExerciseTime
       {status === "idle" ? (
         <Pressable
           onPress={handleStart}
-          style={[styles.startButton, { backgroundColor: Colors.dark.effort }]}
+          style={[styles.startButton, { backgroundColor: theme.effort }]}
           testID="button-start-timer"
         >
-          <Feather name="play" size={20} color="#FFF" />
-          <ThemedText type="body" style={styles.buttonText}>Start Timer</ThemedText>
+          <Feather name="play" size={20} color={theme.buttonText} />
+          <ThemedText type="body" style={[styles.buttonText, { color: theme.buttonText }]}>Start Timer</ThemedText>
         </Pressable>
       ) : null}
 
@@ -545,7 +545,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
   },
   buttonText: {
-    color: "#FFF",
     fontWeight: "600",
     fontSize: 16,
   },

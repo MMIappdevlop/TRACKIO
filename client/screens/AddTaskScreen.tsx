@@ -12,7 +12,7 @@ import { Button } from "@/components/Button";
 import { ModeIcon } from "@/components/icons/ModeIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { taskTemplatesStorage } from "@/lib/storage";
-import { Spacing, BorderRadius, TaskModes, Typography } from "@/constants/theme";
+import { Spacing, BorderRadius, TaskModes, Typography, Colors } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { TaskMode, TaskConfig, TaskTemplate } from "@/types";
 
@@ -133,7 +133,7 @@ export default function AddTaskScreen() {
               onPress={() => updateConfig("isBodyweight", !config.isBodyweight)}
             >
               <View style={[styles.checkbox, config.isBodyweight && { backgroundColor: theme.link, borderColor: theme.link }]}>
-                {config.isBodyweight ? <Feather name="check" size={14} color="#FFF" /> : null}
+                {config.isBodyweight ? <Feather name="check" size={14} color={theme.buttonText} /> : null}
               </View>
               <ThemedText type="body">Bodyweight exercise</ThemedText>
             </Pressable>
@@ -175,7 +175,7 @@ export default function AddTaskScreen() {
                     >
                       <ThemedText
                         type="small"
-                        style={{ color: config.distanceUnit === unit ? "#FFF" : theme.text }}
+                        style={{ color: config.distanceUnit === unit ? theme.buttonText : theme.text }}
                       >
                         {unit}
                       </ThemedText>
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: "#738c99",
+    borderColor: Colors.dark.textMuted,
     alignItems: "center",
     justifyContent: "center",
   },

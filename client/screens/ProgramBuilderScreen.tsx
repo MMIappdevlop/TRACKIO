@@ -312,12 +312,12 @@ export default function ProgramBuilderScreen() {
                   style={[
                     styles.formButton,
                     styles.saveButton,
-                    { backgroundColor: "#0f52ba", opacity: newSessionName.trim() ? 1 : 0.5 },
+                    { backgroundColor: theme.link, opacity: newSessionName.trim() ? 1 : 0.5 },
                   ]}
                   onPress={handleSaveSession}
                   disabled={!newSessionName.trim()}
                 >
-                  <ThemedText type="body" style={{ color: "#FFFFFF" }}>
+                  <ThemedText type="body" style={{ color: theme.buttonText }}>
                     Save Day
                   </ThemedText>
                 </Pressable>
@@ -325,11 +325,11 @@ export default function ProgramBuilderScreen() {
             </View>
           ) : (
             <Pressable
-              style={[styles.addSessionButton, { backgroundColor: "#0f52ba" }]}
+              style={[styles.addSessionButton, { backgroundColor: theme.link }]}
               onPress={handleAddSession}
             >
-              <Feather name="plus-circle" size={20} color="#FFFFFF" />
-              <ThemedText type="body" style={{ color: "#FFFFFF" }}>
+              <Feather name="plus-circle" size={20} color={theme.buttonText} />
+              <ThemedText type="body" style={{ color: theme.buttonText }}>
                 Add Day
               </ThemedText>
             </Pressable>

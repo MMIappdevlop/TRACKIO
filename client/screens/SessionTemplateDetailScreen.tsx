@@ -168,7 +168,7 @@ export default function SessionTemplateDetailScreen() {
                 type="body"
                 style={[
                   styles.dayLabel,
-                  { color: isSelected ? "#FFF" : theme.textSecondary },
+                  { color: isSelected ? theme.buttonText : theme.textSecondary },
                 ]}
               >
                 {label}
@@ -240,8 +240,8 @@ export default function SessionTemplateDetailScreen() {
                 testID="button-start-workout"
                 style={[styles.startButton, { backgroundColor: theme.link }]}
               >
-                <Feather name="play" size={20} color="#FFF" />
-                <ThemedText type="body" style={{ color: "#FFF", fontWeight: "600" }}>
+                <Feather name="play" size={20} color={theme.buttonText} />
+                <ThemedText type="body" style={{ color: theme.buttonText, fontWeight: "600" }}>
                   Start Workout
                 </ThemedText>
               </Pressable>

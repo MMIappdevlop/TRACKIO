@@ -111,7 +111,7 @@ export function RestTimerSheet({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
+        <Pressable style={[styles.backdrop, { backgroundColor: theme.overlay }]} onPress={onClose} />
         <View
           style={[
             styles.sheet,
@@ -168,7 +168,7 @@ export function RestTimerSheet({
               <Feather
                 name={isRunning ? "pause" : "play"}
                 size={28}
-                color="#FFFFFF"
+                color={theme.buttonText}
               />
             </Pressable>
 
@@ -196,7 +196,6 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   sheet: {
     borderTopLeftRadius: BorderRadius.xl,

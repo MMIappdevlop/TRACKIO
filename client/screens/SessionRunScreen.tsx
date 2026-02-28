@@ -725,7 +725,7 @@ export default function SessionRunScreen() {
         animationType="fade"
         onRequestClose={() => setShowFinishModal(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowFinishModal(false)}>
+        <Pressable style={[styles.modalOverlay, { backgroundColor: theme.overlay }]} onPress={() => setShowFinishModal(false)}>
           <Pressable style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
             <Feather name="alert-circle" size={40} color={theme.link} style={styles.modalIcon} />
             <ThemedText type="h2" style={styles.modalTitle}>Some exercises still need your input</ThemedText>
@@ -734,14 +734,14 @@ export default function SessionRunScreen() {
               style={[styles.modalPrimaryBtn, { backgroundColor: theme.link }]}
               testID="button-not-done-yet"
             >
-              <ThemedText type="body" style={styles.modalPrimaryText}>I'm Not Done Yet</ThemedText>
+              <ThemedText type="body" style={[styles.modalPrimaryText, { color: theme.buttonText }]}>I'm Not Done Yet</ThemedText>
             </Pressable>
             <Pressable
               onPress={saveAndFinish}
               style={styles.modalSecondaryBtn}
               testID="button-finish-anyway"
             >
-              <ThemedText type="secondary" style={styles.modalDestructiveText}>Finish Session</ThemedText>
+              <ThemedText type="secondary" style={{ color: theme.error }}>Finish Session</ThemedText>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -753,7 +753,7 @@ export default function SessionRunScreen() {
         animationType="fade"
         onRequestClose={() => setShowPauseModal(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowPauseModal(false)}>
+        <Pressable style={[styles.modalOverlay, { backgroundColor: theme.overlay }]} onPress={() => setShowPauseModal(false)}>
           <Pressable style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
             <Feather name="pause-circle" size={40} color={theme.link} style={styles.modalIcon} />
             <ThemedText type="h2" style={styles.modalTitle}>Pause Session</ThemedText>
@@ -765,7 +765,7 @@ export default function SessionRunScreen() {
               style={[styles.modalPrimaryBtn, { backgroundColor: theme.link }]}
               testID="button-pause-resume"
             >
-              <ThemedText type="body" style={styles.modalPrimaryText}>Resume</ThemedText>
+              <ThemedText type="body" style={[styles.modalPrimaryText, { color: theme.buttonText }]}>Resume</ThemedText>
             </Pressable>
             <Pressable
               onPress={handleSaveAndExit}
@@ -779,7 +779,7 @@ export default function SessionRunScreen() {
               style={styles.modalSecondaryBtn}
               testID="button-discard-session"
             >
-              <ThemedText type="secondary" style={styles.modalDestructiveText}>Discard</ThemedText>
+              <ThemedText type="secondary" style={{ color: theme.error }}>Discard</ThemedText>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -848,7 +848,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.md,
   },
   addSetText: {
-    color: "#FFFFFF",
     fontWeight: "600",
   },
   setCard: {
@@ -966,7 +965,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "center",
     alignItems: "center",
     padding: Spacing.xl,
@@ -998,7 +996,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   modalPrimaryText: {
-    color: "#FFFFFF",
     fontWeight: "700",
     fontSize: 16,
   },
@@ -1007,9 +1004,6 @@ const styles = StyleSheet.create({
     height: 48,
     alignItems: "center",
     justifyContent: "center",
-  },
-  modalDestructiveText: {
-    color: "#EF4444",
   },
   setCheckbox: {
     padding: Spacing.xs,

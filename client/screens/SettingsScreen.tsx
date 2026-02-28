@@ -63,7 +63,7 @@ export default function SettingsScreen() {
                 >
                   <ThemedText
                     type="small"
-                    style={{ color: settings.weightUnit === unit ? "#FFF" : theme.text }}
+                    style={{ color: settings.weightUnit === unit ? theme.buttonText : theme.text }}
                   >
                     {unit}
                   </ThemedText>
@@ -89,7 +89,7 @@ export default function SettingsScreen() {
                 >
                   <ThemedText
                     type="small"
-                    style={{ color: settings.distanceUnit === unit ? "#FFF" : theme.text }}
+                    style={{ color: settings.distanceUnit === unit ? theme.buttonText : theme.text }}
                   >
                     {unit}
                   </ThemedText>
@@ -112,7 +112,7 @@ export default function SettingsScreen() {
               value={settings.showRPE}
               onValueChange={(value) => handleToggle("showRPE", value)}
               trackColor={{ false: theme.backgroundSecondary, true: theme.link }}
-              thumbColor="#FFF"
+              thumbColor={theme.buttonText}
             />
           </View>
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
@@ -125,7 +125,7 @@ export default function SettingsScreen() {
               value={settings.showRIR}
               onValueChange={(value) => handleToggle("showRIR", value)}
               trackColor={{ false: theme.backgroundSecondary, true: theme.link }}
-              thumbColor="#FFF"
+              thumbColor={theme.buttonText}
             />
           </View>
         </View>

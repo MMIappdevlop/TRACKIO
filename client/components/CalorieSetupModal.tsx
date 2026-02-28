@@ -90,7 +90,7 @@ export function CalorieSetupModal({ visible, onClose }: CalorieSetupModalProps) 
         style={styles.overlay}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Pressable style={styles.backdrop} onPress={handleSkip} />
+        <Pressable style={[styles.backdrop, { backgroundColor: theme.overlay }]} onPress={handleSkip} />
         <View style={[styles.content, { backgroundColor: theme.backgroundSecondary }]}>
           {step === "ask" ? (
             <>
@@ -191,7 +191,6 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   content: {
     width: "85%",

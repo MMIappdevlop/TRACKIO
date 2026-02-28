@@ -126,7 +126,7 @@ export default function IntervalTimerScreen() {
             {rounds} rounds in {formatTime(totalElapsed)}
           </ThemedText>
           <Pressable onPress={handleFinish} style={[styles.doneButton, { backgroundColor: theme.link }]}>
-            <ThemedText type="body" style={{ color: "#FFF", fontWeight: "600" }}>Done</ThemedText>
+            <ThemedText type="body" style={{ color: theme.buttonText, fontWeight: "600" }}>Done</ThemedText>
           </Pressable>
         </View>
       </View>
@@ -172,7 +172,7 @@ export default function IntervalTimerScreen() {
         </Pressable>
 
         <Pressable onPress={toggleTimer} style={[styles.playButton, { backgroundColor }]}>
-          <Feather name={isRunning ? "pause" : "play"} size={36} color="#FFF" />
+          <Feather name={isRunning ? "pause" : "play"} size={36} color={theme.buttonText} />
         </Pressable>
 
         <Pressable onPress={handleFinish} style={[styles.controlButton, { backgroundColor: theme.backgroundDefault }]}>

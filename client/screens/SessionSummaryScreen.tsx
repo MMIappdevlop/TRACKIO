@@ -379,8 +379,8 @@ export default function SessionSummaryScreen() {
               <ThemedText type="body">Save PNG</ThemedText>
             </Pressable>
             <Pressable onPress={handleShare} style={[styles.shareBtn, { backgroundColor: theme.link }]} disabled={isCapturing}>
-              <Feather name="share" size={18} color="#FFFFFF" />
-              <ThemedText type="body" style={{ color: "#FFFFFF" }}>Share</ThemedText>
+              <Feather name="share" size={18} color={theme.buttonText} />
+              <ThemedText type="body" style={{ color: theme.buttonText }}>Share</ThemedText>
             </Pressable>
           </View>
         </View>

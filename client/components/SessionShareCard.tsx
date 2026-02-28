@@ -89,7 +89,7 @@ export const SessionShareCard = forwardRef<View, SessionShareCardProps>(
                 width={S(440)}
                 height={S(110)}
                 color="#FFFFFF"
-                accentColor="#0f52ba"
+                accentColor="#4C7DFF"
               />
             </View>
 
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
   bottomBanner: {
     height: S(72),
-    backgroundColor: "#0f52ba",
+    backgroundColor: "#4C7DFF",
     width: "100%",
   },
 });

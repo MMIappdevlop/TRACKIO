@@ -81,8 +81,8 @@ export function MappingStep({
               placeholder="Preset name..."
               placeholderTextColor={theme.textMuted}
             />
-            <Pressable onPress={savePreset} style={[styles.saveBtn, { backgroundColor: "#0f52ba" }]}>
-              <ThemedText type="small" style={{ color: "#FFF" }}>Save</ThemedText>
+            <Pressable onPress={savePreset} style={[styles.saveBtn, { backgroundColor: theme.link }]}>
+              <ThemedText type="small" style={{ color: theme.buttonText }}>Save</ThemedText>
             </Pressable>
             <Pressable onPress={() => setShowPresetInput(false)}>
               <Feather name="x" size={20} color={theme.textMuted} />

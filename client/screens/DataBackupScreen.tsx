@@ -223,7 +223,7 @@ export default function DataBackupScreen() {
         onRequestClose={() => setShowClearConfirm(false)}
       >
         <TouchableWithoutFeedback onPress={() => setShowClearConfirm(false)}>
-          <View style={styles.modalOverlay}>
+          <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
             <TouchableWithoutFeedback>
               <View style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
                 <ThemedText type="h2" style={styles.modalTitle}>Clear All Data</ThemedText>
@@ -242,7 +242,7 @@ export default function DataBackupScreen() {
                     disabled={clearing}
                     style={[styles.modalButton, styles.modalButtonDanger]}
                   >
-                    <ThemedText type="body" style={{ color: "#FFF" }}>
+                    <ThemedText type="body" style={{ color: theme.buttonText }}>
                       {clearing ? "Clearing..." : "Clear All"}
                     </ThemedText>
                   </Pressable>
@@ -305,7 +305,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "center",
     alignItems: "center",
     padding: Spacing.xl,

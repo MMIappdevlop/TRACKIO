@@ -12,7 +12,7 @@ export function TrackioLogo({
   width = 360,
   height = 87,
   color = "#FFFFFF",
-  accentColor = "#0f52ba",
+  accentColor = "#4C7DFF",
 }: TrackioLogoProps) {
   return (
     <Svg

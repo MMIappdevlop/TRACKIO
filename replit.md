@@ -6,6 +6,7 @@ Trackio is a mobile-first personal training log built with React Native + Expo (
 **Core Promise**: "Bring your plan. Trackio records your training."
 
 ## Recent Changes
+- **2026-02-28**: Color/text cleanup — all hardcoded colors now reference theme.ts constants; added `overlay` to theme; `#FFFFFF` replaced with `theme.buttonText`, accent colors with `theme.link`, overlay rgba with `theme.overlay`
 - **2026-02-28**: Session pause/resume — auto-saves workout progress, resume banner on Training home, Save & Exit / Discard options
 - **2026-02-28**: Calorie setup prompt moved to Training home screen — appears once after first plan is created or imported, never again after dismissal
 - **2026-02-28**: Rest timer now starts paused (user presses Start), button changed from "Skip Rest" to "Skip"

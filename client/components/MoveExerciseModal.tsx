@@ -11,7 +11,7 @@ import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing, BorderRadius } from "@/constants/theme";
+import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { SessionTemplate } from "@/types";
 
 interface MoveExerciseModalProps {
@@ -47,7 +47,7 @@ export function MoveExerciseModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { backgroundColor: theme.overlay }]}>
         <Pressable style={styles.backdrop} onPress={onClose} />
         <View
           style={[styles.content, { backgroundColor: theme.backgroundSecondary }]}
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,

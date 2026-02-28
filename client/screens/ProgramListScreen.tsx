@@ -270,7 +270,7 @@ export default function ProgramListScreen() {
         animationType="fade"
         onRequestClose={() => setDeletingProgram(null)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setDeletingProgram(null)}>
+        <Pressable style={[styles.modalOverlay, { backgroundColor: theme.overlay }]} onPress={() => setDeletingProgram(null)}>
           <View style={[styles.deleteModal, { backgroundColor: theme.backgroundSecondary }]}>
             <View style={[styles.deleteIcon, { backgroundColor: Colors.dark.error + "20" }]}>
               <Feather name="alert-triangle" size={32} color={Colors.dark.error} />
@@ -376,7 +376,6 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
     justifyContent: "center",
     alignItems: "center",
   },

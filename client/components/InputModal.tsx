@@ -14,7 +14,7 @@ import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing, BorderRadius, Typography } from "@/constants/theme";
+import { Spacing, BorderRadius, Typography, Colors } from "@/constants/theme";
 
 interface InputModalProps {
   visible: boolean;
@@ -69,7 +69,7 @@ export function InputModal({
         style={styles.overlay}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <Pressable style={styles.backdrop} onPress={onClose} />
+        <Pressable style={[styles.backdrop, { backgroundColor: theme.overlay }]} onPress={onClose} />
         <View
           style={[styles.content, { backgroundColor: theme.backgroundSecondary }]}
         >
@@ -120,7 +120,6 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   content: {
     width: "85%",
