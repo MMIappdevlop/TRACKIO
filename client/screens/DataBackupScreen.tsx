@@ -40,19 +40,21 @@ export default function DataBackupScreen() {
         URL.revokeObjectURL(url);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
+        const cacheDir = FileSystem.cacheDirectory;
+        if (!cacheDir) throw new Error("No cache directory available");
         const fileName = `trakio-backup-${new Date().toISOString().split("T")[0]}.json`;
-        const uri = FileSystem.cacheDirectory + fileName;
+        const uri = cacheDir + fileName;
         await FileSystem.writeAsStringAsync(uri, json, {
           encoding: FileSystem.EncodingType.UTF8,
         });
         await Sharing.shareAsync(uri, {
           mimeType: "application/json",
           dialogTitle: "Save Trackio Backup",
-          UTI: "public.json",
         });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch (error) {
+      console.error("Export failed:", error);
       if (Platform.OS === "web") {
         alert("Export Failed: Could not create backup file.");
       } else {
