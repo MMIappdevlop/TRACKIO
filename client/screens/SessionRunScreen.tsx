@@ -44,6 +44,8 @@ export default function SessionRunScreen() {
   const [restSeconds, setRestSeconds] = useState(90);
   const [showFinishModal, setShowFinishModal] = useState(false);
   const [previousData, setPreviousData] = useState<Record<string, StrengthSetData[]>>({});
+  const [distanceInputStr, setDistanceInputStr] = useState<Record<string, string>>({});
+  const [durationInputStr, setDurationInputStr] = useState<Record<string, string>>({});
   const startTimeRef = useRef(new Date());
   const taskLogsRef = useRef<TaskLogState[]>([]);
   const tasksRef = useRef<TaskTemplate[]>([]);
@@ -153,13 +155,45 @@ export default function SessionRunScreen() {
     }
   };
 
-  const handleSetUpdate = (taskId: string, setIndex: number, field: "weight" | "reps", value: string) => {
-    const log = getTaskLog(taskId);
-    if (!log?.data.sets) return;
+  const [setInputStrings, setSetInputStrings] = useState<Record<string, string>>({});
 
-    const newSets = [...log.data.sets];
-    newSets[setIndex] = { ...newSets[setIndex], [field]: parseFloat(value) || 0 };
-    updateTaskLog(taskId, { sets: newSets });
+  const getSetInputKey = (taskId: string, setIndex: number, field: string) => `${taskId}-${setIndex}-${field}`;
+
+  const handleSetInputChange = (taskId: string, setIndex: number, field: "weight" | "reps", value: string) => {
+    const key = getSetInputKey(taskId, setIndex, field);
+    setSetInputStrings((prev) => ({ ...prev, [key]: value }));
+
+    if (value === "" || value.trim() === "") {
+      const log = getTaskLog(taskId);
+      if (!log?.data.sets) return;
+      const newSets = [...log.data.sets];
+      newSets[setIndex] = { ...newSets[setIndex], [field]: 0 };
+      updateTaskLog(taskId, { sets: newSets });
+      return;
+    }
+    const parsed = parseFloat(value);
+    if (!isNaN(parsed)) {
+      const log = getTaskLog(taskId);
+      if (!log?.data.sets) return;
+      const newSets = [...log.data.sets];
+      newSets[setIndex] = { ...newSets[setIndex], [field]: parsed };
+      updateTaskLog(taskId, { sets: newSets });
+    }
+  };
+
+  const handleSetInputBlur = (taskId: string, setIndex: number, field: "weight" | "reps") => {
+    const key = getSetInputKey(taskId, setIndex, field);
+    setSetInputStrings((prev) => {
+      const updated = { ...prev };
+      delete updated[key];
+      return updated;
+    });
+  };
+
+  const getSetInputValue = (taskId: string, setIndex: number, field: "weight" | "reps", numericValue?: number) => {
+    const key = getSetInputKey(taskId, setIndex, field);
+    if (setInputStrings[key] !== undefined) return setInputStrings[key];
+    return numericValue ? String(numericValue) : "0";
   };
 
   const handleAddSet = (taskId: string) => {
@@ -415,8 +449,9 @@ export default function SessionRunScreen() {
                       <ThemedText type="muted" style={styles.setFieldLabel}>Weight</ThemedText>
                       <TextInput
                         style={[styles.setInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
-                        value={set.weight ? String(set.weight) : "0"}
-                        onChangeText={(v) => handleSetUpdate(currentTask.id, index, "weight", v)}
+                        value={getSetInputValue(currentTask.id, index, "weight", set.weight)}
+                        onChangeText={(v) => handleSetInputChange(currentTask.id, index, "weight", v)}
+                        onBlur={() => handleSetInputBlur(currentTask.id, index, "weight")}
                         keyboardType="decimal-pad"
                         selectTextOnFocus
                       />
@@ -428,9 +463,10 @@ export default function SessionRunScreen() {
                       <ThemedText type="muted" style={styles.setFieldLabel}>Reps</ThemedText>
                       <TextInput
                         style={[styles.setInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
-                        value={set.reps ? String(set.reps) : "0"}
-                        onChangeText={(v) => handleSetUpdate(currentTask.id, index, "reps", v)}
-                        keyboardType="number-pad"
+                        value={getSetInputValue(currentTask.id, index, "reps", set.reps)}
+                        onChangeText={(v) => handleSetInputChange(currentTask.id, index, "reps", v)}
+                        onBlur={() => handleSetInputBlur(currentTask.id, index, "reps")}
+                        keyboardType="decimal-pad"
                         selectTextOnFocus
                       />
                     </View>
@@ -463,21 +499,61 @@ export default function SessionRunScreen() {
                 <ThemedText type="muted" style={styles.fieldLabel}>Distance</ThemedText>
                 <TextInput
                   style={[styles.largeInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-                  value={currentLog?.data.distance ? String(currentLog.data.distance) : ""}
-                  onChangeText={(v) => updateTaskLog(currentTask.id, { distance: parseFloat(v) || undefined })}
+                  value={distanceInputStr[currentTask.id] !== undefined ? distanceInputStr[currentTask.id] : (currentLog?.data.distance ? String(currentLog.data.distance) : "")}
+                  onChangeText={(v) => {
+                    setDistanceInputStr((prev) => ({ ...prev, [currentTask.id]: v }));
+                    const parsed = parseFloat(v);
+                    if (!isNaN(parsed)) {
+                      updateTaskLog(currentTask.id, { distance: parsed });
+                    }
+                  }}
+                  onBlur={() => {
+                    setDistanceInputStr((prev) => {
+                      const updated = { ...prev };
+                      delete updated[currentTask.id];
+                      return updated;
+                    });
+                  }}
                   keyboardType="decimal-pad"
                   placeholder={currentTask.config.distanceUnit || "km"}
                   placeholderTextColor={theme.textMuted}
                 />
               </View>
               <View style={styles.distanceField}>
-                <ThemedText type="muted" style={styles.fieldLabel}>Duration (min)</ThemedText>
+                <ThemedText type="muted" style={styles.fieldLabel}>Duration (mm:ss)</ThemedText>
                 <TextInput
                   style={[styles.largeInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-                  value={currentLog?.data.durationSeconds ? String(Math.floor(currentLog.data.durationSeconds / 60)) : ""}
-                  onChangeText={(v) => updateTaskLog(currentTask.id, { durationSeconds: (parseInt(v) || 0) * 60 })}
-                  keyboardType="number-pad"
-                  placeholder="min"
+                  value={durationInputStr[currentTask.id] !== undefined ? durationInputStr[currentTask.id] : (currentLog?.data.durationSeconds ? `${Math.floor(currentLog.data.durationSeconds / 60)}:${(currentLog.data.durationSeconds % 60).toString().padStart(2, "0")}` : "")}
+                  onChangeText={(v) => {
+                    let cleaned = v.replace(/[^0-9:]/g, "");
+                    const colonIdx = cleaned.indexOf(":");
+                    if (colonIdx !== -1) {
+                      cleaned = cleaned.substring(0, colonIdx + 1) + cleaned.substring(colonIdx + 1).replace(/:/g, "");
+                    }
+                    setDurationInputStr((prev) => ({ ...prev, [currentTask.id]: cleaned }));
+                    if (cleaned === "" || cleaned === ":") {
+                      updateTaskLog(currentTask.id, { durationSeconds: 0 });
+                      return;
+                    }
+                    const parts = cleaned.split(":");
+                    if (parts.length === 2) {
+                      const mins = parseInt(parts[0]) || 0;
+                      const secs = Math.min(parseInt(parts[1]) || 0, 59);
+                      updateTaskLog(currentTask.id, { durationSeconds: mins * 60 + secs });
+                    } else if (parts.length === 1 && parts[0]) {
+                      const mins = parseInt(parts[0]) || 0;
+                      updateTaskLog(currentTask.id, { durationSeconds: mins * 60 });
+                    }
+                  }}
+                  onBlur={() => {
+                    setDurationInputStr((prev) => {
+                      const updated = { ...prev };
+                      delete updated[currentTask.id];
+                      return updated;
+                    });
+                  }}
+                  keyboardType="default"
+                  placeholder="mm:ss"
                   placeholderTextColor={theme.textMuted}
                 />
               </View>

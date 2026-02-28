@@ -46,6 +46,7 @@ export default function AddTaskScreen() {
     restSeconds: 30,
     rounds: 5,
   });
+  const [targetDistanceStr, setTargetDistanceStr] = useState<string | null>(null);
 
   const isEditing = !!taskId;
 
@@ -146,8 +147,15 @@ export default function AddTaskScreen() {
                 <ThemedText type="secondary" style={styles.label}>Target Distance</ThemedText>
                 <TextInput
                   style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text, borderColor: theme.border }]}
-                  value={String(config.targetDistance || "")}
-                  onChangeText={(v) => updateConfig("targetDistance", parseFloat(v) || 0)}
+                  value={targetDistanceStr !== null ? targetDistanceStr : String(config.targetDistance || "")}
+                  onChangeText={(v) => {
+                    setTargetDistanceStr(v);
+                    const parsed = parseFloat(v);
+                    if (!isNaN(parsed)) {
+                      updateConfig("targetDistance", parsed);
+                    }
+                  }}
+                  onBlur={() => setTargetDistanceStr(null)}
                   keyboardType="decimal-pad"
                   placeholder="5"
                   placeholderTextColor={theme.textMuted}

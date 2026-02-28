@@ -28,14 +28,14 @@ export function RestTimerSheet({
 }: RestTimerSheetProps) {
   const { theme } = useTheme();
   const [seconds, setSeconds] = useState(initialSeconds);
-  const [isRunning, setIsRunning] = useState(true);
+  const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const progress = useSharedValue(1);
 
   useEffect(() => {
     if (visible) {
       setSeconds(initialSeconds);
-      setIsRunning(true);
+      setIsRunning(false);
       progress.value = 1;
     }
     return () => {
@@ -181,7 +181,7 @@ export function RestTimerSheet({
           </View>
 
           <Pressable onPress={skipRest} style={styles.skipButton}>
-            <ThemedText type="link">Skip Rest</ThemedText>
+            <ThemedText type="link">Skip</ThemedText>
           </Pressable>
         </View>
       </View>
