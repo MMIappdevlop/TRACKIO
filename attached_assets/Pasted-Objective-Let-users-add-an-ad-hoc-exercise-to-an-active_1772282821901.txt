@@ -1,0 +1,40 @@
+Objective
+
+Let users add an ad-hoc exercise to an active workout session from SessionRunScreen. The user picks a name, mode (strength/distance/interval/time/notes), and for strength, a set count. The exercise is session-only — it is not saved back to the program template.
+
+Design
+
+"+" icon button added to the navigation header (right side, alongside the existing "Finish" button — Finish moves slightly left)
+Tapping "+" opens a bottom-sheet-style Modal with:
+Text input: exercise name
+Mode selector: 5 pill buttons (Strength / Distance / Interval / Time / Notes)
+Set count row (only shown for Strength): "–" / number / "+" to pick 1–10 sets, default 3
+"Add to Workout" primary button — disabled if name is empty
+"Cancel" secondary link
+On confirm:
+Generate a local UUID for the task (prefixed adhoc- for traceability)
+Build a TaskTemplate-shaped object in memory (no taskTemplatesStorage.create call)
+Build the initial TaskLogState for it:
+Strength: { sets: Array(setCount).fill({ setNumber, weight: undefined, reps: undefined, isCompleted: false }) }
+All others: empty data: {}
+Append both to tasks and taskLogs state
+Set currentTaskIndex to the new task's index so the user lands on it immediately
+Tasks
+
+T001: Add ad-hoc exercise modal and logic to SessionRunScreen
+
+Blocked By: []
+Details:
+Add state: showAddModal (bool), adhocName (string), adhocMode (ExerciseMode, default "strength"), adhocSets (number, default 3)
+Add handleAddAdhocExercise function — builds TaskTemplate object + initial log, appends to state, navigates to it, resets modal state
+Update navigation.setOptions in the header useEffect to include a second HeaderButton with feather "plus" icon that sets showAddModal(true); keep existing Finish button
+Add the Modal JSX at the bottom of the render (before closing </View>):
+Name input (TextInput, autoFocus)
+5 mode pill buttons in a wrapping row
+Set count row (conditionally shown for strength only)
+"Add to Workout" Pressable (primary style, disabled when name is empty)
+"Cancel" Pressable (secondary)
+Inner Pressable gets onPress={() => {}} no-op to prevent Android touch bleed-through
+Import uuidv4 from uuid (already used in storage.ts — check if accessible from screen, if not use Math.random().toString(36) for the local ID)
+File: client/screens/SessionRunScreen.tsx
+Acceptance: During an active workout, tapping "+" opens the modal; filling name + mode + sets and tapping "Add to Workout" immediately adds the exercise and jumps to it; the new exercise behaves identically to pre-planned exercises (sets can be filled, rest timer works, it appears in session summary)
