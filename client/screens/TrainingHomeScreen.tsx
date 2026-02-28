@@ -13,10 +13,11 @@ import { Button } from "@/components/Button";
 import { CalorieSetupModal } from "@/components/CalorieSetupModal";
 import { useTheme } from "@/hooks/useTheme";
 import { usePrograms, useSessionTemplates, useSettings, useCompletedSessions, useWeeklyStats } from "@/hooks/useData";
+import { activeSessionStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { TrainingStackParamList } from "@/navigation/TrainingStackNavigator";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import type { SessionTemplate } from "@/types";
+import type { SessionTemplate, ActiveSession } from "@/types";
 
 type NavigationProp = NativeStackNavigationProp<TrainingStackParamList & RootStackParamList>;
 
@@ -55,6 +56,7 @@ export default function TrainingHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedSessionIndex, setSelectedSessionIndex] = useState(0);
   const [showCalorieSetup, setShowCalorieSetup] = useState(false);
+  const [savedSession, setSavedSession] = useState<ActiveSession | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -63,6 +65,7 @@ export default function TrainingHomeScreen() {
       refreshSettings();
       refreshSessions();
       refreshWeeklyStats();
+      activeSessionStorage.get().then(setSavedSession);
     }, [activeProgram?.id])
   );
 
@@ -94,6 +97,24 @@ export default function TrainingHomeScreen() {
       programId: activeProgram.id,
       programName: activeProgram.name,
     });
+  };
+
+  const handleResumeSession = () => {
+    if (!savedSession) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    navigation.navigate("SessionRun", {
+      sessionTemplateId: savedSession.sessionTemplateId,
+      sessionTemplateName: savedSession.sessionTemplateName,
+      programId: savedSession.programId,
+      programName: savedSession.programName,
+      resumeSession: true,
+    });
+  };
+
+  const handleDiscardSession = async () => {
+    await activeSessionStorage.clear();
+    setSavedSession(null);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const lastSession = sessions.length > 0 ? sessions[0] : null;
@@ -151,6 +172,28 @@ export default function TrainingHomeScreen() {
             ) : null}
           </View>
         </View>
+
+        {/* Resume Banner */}
+        {savedSession ? (
+          <View style={[styles.resumeBanner, { backgroundColor: theme.backgroundDefault }]} testID="resume-session-banner">
+            <View style={styles.resumeInfo}>
+              <View style={styles.resumeHeader}>
+                <View style={[styles.resumeDot, { backgroundColor: Colors.dark.effort }]} />
+                <ThemedText type="secondary" style={styles.resumeLabel}>In Progress</ThemedText>
+              </View>
+              <ThemedText type="h3" style={styles.resumeName}>{savedSession.sessionTemplateName}</ThemedText>
+              <ThemedText type="muted" style={styles.resumePlan}>{savedSession.programName}</ThemedText>
+            </View>
+            <View style={styles.resumeActions}>
+              <Button onPress={handleResumeSession} style={styles.resumeButton} testID="button-resume-session">
+                Resume
+              </Button>
+              <Pressable onPress={handleDiscardSession} style={styles.discardButton} testID="button-discard-session">
+                <Feather name="trash-2" size={16} color={Colors.dark.error} />
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
 
         {/* Today's Session Card */}
         <View style={[styles.sessionCard, { backgroundColor: theme.backgroundDefault }]}>
@@ -407,5 +450,51 @@ const styles = StyleSheet.create({
   },
   motivationText: {
     fontStyle: "italic",
+  },
+  resumeBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  resumeInfo: {
+    flex: 1,
+  },
+  resumeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
+  resumeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  resumeLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  resumeName: {
+    marginBottom: 2,
+  },
+  resumePlan: {
+    fontSize: 12,
+  },
+  resumeActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  resumeButton: {
+    paddingHorizontal: Spacing.lg,
+  },
+  discardButton: {
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

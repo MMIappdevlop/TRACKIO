@@ -19,6 +19,7 @@ export type RootStackParamList = {
     sessionTemplateName: string;
     programId: string;
     programName: string;
+    resumeSession?: boolean;
   };
   SessionSummary: {
     completedSessionId: string;

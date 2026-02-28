@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, StyleSheet, Pressable, TextInput, Alert, Modal } from "react-native";
+import { View, StyleSheet, Pressable, TextInput, Modal } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -15,7 +15,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ExerciseTimer } from "@/components/ExerciseTimer";
 import { useTheme } from "@/hooks/useTheme";
 import { useSettings } from "@/hooks/useData";
-import { taskTemplatesStorage, completedSessionsStorage, completedTasksStorage } from "@/lib/storage";
+import { taskTemplatesStorage, completedSessionsStorage, completedTasksStorage, activeSessionStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, TaskModes, Colors } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { TaskTemplate, StrengthSetData, TaskDataJson, SplitTime } from "@/types";
@@ -35,7 +35,7 @@ export default function SessionRunScreen() {
   const { settings } = useSettings();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
-  const { sessionTemplateId, sessionTemplateName, programId, programName } = route.params;
+  const { sessionTemplateId, sessionTemplateName, programId, programName, resumeSession } = route.params;
 
   const [tasks, setTasks] = useState<TaskTemplate[]>([]);
   const [taskLogs, setTaskLogs] = useState<TaskLogState[]>([]);
@@ -43,6 +43,7 @@ export default function SessionRunScreen() {
   const [showRestTimer, setShowRestTimer] = useState(false);
   const [restSeconds, setRestSeconds] = useState(90);
   const [showFinishModal, setShowFinishModal] = useState(false);
+  const [showPauseModal, setShowPauseModal] = useState(false);
   const [previousData, setPreviousData] = useState<Record<string, StrengthSetData[]>>({});
   const [distanceInputStr, setDistanceInputStr] = useState<Record<string, string>>({});
   const [durationInputStr, setDurationInputStr] = useState<Record<string, string>>({});
@@ -50,6 +51,9 @@ export default function SessionRunScreen() {
   const taskLogsRef = useRef<TaskLogState[]>([]);
   const tasksRef = useRef<TaskTemplate[]>([]);
   const handleFinishRef = useRef<() => void>(() => {});
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initializedRef = useRef(false);
+  const exitingRef = useRef(false);
 
   useEffect(() => {
     tasksRef.current = tasks;
@@ -60,7 +64,7 @@ export default function SessionRunScreen() {
   });
 
   useEffect(() => {
-    loadTasks();
+    loadSession();
     navigation.setOptions({
       headerRight: () => (
         <HeaderButton onPress={() => handleFinishRef.current()}>
@@ -73,14 +77,59 @@ export default function SessionRunScreen() {
         </HeaderButton>
       ),
     });
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
   }, []);
 
-  const loadTasks = async () => {
+  useEffect(() => {
+    if (!initializedRef.current || exitingRef.current) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      if (exitingRef.current) return;
+      activeSessionStorage.save({
+        sessionTemplateId,
+        sessionTemplateName,
+        programId,
+        programName,
+        startedAt: startTimeRef.current.toISOString(),
+        taskLogs: taskLogsRef.current,
+        currentTaskIndex,
+      });
+    }, 2000);
+  }, [taskLogs, currentTaskIndex]);
+
+  const loadSession = async () => {
     const loadedTasks = await taskTemplatesStorage.getBySessionTemplateId(sessionTemplateId);
     tasksRef.current = loadedTasks;
     setTasks(loadedTasks);
+
+    if (resumeSession) {
+      const saved = await activeSessionStorage.get();
+      if (saved && saved.sessionTemplateId === sessionTemplateId) {
+        startTimeRef.current = new Date(saved.startedAt);
+        taskLogsRef.current = saved.taskLogs;
+        setTaskLogs(saved.taskLogs);
+        setCurrentTaskIndex(saved.currentTaskIndex);
+        initializedRef.current = true;
+        loadPreviousData(loadedTasks);
+        return;
+      }
+    }
+
     initializeTaskLogs(loadedTasks);
     loadPreviousData(loadedTasks);
+    initializedRef.current = true;
+
+    activeSessionStorage.save({
+      sessionTemplateId,
+      sessionTemplateName,
+      programId,
+      programName,
+      startedAt: startTimeRef.current.toISOString(),
+      taskLogs: taskLogsRef.current,
+      currentTaskIndex: 0,
+    });
   };
 
   const loadPreviousData = async (loadedTasks: TaskTemplate[]) => {
@@ -257,11 +306,38 @@ export default function SessionRunScreen() {
     }
   }, []);
 
+  const stopAutoSave = () => {
+    exitingRef.current = true;
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+  };
+
   const handleCancel = () => {
-    Alert.alert("End Session", "Are you sure you want to end this session? Your progress will not be saved.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "End Session", style: "destructive", onPress: () => navigation.goBack() },
-    ]);
+    setShowPauseModal(true);
+  };
+
+  const handleSaveAndExit = async () => {
+    setShowPauseModal(false);
+    stopAutoSave();
+    await activeSessionStorage.save({
+      sessionTemplateId,
+      sessionTemplateName,
+      programId,
+      programName,
+      startedAt: startTimeRef.current.toISOString(),
+      taskLogs: taskLogsRef.current,
+      currentTaskIndex,
+    });
+    navigation.goBack();
+  };
+
+  const handleDiscard = async () => {
+    setShowPauseModal(false);
+    stopAutoSave();
+    await activeSessionStorage.clear();
+    navigation.goBack();
   };
 
   const handleFinish = () => {
@@ -282,6 +358,8 @@ export default function SessionRunScreen() {
 
   const saveAndFinish = async () => {
     setShowFinishModal(false);
+    stopAutoSave();
+    await activeSessionStorage.clear();
     const endTime = new Date();
     const durationSeconds = Math.floor((endTime.getTime() - startTimeRef.current.getTime()) / 1000);
 
@@ -669,6 +747,44 @@ export default function SessionRunScreen() {
         </Pressable>
       </Modal>
 
+      <Modal
+        visible={showPauseModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowPauseModal(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setShowPauseModal(false)}>
+          <Pressable style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
+            <Feather name="pause-circle" size={40} color={theme.link} style={styles.modalIcon} />
+            <ThemedText type="h2" style={styles.modalTitle}>Pause Session</ThemedText>
+            <ThemedText type="secondary" style={styles.pauseDescription}>
+              Your progress will be saved and you can resume later.
+            </ThemedText>
+            <Pressable
+              onPress={() => setShowPauseModal(false)}
+              style={[styles.modalPrimaryBtn, { backgroundColor: theme.link }]}
+              testID="button-pause-resume"
+            >
+              <ThemedText type="body" style={styles.modalPrimaryText}>Resume</ThemedText>
+            </Pressable>
+            <Pressable
+              onPress={handleSaveAndExit}
+              style={styles.modalSecondaryBtn}
+              testID="button-save-exit"
+            >
+              <ThemedText type="link">Save & Exit</ThemedText>
+            </Pressable>
+            <Pressable
+              onPress={handleDiscard}
+              style={styles.modalSecondaryBtn}
+              testID="button-discard-session"
+            >
+              <ThemedText type="secondary" style={styles.modalDestructiveText}>Discard</ThemedText>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <RestTimerSheet
         visible={showRestTimer}
         initialSeconds={restSeconds}
@@ -867,6 +983,11 @@ const styles = StyleSheet.create({
   modalTitle: {
     textAlign: "center",
     marginBottom: Spacing.xl,
+  },
+  pauseDescription: {
+    textAlign: "center",
+    marginBottom: Spacing.lg,
+    lineHeight: 20,
   },
   modalPrimaryBtn: {
     width: "100%",

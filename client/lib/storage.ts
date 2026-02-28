@@ -8,6 +8,7 @@ import type {
   CompletedTask,
   BadgeAward,
   Settings,
+  ActiveSession,
 } from "@/types";
 
 const STORAGE_KEYS = {
@@ -18,6 +19,7 @@ const STORAGE_KEYS = {
   COMPLETED_TASKS: "@trakio/completed_tasks",
   BADGES: "@trakio/badges",
   SETTINGS: "@trakio/settings",
+  ACTIVE_SESSION: "@trakio/active_session",
 };
 
 async function getItem<T>(key: string): Promise<T[]> {
@@ -481,5 +483,24 @@ export const backupStorage = {
 
   async clearAll(): Promise<void> {
     await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
+  },
+};
+
+export const activeSessionStorage = {
+  async save(session: ActiveSession): Promise<void> {
+    await AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_SESSION, JSON.stringify(session));
+  },
+
+  async get(): Promise<ActiveSession | null> {
+    try {
+      const data = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_SESSION);
+      return data ? JSON.parse(data) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  async clear(): Promise<void> {
+    await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_SESSION);
   },
 };

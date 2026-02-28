@@ -139,6 +139,16 @@ export interface Settings {
   userAge?: number;
 }
 
+export interface ActiveSession {
+  sessionTemplateId: string;
+  sessionTemplateName: string;
+  programId: string;
+  programName: string;
+  startedAt: string;
+  taskLogs: { taskId: string; data: ExerciseDataJson }[];
+  currentTaskIndex: number;
+}
+
 export interface WeeklyStats {
   weekStart: string;
   sessionsCount: number;
