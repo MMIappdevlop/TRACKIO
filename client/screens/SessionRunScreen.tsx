@@ -324,23 +324,31 @@ export default function SessionRunScreen() {
   const handleSaveAndExit = async () => {
     setShowPauseModal(false);
     stopAutoSave();
-    await activeSessionStorage.save({
-      sessionTemplateId,
-      sessionTemplateName,
-      programId,
-      programName,
-      startedAt: startTimeRef.current.toISOString(),
-      taskLogs: taskLogsRef.current,
-      currentTaskIndex,
-    });
-    navigation.goBack();
+    try {
+      await activeSessionStorage.save({
+        sessionTemplateId,
+        sessionTemplateName,
+        programId,
+        programName,
+        startedAt: startTimeRef.current.toISOString(),
+        taskLogs: taskLogsRef.current,
+        currentTaskIndex,
+      });
+      navigation.goBack();
+    } catch (e) {
+      Alert.alert("Could not save draft", "Something went wrong. Please try again.");
+    }
   };
 
   const handleDiscard = async () => {
     setShowPauseModal(false);
     stopAutoSave();
-    await activeSessionStorage.clear();
-    navigation.goBack();
+    try {
+      await activeSessionStorage.clear();
+      navigation.goBack();
+    } catch (e) {
+      navigation.goBack();
+    }
   };
 
   const handleFinish = () => {
