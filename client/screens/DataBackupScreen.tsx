@@ -74,9 +74,9 @@ export default function DataBackupScreen() {
 
       setImporting(true);
       const pickedFile = result.assets[0];
-      const content = await FileSystem.readAsStringAsync(pickedFile.uri, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
+      const response = await fetch(pickedFile.uri);
+      if (!response.ok) throw new Error("Could not read file");
+      const content = await response.text();
 
       const importResult = await backupStorage.importAll(content);
 
