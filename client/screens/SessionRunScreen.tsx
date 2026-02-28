@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, StyleSheet, Pressable, TextInput, Modal } from "react-native";
+import { View, StyleSheet, Pressable, TextInput, Modal, Alert } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -362,49 +362,53 @@ export default function SessionRunScreen() {
   const saveAndFinish = async () => {
     setShowFinishModal(false);
     stopAutoSave();
-    await activeSessionStorage.clear();
-    const endTime = new Date();
-    const durationSeconds = Math.floor((endTime.getTime() - startTimeRef.current.getTime()) / 1000);
+    try {
+      await activeSessionStorage.clear();
+      const endTime = new Date();
+      const durationSeconds = Math.floor((endTime.getTime() - startTimeRef.current.getTime()) / 1000);
 
-    const currentTaskLogs = taskLogsRef.current;
-    const currentTasks = tasksRef.current;
+      const currentTaskLogs = taskLogsRef.current;
+      const currentTasks = tasksRef.current;
 
-    let completedCount = 0;
-    const totalCount = currentTasks.length;
+      let completedCount = 0;
+      const totalCount = currentTasks.length;
 
-    const completedSession = await completedSessionsStorage.create({
-      programId,
-      programName,
-      sessionTemplateId,
-      sessionTemplateName,
-      durationSeconds,
-      startedAt: startTimeRef.current.toISOString(),
-      completedAt: endTime.toISOString(),
-    });
+      const completedSession = await completedSessionsStorage.create({
+        programId,
+        programName,
+        sessionTemplateId,
+        sessionTemplateName,
+        durationSeconds,
+        startedAt: startTimeRef.current.toISOString(),
+        completedAt: endTime.toISOString(),
+      });
 
-    for (const log of currentTaskLogs) {
-      const task = currentTasks.find((t) => t.id === log.taskId);
-      if (!task) continue;
+      for (const log of currentTaskLogs) {
+        const task = currentTasks.find((t) => t.id === log.taskId);
+        if (!task) continue;
 
-      const completed = isExerciseComplete(task, log);
-      if (completed) completedCount++;
+        const completed = isExerciseComplete(task, log);
+        if (completed) completedCount++;
 
-      if (completed) {
-        await completedTasksStorage.create({
-          completedSessionId: completedSession.id,
-          taskTemplateId: task.id,
-          taskTemplateName: task.name,
-          mode: task.mode,
-          dataJson: log.data,
-          completedAt: new Date().toISOString(),
-        });
+        if (completed) {
+          await completedTasksStorage.create({
+            completedSessionId: completedSession.id,
+            taskTemplateId: task.id,
+            taskTemplateName: task.name,
+            mode: task.mode,
+            dataJson: log.data,
+            completedAt: new Date().toISOString(),
+          });
+        }
       }
+
+      const completionRatio = totalCount > 0 ? completedCount / totalCount : 1;
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      navigation.replace("SessionSummary", { completedSessionId: completedSession.id, completionRatio });
+    } catch (e) {
+      Alert.alert("Could not save session", "Something went wrong. Please try again.");
     }
-
-    const completionRatio = totalCount > 0 ? completedCount / totalCount : 1;
-
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    navigation.replace("SessionSummary", { completedSessionId: completedSession.id, completionRatio });
   };
 
   const handlePrevious = () => {
@@ -729,7 +733,7 @@ export default function SessionRunScreen() {
         onRequestClose={() => setShowFinishModal(false)}
       >
         <Pressable style={[styles.modalOverlay, { backgroundColor: theme.overlay }]} onPress={() => setShowFinishModal(false)}>
-          <Pressable style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
+          <Pressable style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]} onPress={() => {}}>
             <Feather name="alert-circle" size={40} color={theme.link} style={styles.modalIcon} />
             <ThemedText type="h2" style={styles.modalTitle}>Some exercises still need your input</ThemedText>
             <Pressable
@@ -757,7 +761,7 @@ export default function SessionRunScreen() {
         onRequestClose={() => setShowPauseModal(false)}
       >
         <Pressable style={[styles.modalOverlay, { backgroundColor: theme.overlay }]} onPress={() => setShowPauseModal(false)}>
-          <Pressable style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]}>
+          <Pressable style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]} onPress={() => {}}>
             <Feather name="pause-circle" size={40} color={theme.link} style={styles.modalIcon} />
             <ThemedText type="h2" style={styles.modalTitle}>Pause Session</ThemedText>
             <ThemedText type="secondary" style={styles.pauseDescription}>
