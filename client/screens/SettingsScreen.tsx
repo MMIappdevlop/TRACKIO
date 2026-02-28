@@ -136,12 +136,12 @@ export default function SettingsScreen() {
         <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
           <View style={styles.aboutRow}>
             <ThemedText type="body">Version</ThemedText>
-            <ThemedText type="secondary">1.0.0</ThemedText>
+            <ThemedText type="secondary">0.1.7</ThemedText>
           </View>
           <View style={[styles.divider, { backgroundColor: theme.border }]} />
           <View style={styles.aboutRow}>
             <ThemedText type="body">Build</ThemedText>
-            <ThemedText type="secondary">2024.01</ThemedText>
+            <ThemedText type="secondary">2026.02</ThemedText>
           </View>
         </View>
       </View>
