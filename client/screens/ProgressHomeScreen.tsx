@@ -59,7 +59,6 @@ export default function ProgressHomeScreen() {
     if (loading) return null;
     return (
       <EmptyState
-        image={require("../../assets/images/empty-progress.png")}
         title="No Sessions Yet"
         description="Complete your first workout to see your progress here"
       />
