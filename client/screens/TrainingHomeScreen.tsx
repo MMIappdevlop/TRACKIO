@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from "react";
-import { View, StyleSheet, Pressable, RefreshControl, ScrollView } from "react-native";
+import { View, StyleSheet, Pressable, RefreshControl, ScrollView, Text } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -20,6 +20,25 @@ import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { SessionTemplate, ActiveSession } from "@/types";
 
 type NavigationProp = NativeStackNavigationProp<TrainingStackParamList & RootStackParamList>;
+
+interface GreetingEntry { text: string; emoji: string; isBazinga?: boolean; }
+const GREETINGS: GreetingEntry[] = [
+  { text: "Good morning",               emoji: "💪" },
+  { text: "Good afternoon",             emoji: "☀️" },
+  { text: "Good evening",               emoji: "🌙" },
+  { text: "Hey there",                  emoji: "👋" },
+  { text: "Hello, buddy",               emoji: "😎" },
+  { text: "What's up",                  emoji: "⚡" },
+  { text: "Welcome back",               emoji: "🏆" },
+  { text: "Ready to crush it",          emoji: "💥" },
+  { text: "Looking strong",             emoji: "🔥" },
+  { text: "Let's go",                   emoji: "🚀" },
+  { text: "How you doin'?",             emoji: "😉" },
+  { text: "Welcome to the real world!", emoji: "👩🏻‍🍳" },
+  { text: "What's new?",                emoji: "👀" },
+  { text: "Bazinga!",                   emoji: "🚂", isBazinga: true },
+];
+const SESSION_GREETING = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
 
 function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
@@ -57,6 +76,7 @@ export default function TrainingHomeScreen() {
   const [selectedSessionIndex, setSelectedSessionIndex] = useState(0);
   const [showCalorieSetup, setShowCalorieSetup] = useState(false);
   const [savedSession, setSavedSession] = useState<ActiveSession | null>(null);
+  const [bazingaRevealed, setBazingaRevealed] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -140,13 +160,6 @@ export default function TrainingHomeScreen() {
     }
   };
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 17) return "Good afternoon";
-    return "Good evening";
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
       <ScrollView
@@ -162,9 +175,21 @@ export default function TrainingHomeScreen() {
         {/* Header Section */}
         <View style={styles.headerSection}>
           <View style={styles.headerLeft}>
-            <ThemedText type="h1" style={styles.greeting}>
-              {getGreeting()}, {settings?.userName || "Athlete"}
-            </ThemedText>
+            {SESSION_GREETING.isBazinga && !bazingaRevealed ? (
+              <Pressable onPress={() => { setBazingaRevealed(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+                <Text style={styles.greetingEmoji}>{SESSION_GREETING.emoji}</Text>
+                <ThemedText type="h1" style={[styles.greeting, styles.blurredText]}>
+                  {SESSION_GREETING.text}, {settings?.userName || "Athlete"}
+                </ThemedText>
+              </Pressable>
+            ) : (
+              <>
+                <Text style={styles.greetingEmoji}>{SESSION_GREETING.emoji}</Text>
+                <ThemedText type="h1" style={styles.greeting}>
+                  {SESSION_GREETING.text}, {settings?.userName || "Athlete"}
+                </ThemedText>
+              </>
+            )}
             {activeProgram ? (
               <ThemedText type="secondary" style={styles.planLabel}>
                 Active Plan: {activeProgram.name}
@@ -352,6 +377,16 @@ const styles = StyleSheet.create({
   },
   greeting: {
     marginBottom: Spacing.xs,
+  },
+  greetingEmoji: {
+    fontSize: 44,
+    marginBottom: Spacing.sm,
+  },
+  blurredText: {
+    color: "transparent",
+    textShadowColor: "#E6E8EB",
+    textShadowRadius: 12,
+    textShadowOffset: { width: 0, height: 0 },
   },
   planLabel: {},
   sessionCard: {
