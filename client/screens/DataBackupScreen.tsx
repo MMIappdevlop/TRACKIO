@@ -27,37 +27,40 @@ export default function DataBackupScreen() {
     setExporting(true);
     try {
       const json = await backupStorage.exportAll();
+      const fileName = `trakio-backup-${new Date().toISOString().split("T")[0]}.json`;
 
-      if (Platform.OS === "web") {
-        const blob = new Blob([json], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `trakio-backup-${new Date().toISOString().split("T")[0]}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } else {
-        const cacheDir = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
-        if (!cacheDir) throw new Error("No storage directory available");
-        const fileName = `trakio-backup-${new Date().toISOString().split("T")[0]}.json`;
+      const cacheDir = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
+      if (cacheDir) {
         const uri = `${cacheDir}${fileName}`;
         await FileSystem.writeAsStringAsync(uri, json, {
           encoding: FileSystem.EncodingType.UTF8,
         });
         const canShare = await Sharing.isAvailableAsync();
-        if (!canShare) {
-          Alert.alert("Sharing Unavailable", "File sharing is not supported on this device.");
+        if (canShare) {
+          await Sharing.shareAsync(uri, {
+            mimeType: "application/json",
+            dialogTitle: "Save Trackio Backup",
+          });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           return;
         }
-        await Sharing.shareAsync(uri, {
-          mimeType: "application/json",
-          dialogTitle: "Save Trackio Backup",
-        });
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
+
+      if (typeof document !== "undefined") {
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        return;
+      }
+
+      Alert.alert("Export Unavailable", "No export method is available on this device.");
     } catch (error: any) {
       const msg: string = error?.message ?? "";
       if (msg.toLowerCase().includes("cancel") || msg.toLowerCase().includes("dismiss")) {
