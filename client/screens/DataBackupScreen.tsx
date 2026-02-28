@@ -27,7 +27,7 @@ export default function DataBackupScreen() {
     setExporting(true);
     try {
       const json = await backupStorage.exportAll();
-      
+
       if (Platform.OS === "web") {
         const blob = new Blob([json], { type: "application/json" });
         const url = URL.createObjectURL(blob);
@@ -40,26 +40,31 @@ export default function DataBackupScreen() {
         URL.revokeObjectURL(url);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       } else {
-        const cacheDir = FileSystem.cacheDirectory;
-        if (!cacheDir) throw new Error("No cache directory available");
+        const cacheDir = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
+        if (!cacheDir) throw new Error("No storage directory available");
         const fileName = `trakio-backup-${new Date().toISOString().split("T")[0]}.json`;
-        const uri = cacheDir + fileName;
+        const uri = `${cacheDir}${fileName}`;
         await FileSystem.writeAsStringAsync(uri, json, {
           encoding: FileSystem.EncodingType.UTF8,
         });
+        const canShare = await Sharing.isAvailableAsync();
+        if (!canShare) {
+          Alert.alert("Sharing Unavailable", "File sharing is not supported on this device.");
+          return;
+        }
         await Sharing.shareAsync(uri, {
           mimeType: "application/json",
           dialogTitle: "Save Trackio Backup",
         });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
-    } catch (error) {
-      console.error("Export failed:", error);
-      if (Platform.OS === "web") {
-        alert("Export Failed: Could not create backup file.");
-      } else {
-        Alert.alert("Export Failed", "Could not create backup file.");
+    } catch (error: any) {
+      const msg: string = error?.message ?? "";
+      if (msg.toLowerCase().includes("cancel") || msg.toLowerCase().includes("dismiss")) {
+        return;
       }
+      console.error("Export failed:", error);
+      Alert.alert("Export Failed", "Could not export backup. Please try again.");
     } finally {
       setExporting(false);
     }
@@ -68,7 +73,9 @@ export default function DataBackupScreen() {
   const handleImport = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: "application/json",
+        type: Platform.OS === "ios"
+          ? ["public.json", "application/json", "public.text", "text/plain"]
+          : "application/json",
         copyToCacheDirectory: true,
       });
 
@@ -76,32 +83,29 @@ export default function DataBackupScreen() {
 
       setImporting(true);
       const pickedFile = result.assets[0];
-      const response = await fetch(pickedFile.uri);
-      if (!response.ok) throw new Error("Could not read file");
-      const content = await response.text();
+
+      let content: string;
+      if (Platform.OS === "web") {
+        const response = await fetch(pickedFile.uri);
+        if (!response.ok) throw new Error("Could not read file");
+        content = await response.text();
+      } else {
+        content = await FileSystem.readAsStringAsync(pickedFile.uri, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+      }
 
       const importResult = await backupStorage.importAll(content);
 
       if (importResult.success) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        if (Platform.OS === "web") {
-          alert("Import Complete: Your data has been restored.");
-        } else {
-          Alert.alert("Import Complete", "Your data has been restored.");
-        }
+        Alert.alert("Import Complete", "Your data has been restored successfully.");
       } else {
-        if (Platform.OS === "web") {
-          alert("Import Failed: " + (importResult.error || "Invalid backup file."));
-        } else {
-          Alert.alert("Import Failed", importResult.error || "Invalid backup file.");
-        }
+        Alert.alert("Import Failed", importResult.error || "Invalid backup file.");
       }
-    } catch (error) {
-      if (Platform.OS === "web") {
-        alert("Import Failed: Could not read backup file.");
-      } else {
-        Alert.alert("Import Failed", "Could not read backup file.");
-      }
+    } catch (error: any) {
+      console.error("Import failed:", error);
+      Alert.alert("Import Failed", "Could not read the backup file. Make sure it is a valid Trackio backup.");
     } finally {
       setImporting(false);
     }
