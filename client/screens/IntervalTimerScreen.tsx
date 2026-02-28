@@ -4,6 +4,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useKeepAwake } from "expo-keep-awake";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -24,6 +25,7 @@ export default function IntervalTimerScreen() {
   const navigation = useNavigation();
   const route = useRoute<RoutePropType>();
   const { theme } = useTheme();
+  useKeepAwake();
   const insets = useSafeAreaInsets();
   const { taskName, workSeconds, restSeconds, rounds } = route.params;
 

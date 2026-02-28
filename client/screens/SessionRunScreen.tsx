@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { HeaderButton } from "@react-navigation/elements";
 import * as Haptics from "expo-haptics";
+import { useKeepAwake } from "expo-keep-awake";
 
 import { ThemedText } from "@/components/ThemedText";
 import { RestTimerSheet } from "@/components/RestTimerSheet";
@@ -32,6 +33,7 @@ export default function SessionRunScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RoutePropType>();
   const { theme } = useTheme();
+  useKeepAwake();
   const { settings } = useSettings();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();

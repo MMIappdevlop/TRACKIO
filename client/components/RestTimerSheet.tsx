@@ -30,6 +30,7 @@ export function RestTimerSheet({
   const [seconds, setSeconds] = useState(initialSeconds);
   const [isRunning, setIsRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const endTimeRef = useRef<number>(0);
   const progress = useSharedValue(1);
 
   useEffect(() => {
@@ -48,24 +49,27 @@ export function RestTimerSheet({
   useEffect(() => {
     if (isRunning && seconds > 0) {
       intervalRef.current = setInterval(() => {
-        setSeconds((prev) => {
-          if (prev <= 1) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            onComplete?.();
-            onClose();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+        const remaining = Math.ceil((endTimeRef.current - Date.now()) / 1000);
+        if (remaining <= 0) {
+          clearInterval(intervalRef.current!);
+          intervalRef.current = null;
+          setSeconds(0);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          onComplete?.();
+          onClose();
+        } else {
+          setSeconds(remaining);
+        }
+      }, 500);
     }
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
     };
-  }, [isRunning, seconds > 0]);
+  }, [isRunning]);
 
   useEffect(() => {
     if (initialSeconds > 0) {
@@ -78,12 +82,21 @@ export function RestTimerSheet({
 
   const toggleTimer = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setIsRunning(!isRunning);
+    if (!isRunning) {
+      endTimeRef.current = Date.now() + seconds * 1000;
+    }
+    setIsRunning((prev) => !prev);
   };
 
   const addTime = (delta: number) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSeconds((prev) => Math.max(0, prev + delta));
+    setSeconds((prev) => {
+      const newVal = Math.max(0, prev + delta);
+      if (isRunning) {
+        endTimeRef.current = endTimeRef.current + delta * 1000;
+      }
+      return newVal;
+    });
   };
 
   const skipRest = () => {

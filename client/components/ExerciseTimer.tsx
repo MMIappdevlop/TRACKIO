@@ -47,6 +47,8 @@ export function ExerciseTimer({ mode, intervalConfig, onComplete }: ExerciseTime
   const breakIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const totalBreakRef = useRef(0);
   const startTimeRef = useRef<number>(0);
+  const pausedElapsedRef = useRef(0);
+  const breakStartRef = useRef<number>(0);
   const splitCountRef = useRef(0);
 
   const pulseScale = useSharedValue(1);
@@ -68,8 +70,10 @@ export function ExerciseTimer({ mode, intervalConfig, onComplete }: ExerciseTime
 
   useEffect(() => {
     if (status === "running") {
+      startTimeRef.current = Date.now() - pausedElapsedRef.current * 1000;
       intervalRef.current = setInterval(() => {
-        setElapsed((prev) => prev + 1);
+        const wallElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        setElapsed(wallElapsed);
         if (mode === "interval") {
           setPhaseSeconds((prev) => {
             const next = prev + 1;
@@ -84,8 +88,11 @@ export function ExerciseTimer({ mode, intervalConfig, onComplete }: ExerciseTime
             return next;
           });
         }
-      }, 1000);
+      }, 500);
     } else {
+      if (status === "paused") {
+        pausedElapsedRef.current = elapsed;
+      }
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -101,9 +108,10 @@ export function ExerciseTimer({ mode, intervalConfig, onComplete }: ExerciseTime
 
   useEffect(() => {
     if (status === "break") {
+      breakStartRef.current = Date.now();
       breakIntervalRef.current = setInterval(() => {
-        setBreakElapsed((prev) => prev + 1);
-      }, 1000);
+        setBreakElapsed(Math.floor((Date.now() - breakStartRef.current) / 1000));
+      }, 500);
     } else {
       if (breakIntervalRef.current) {
         clearInterval(breakIntervalRef.current);
@@ -152,7 +160,7 @@ export function ExerciseTimer({ mode, intervalConfig, onComplete }: ExerciseTime
 
   const handleStart = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    startTimeRef.current = Date.now();
+    pausedElapsedRef.current = 0;
     setStatus("running");
     setElapsed(0);
     setBreakElapsed(0);
@@ -173,6 +181,7 @@ export function ExerciseTimer({ mode, intervalConfig, onComplete }: ExerciseTime
 
   const handleResume = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    pausedElapsedRef.current = elapsed;
     setStatus("running");
   };
 
@@ -194,6 +203,7 @@ export function ExerciseTimer({ mode, intervalConfig, onComplete }: ExerciseTime
       },
     ]);
     setBreakElapsed(0);
+    pausedElapsedRef.current = elapsed;
     setStatus("running");
   };
 
