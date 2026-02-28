@@ -78,14 +78,9 @@ export default function SessionRunScreen() {
         </HeaderButton>
       ),
       headerLeft: () => (
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <HeaderButton onPress={handleCancel}>
-            <Feather name="x" size={22} color={theme.textSecondary} />
-          </HeaderButton>
-          <HeaderButton onPress={() => setShowAddModal(true)}>
-            <Feather name="plus" size={22} color={theme.link} />
-          </HeaderButton>
-        </View>
+        <HeaderButton onPress={handleCancel}>
+          <Feather name="x" size={22} color={theme.textSecondary} />
+        </HeaderButton>
       ),
     });
     return () => {
@@ -533,8 +528,18 @@ export default function SessionRunScreen() {
           {currentTaskIndex + 1}/{tasks.length}
         </ThemedText>
 
-        {/* Task Name */}
-        <ThemedText type="h1" style={styles.taskName}>{currentTask.name}</ThemedText>
+        {/* Task Name + Add Exercise */}
+        <View style={styles.taskNameRow}>
+          <ThemedText type="h1" style={styles.taskName} numberOfLines={1}>{currentTask.name}</ThemedText>
+          <Pressable
+            testID="button-add-exercise"
+            onPress={() => setShowAddModal(true)}
+            style={[styles.addExerciseButton, { backgroundColor: theme.backgroundSecondary }]}
+          >
+            <Feather name="plus" size={16} color={theme.text} />
+            <ThemedText type="body" style={[styles.addSetText, { color: theme.text }]}>Add</ThemedText>
+          </Pressable>
+        </View>
 
         {/* Target */}
         <ThemedText type="secondary" style={styles.targetText}>
@@ -961,8 +966,24 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: Spacing.sm,
   },
-  taskName: {
+  taskNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: Spacing.xs,
+    gap: Spacing.sm,
+  },
+  taskName: {
+    flex: 1,
+  },
+  addExerciseButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexShrink: 0,
+    gap: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
   },
   targetText: {
     marginBottom: Spacing.lg,
