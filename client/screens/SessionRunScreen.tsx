@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, StyleSheet, Pressable, TextInput, Modal, Alert } from "react-native";
+import { View, StyleSheet, Pressable, TextInput, Modal, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -73,19 +73,19 @@ export default function SessionRunScreen() {
     loadSession();
     navigation.setOptions({
       headerRight: () => (
+        <HeaderButton onPress={() => handleFinishRef.current()}>
+          <ThemedText type="link" style={{ fontWeight: "600" }}>Finish</ThemedText>
+        </HeaderButton>
+      ),
+      headerLeft: () => (
         <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <HeaderButton onPress={handleCancel}>
+            <Feather name="x" size={22} color={theme.textSecondary} />
+          </HeaderButton>
           <HeaderButton onPress={() => setShowAddModal(true)}>
             <Feather name="plus" size={22} color={theme.link} />
           </HeaderButton>
-          <HeaderButton onPress={() => handleFinishRef.current()}>
-            <ThemedText type="link" style={{ fontWeight: "600" }}>Finish</ThemedText>
-          </HeaderButton>
         </View>
-      ),
-      headerLeft: () => (
-        <HeaderButton onPress={handleCancel}>
-          <Feather name="x" size={22} color={theme.textSecondary} />
-        </HeaderButton>
       ),
     });
     return () => {
@@ -854,6 +854,10 @@ export default function SessionRunScreen() {
         animationType="slide"
         onRequestClose={() => setShowAddModal(false)}
       >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
         <Pressable style={[styles.addModalOverlay, { backgroundColor: theme.overlay }]} onPress={() => setShowAddModal(false)}>
           <Pressable style={[styles.addModalContent, { backgroundColor: theme.backgroundDefault }]} onPress={() => {}}>
             <View style={[styles.addModalHandle, { backgroundColor: theme.textMuted }]} />
@@ -930,6 +934,7 @@ export default function SessionRunScreen() {
             </Pressable>
           </Pressable>
         </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
 
       <RestTimerSheet

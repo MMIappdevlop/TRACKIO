@@ -6,6 +6,7 @@ Trackio is a mobile-first personal training log built with React Native + Expo (
 **Core Promise**: "Bring your plan. Trackio records your training."
 
 ## Recent Changes
+- **2026-02-28**: Session header layout — "+" (add exercise) moved to left header alongside the X (cancel) button; "Finish" stands alone on the right; add exercise modal now uses KeyboardAvoidingView so the sheet floats above the keyboard
 - **2026-02-28**: Ad-hoc exercise during active workout — "+" button in header opens a bottom-sheet modal to add a session-only exercise (name, mode, set count for strength); navigates directly to it; saved in session summary like any planned exercise
 - **2026-02-28**: Color/text cleanup — all hardcoded colors now reference theme.ts constants; added `overlay` to theme; `#FFFFFF` replaced with `theme.buttonText`, accent colors with `theme.link`, overlay rgba with `theme.overlay`
 - **2026-02-28**: Session pause/resume — auto-saves workout progress, resume banner on Training home, Save & Exit / Discard options
