@@ -21,11 +21,11 @@ import type { SessionTemplate, ActiveSession } from "@/types";
 
 type NavigationProp = NativeStackNavigationProp<TrainingStackParamList & RootStackParamList>;
 
-interface GreetingEntry { text: string; emoji: string; isBazinga?: boolean; }
+interface GreetingEntry { text: string; emoji: string; hours?: [number, number]; isBazinga?: boolean; }
 const GREETINGS: GreetingEntry[] = [
-  { text: "Good morning",               emoji: "💪" },
-  { text: "Good afternoon",             emoji: "☀️" },
-  { text: "Good evening",               emoji: "🌙" },
+  { text: "Good morning",               emoji: "💪", hours: [5, 11]  },
+  { text: "Good afternoon",             emoji: "☀️",  hours: [12, 16] },
+  { text: "Good evening",               emoji: "🌙", hours: [17, 23] },
   { text: "Hey there",                  emoji: "👋" },
   { text: "Hello, buddy",               emoji: "😎" },
   { text: "What's up",                  emoji: "⚡" },
@@ -38,7 +38,12 @@ const GREETINGS: GreetingEntry[] = [
   { text: "What's new?",                emoji: "👀" },
   { text: "Bazinga!",                   emoji: "🚂", isBazinga: true },
 ];
-const SESSION_GREETING = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+function pickGreeting(): GreetingEntry {
+  const hour = new Date().getHours();
+  const eligible = GREETINGS.filter(g => !g.hours || (hour >= g.hours[0] && hour <= g.hours[1]));
+  return eligible[Math.floor(Math.random() * eligible.length)];
+}
+const SESSION_GREETING = pickGreeting();
 
 function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
@@ -179,14 +184,14 @@ export default function TrainingHomeScreen() {
               <Pressable onPress={() => { setBazingaRevealed(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
                 <Text style={styles.greetingEmoji}>{SESSION_GREETING.emoji}</Text>
                 <ThemedText type="h1" style={[styles.greeting, styles.blurredText]}>
-                  {SESSION_GREETING.text}, {settings?.userName || "Athlete"}
+                  {SESSION_GREETING.text}
                 </ThemedText>
               </Pressable>
             ) : (
               <>
                 <Text style={styles.greetingEmoji}>{SESSION_GREETING.emoji}</Text>
                 <ThemedText type="h1" style={styles.greeting}>
-                  {SESSION_GREETING.text}, {settings?.userName || "Athlete"}
+                  {SESSION_GREETING.text}
                 </ThemedText>
               </>
             )}
