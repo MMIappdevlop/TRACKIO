@@ -26,7 +26,6 @@ export default function BadgesScreen() {
     if (loading) return null;
     return (
       <EmptyState
-        image={require("../../assets/images/empty-badges.png")}
         title="No Badges Yet"
         description="Complete workouts and reach milestones to earn badges"
       />
