@@ -9,7 +9,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ModeIcon } from "@/components/icons/ModeIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { completedTasksStorage, taskTemplatesStorage } from "@/lib/storage";
-import { Spacing, BorderRadius, TaskModes, Colors } from "@/constants/theme";
+import { Spacing, BorderRadius, TaskModes } from "@/constants/theme";
 import type { ProgressStackParamList } from "@/navigation/ProgressStackNavigator";
 import type { CompletedTask, TaskTemplate } from "@/types";
 

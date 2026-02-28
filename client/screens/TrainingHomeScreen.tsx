@@ -196,7 +196,7 @@ export default function TrainingHomeScreen() {
               </>
             )}
             {activeProgram ? (
-              <ThemedText type="secondary" style={styles.planLabel}>
+              <ThemedText type="secondary">
                 Active Plan: {activeProgram.name}
               </ThemedText>
             ) : null}
@@ -389,11 +389,8 @@ const styles = StyleSheet.create({
   },
   blurredText: {
     color: "transparent",
-    textShadowColor: "#E6E8EB",
-    textShadowRadius: 12,
-    textShadowOffset: { width: 0, height: 0 },
+    textShadow: "0 0 12px #E6E8EB",
   },
-  planLabel: {},
   sessionCard: {
     borderRadius: BorderRadius.lg,
     padding: Spacing.xl,

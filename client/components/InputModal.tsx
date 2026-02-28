@@ -14,7 +14,7 @@ import * as Haptics from "expo-haptics";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing, BorderRadius, Typography, Colors } from "@/constants/theme";
+import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 
 interface InputModalProps {
   visible: boolean;
