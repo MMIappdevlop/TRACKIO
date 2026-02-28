@@ -19,7 +19,7 @@ import { useSettings } from "@/hooks/useData";
 import { taskTemplatesStorage, completedSessionsStorage, completedTasksStorage, activeSessionStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, TaskModes, Colors } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import type { TaskTemplate, StrengthSetData, TaskDataJson, SplitTime } from "@/types";
+import type { TaskTemplate, StrengthSetData, TaskDataJson, SplitTime, ExerciseMode } from "@/types";
 
 type RoutePropType = RouteProp<RootStackParamList, "SessionRun">;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -46,6 +46,10 @@ export default function SessionRunScreen() {
   const [restSeconds, setRestSeconds] = useState(90);
   const [showFinishModal, setShowFinishModal] = useState(false);
   const [showPauseModal, setShowPauseModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [adhocName, setAdhocName] = useState("");
+  const [adhocMode, setAdhocMode] = useState<ExerciseMode>("strength");
+  const [adhocSets, setAdhocSets] = useState(3);
   const [previousData, setPreviousData] = useState<Record<string, StrengthSetData[]>>({});
   const [distanceInputStr, setDistanceInputStr] = useState<Record<string, string>>({});
   const [durationInputStr, setDurationInputStr] = useState<Record<string, string>>({});
@@ -69,9 +73,14 @@ export default function SessionRunScreen() {
     loadSession();
     navigation.setOptions({
       headerRight: () => (
-        <HeaderButton onPress={() => handleFinishRef.current()}>
-          <ThemedText type="link" style={{ fontWeight: "600" }}>Finish</ThemedText>
-        </HeaderButton>
+        <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <HeaderButton onPress={() => setShowAddModal(true)}>
+            <Feather name="plus" size={22} color={theme.link} />
+          </HeaderButton>
+          <HeaderButton onPress={() => handleFinishRef.current()}>
+            <ThemedText type="link" style={{ fontWeight: "600" }}>Finish</ThemedText>
+          </HeaderButton>
+        </View>
       ),
       headerLeft: () => (
         <HeaderButton onPress={handleCancel}>
@@ -315,6 +324,45 @@ export default function SessionRunScreen() {
       clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = null;
     }
+  };
+
+  const handleAddAdhocExercise = () => {
+    const id = `adhoc-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const now = new Date().toISOString();
+    const newTask: TaskTemplate = {
+      id,
+      sessionTemplateId,
+      name: adhocName.trim(),
+      mode: adhocMode,
+      order: tasksRef.current.length,
+      config: adhocMode === "strength" ? { sets: adhocSets } : {},
+      trackMilestones: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    const initialData: TaskDataJson = {};
+    if (adhocMode === "strength") {
+      initialData.sets = Array.from({ length: adhocSets }, (_, i) => ({
+        setNumber: i + 1,
+        weight: undefined,
+        reps: undefined,
+        isCompleted: false,
+      }));
+    }
+    const newLog: TaskLogState = { taskId: id, data: initialData };
+    const newIndex = tasksRef.current.length;
+    setTasks((prev) => [...prev, newTask]);
+    setTaskLogs((prev) => {
+      const updated = [...prev, newLog];
+      taskLogsRef.current = updated;
+      return updated;
+    });
+    setCurrentTaskIndex(newIndex);
+    setShowAddModal(false);
+    setAdhocName("");
+    setAdhocMode("strength");
+    setAdhocSets(3);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
   const handleCancel = () => {
@@ -800,6 +848,90 @@ export default function SessionRunScreen() {
         </Pressable>
       </Modal>
 
+      <Modal
+        visible={showAddModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowAddModal(false)}
+      >
+        <Pressable style={[styles.addModalOverlay, { backgroundColor: theme.overlay }]} onPress={() => setShowAddModal(false)}>
+          <Pressable style={[styles.addModalContent, { backgroundColor: theme.backgroundDefault }]} onPress={() => {}}>
+            <View style={[styles.addModalHandle, { backgroundColor: theme.textMuted }]} />
+            <ThemedText type="h2" style={styles.addModalTitle}>Add Exercise</ThemedText>
+
+            <TextInput
+              style={[styles.addModalInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+              placeholder="Exercise name"
+              placeholderTextColor={theme.textMuted}
+              value={adhocName}
+              onChangeText={setAdhocName}
+              autoFocus
+              returnKeyType="done"
+            />
+
+            <ThemedText type="secondary" style={styles.addModalLabel}>Type</ThemedText>
+            <View style={styles.modePills}>
+              {(["strength", "distance", "interval", "time", "notes"] as ExerciseMode[]).map((m) => (
+                <Pressable
+                  key={m}
+                  onPress={() => setAdhocMode(m)}
+                  style={[styles.modePill, { backgroundColor: adhocMode === m ? theme.link : theme.backgroundSecondary }]}
+                >
+                  <ThemedText
+                    type="secondary"
+                    style={[styles.modePillText, { color: adhocMode === m ? theme.buttonText : theme.textSecondary }]}
+                  >
+                    {m.charAt(0).toUpperCase() + m.slice(1)}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+
+            {adhocMode === "strength" ? (
+              <>
+                <ThemedText type="secondary" style={styles.addModalLabel}>Sets</ThemedText>
+                <View style={styles.setCountRow}>
+                  <Pressable
+                    onPress={() => setAdhocSets((prev) => Math.max(1, prev - 1))}
+                    style={[styles.setCountBtn, { backgroundColor: theme.backgroundSecondary }]}
+                  >
+                    <Feather name="minus" size={18} color={theme.text} />
+                  </Pressable>
+                  <ThemedText type="h1" style={styles.setCountNum}>{adhocSets}</ThemedText>
+                  <Pressable
+                    onPress={() => setAdhocSets((prev) => Math.min(10, prev + 1))}
+                    style={[styles.setCountBtn, { backgroundColor: theme.backgroundSecondary }]}
+                  >
+                    <Feather name="plus" size={18} color={theme.text} />
+                  </Pressable>
+                </View>
+              </>
+            ) : null}
+
+            <Pressable
+              onPress={handleAddAdhocExercise}
+              disabled={adhocName.trim().length === 0}
+              style={[
+                styles.addModalBtn,
+                { backgroundColor: adhocName.trim().length > 0 ? theme.link : theme.backgroundSecondary },
+              ]}
+              testID="button-add-adhoc-exercise"
+            >
+              <ThemedText
+                type="body"
+                style={[styles.addModalBtnText, { color: adhocName.trim().length > 0 ? theme.buttonText : theme.textMuted }]}
+              >
+                Add to Workout
+              </ThemedText>
+            </Pressable>
+
+            <Pressable onPress={() => setShowAddModal(false)} style={styles.addModalCancel}>
+              <ThemedText type="secondary">Cancel</ThemedText>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <RestTimerSheet
         visible={showRestTimer}
         initialSeconds={restSeconds}
@@ -1023,5 +1155,84 @@ const styles = StyleSheet.create({
   setCheckbox: {
     padding: Spacing.xs,
     marginRight: Spacing.sm,
+  },
+  addModalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  addModalContent: {
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    paddingBottom: Spacing["3xl"],
+  },
+  addModalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: Spacing.lg,
+    opacity: 0.4,
+  },
+  addModalTitle: {
+    marginBottom: Spacing.lg,
+  },
+  addModalLabel: {
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.lg,
+  },
+  addModalInput: {
+    height: 52,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    fontSize: 16,
+    fontFamily: "Inter_400Regular",
+  },
+  modePills: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.sm,
+  },
+  modePill: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+  },
+  modePillText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  setCountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xl,
+  },
+  setCountBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  setCountNum: {
+    minWidth: 40,
+    textAlign: "center",
+  },
+  addModalBtn: {
+    height: 52,
+    borderRadius: BorderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: Spacing.xl,
+  },
+  addModalBtnText: {
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  addModalCancel: {
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: Spacing.sm,
   },
 });
