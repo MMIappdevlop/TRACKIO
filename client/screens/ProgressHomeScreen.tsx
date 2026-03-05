@@ -225,6 +225,7 @@ export default function ProgressHomeScreen() {
         weightUnit={settings?.weightUnit || "kg"}
         weekNum={weekInfo.weekNum}
         weekRange={weekInfo.range}
+        userName={settings?.userName}
       />
     </View>
   );

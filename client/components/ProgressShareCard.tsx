@@ -11,6 +11,7 @@ interface ProgressShareCardProps {
   weightUnit?: string;
   weekNum: number;
   weekRange: string;
+  userName?: string;
 }
 
 const CARD_WIDTH = 1080;
@@ -103,7 +104,7 @@ function ComparisonRow({ label, value, deltaInfo, isLast }: { label: string; val
 }
 
 export const ProgressShareCard = forwardRef<View, ProgressShareCardProps>(
-  ({ stats, prevStats, userWeight, weightUnit = "kg", weekNum, weekRange }, ref) => {
+  ({ stats, prevStats, userWeight, weightUnit = "kg", weekNum, weekRange, userName }, ref) => {
     const cur = stats;
     const prev = prevStats;
 
@@ -117,7 +118,7 @@ export const ProgressShareCard = forwardRef<View, ProgressShareCardProps>(
       <View style={s.outerWrapper}>
         <View ref={ref} style={s.canvas} collapsable={false}>
           <View style={s.headerSection}>
-            <Text style={s.headerTitle}>My Progress</Text>
+            <Text style={s.headerTitle}>{userName ? `${userName}'s Progress` : "My Progress"}</Text>
             <Text style={s.headerSubtitle}>Week {weekNum}</Text>
             <Text style={s.headerRange}>{weekRange}</Text>
           </View>
@@ -172,7 +173,7 @@ const s = StyleSheet.create({
   },
   headerSection: {
     marginBottom: S(48),
-    alignItems: "center",
+    alignItems: "flex-start",
   },
   headerTitle: {
     fontSize: S(56),
