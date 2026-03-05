@@ -4,12 +4,14 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import ProgressHomeScreen from "@/screens/ProgressHomeScreen";
 import SessionDetailScreen from "@/screens/SessionDetailScreen";
 import TaskDetailScreen from "@/screens/TaskDetailScreen";
+import TrainingCalendarScreen from "@/screens/TrainingCalendarScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
 export type ProgressStackParamList = {
   ProgressHome: undefined;
   SessionDetail: { sessionId: string };
   TaskDetail: { taskTemplateId: string; taskName: string };
+  TrainingCalendar: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProgressStackParamList>();
@@ -39,6 +41,13 @@ export default function ProgressStackNavigator() {
         options={({ route }) => ({
           headerTitle: route.params.taskName,
         })}
+      />
+      <Stack.Screen
+        name="TrainingCalendar"
+        component={TrainingCalendarScreen}
+        options={{
+          headerTitle: "Training History",
+        }}
       />
     </Stack.Navigator>
   );

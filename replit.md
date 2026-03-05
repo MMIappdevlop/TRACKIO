@@ -6,6 +6,9 @@ Trackio is a mobile-first personal training log built with React Native + Expo (
 **Core Promise**: "Bring your plan. Trackio records your training."
 
 ## Recent Changes
+- **2026-03-05**: Progress screen redesign — WeeklyStatsCard now shows training streak, ISO week number with date range, 7-day activity dots (Mon-Sun), horizontal stats row; calendar icon in header navigates to Training History Calendar screen with month nav, day selection, and per-day session list
+- **2026-03-05**: Training History Calendar — full month grid (Mon-Sun), dot indicators for training days, day selection shows sessions below, month navigation arrows, navigates to SessionDetail on tap
+- **2026-03-05**: Add Exercise button moved from header to exercise name row — pill-shaped "Add" button styled like "Add Set", positioned right of exercise name
 - **2026-02-28**: Server-mediated backup export — client POSTs backup JSON to `POST /api/backup`, server stores in memory (5min TTL, max 20 entries, 10MB cap), returns download URL; client opens `GET /api/backup/:id/download` via WebBrowser; replaces broken client-side FileSystem/Sharing approach; import uses fallback chain (FileSystem → fetch)
 - **2026-02-28**: Session header layout — "+" (add exercise) moved to left header alongside the X (cancel) button; "Finish" stands alone on the right; add exercise modal now uses KeyboardAvoidingView so the sheet floats above the keyboard
 - **2026-02-28**: Ad-hoc exercise during active workout — "+" button in header opens a bottom-sheet modal to add a session-only exercise (name, mode, set count for strength); navigates directly to it; saved in session summary like any planned exercise
@@ -82,6 +85,7 @@ client/
 │   ├── SessionTemplateDetailScreen.tsx
 │   ├── SettingsScreen.tsx
 │   ├── TaskDetailScreen.tsx
+│   ├── TrainingCalendarScreen.tsx
 │   └── TrainingHomeScreen.tsx
 └── types/
     └── index.ts            # TypeScript type definitions

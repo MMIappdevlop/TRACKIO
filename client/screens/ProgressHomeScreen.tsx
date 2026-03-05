@@ -1,9 +1,10 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, FlatList, StyleSheet, RefreshControl } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useHeaderHeight } from "@react-navigation/elements";
+import { useHeaderHeight, HeaderButton } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
 import { WeeklyStatsCard } from "@/components/WeeklyStatsCard";
@@ -11,7 +12,7 @@ import { SessionHistoryCard } from "@/components/SessionHistoryCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
 import { useWeeklyStats, useCompletedSessions } from "@/hooks/useData";
-import { Spacing } from "@/constants/theme";
+import { Spacing, BorderRadius } from "@/constants/theme";
 import type { ProgressStackParamList } from "@/navigation/ProgressStackNavigator";
 import type { CompletedSession } from "@/types";
 
@@ -26,6 +27,19 @@ export default function ProgressHomeScreen() {
   const { stats, loading: statsLoading, refresh: refreshStats } = useWeeklyStats();
   const { sessions, loading: sessionsLoading, refresh: refreshSessions } = useCompletedSessions();
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <HeaderButton
+          testID="button-calendar"
+          onPress={() => navigation.navigate("TrainingCalendar")}
+        >
+          <Feather name="calendar" size={22} color={theme.text} />
+        </HeaderButton>
+      ),
+    });
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -48,9 +62,14 @@ export default function ProgressHomeScreen() {
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <WeeklyStatsCard stats={stats} loading={statsLoading} />
+      <WeeklyStatsCard stats={stats} loading={statsLoading} completedSessions={sessions} />
       {sessions.length > 0 ? (
-        <ThemedText type="h2" style={styles.sectionTitle}>Recent Sessions</ThemedText>
+        <View style={styles.sectionTitleRow}>
+          <ThemedText type="h2">Recent Sessions</ThemedText>
+          <View style={[styles.countBadge, { backgroundColor: theme.backgroundSecondary }]}>
+            <ThemedText type="muted" style={styles.countText}>{sessions.length}</ThemedText>
+          </View>
+        </View>
       ) : null}
     </View>
   );
@@ -109,7 +128,21 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: Spacing.md,
   },
-  sectionTitle: {
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
     marginBottom: Spacing.md,
+  },
+  countBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.full,
+    minWidth: 24,
+    alignItems: "center",
+  },
+  countText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
