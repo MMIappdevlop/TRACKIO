@@ -1,0 +1,56 @@
+Implement an IN-APP “Weight Update Reminder” plus an onboarding upsell popup.
+
+A) Weight Update Reminder settings
+Navigation: Settings → Reminders → Weight Update
+
+UI:
+- Toggle: “Weight Update Reminder” (on/off)
+- Multi-select days of week (Mon–Sun)
+- Time picker (default 09:00)
+- Note: “Reminder will appear when you open Trackio.”
+
+Reminder behavior (no OS notifications):
+On app open (or after short delay), check:
+1) remindersEnabled == true
+2) today weekday is selected
+3) currentTime >= reminderTime
+4) no weight entry exists for today
+5) reminder not already shown today
+If all true: show in-app popup:
+Title: “Update weight”
+Text: “Log today’s weight to keep your progress accurate.”
+Buttons:
+- Primary: “Log weight” → open Weight Log input
+- Secondary: “Not now”
+If dismissed, do not show again until next day.
+Store lastReminderShownDate and lastDismissedDate locally.
+
+Weight Log:
+- Numeric input supports decimals (e.g., 78.4)
+- Save with today’s date/time
+- Set hasEverLoggedWeight = true
+
+B) Upsell popup after first workout
+Trigger: after the user finishes their FIRST workout ever (firstWorkoutCompletedAt not set before).
+
+Show modal:
+Title: “Track your weight?”
+Text: “Enable reminders to log your weight on your schedule. This helps your weekly progress stay accurate.”
+Buttons:
+- “Enable” (primary) → open Settings → Reminders → Weight Update and prefill:
+   * toggle ON
+   * day = Sunday selected
+   * time = 09:00
+- “Not now” (secondary) → dismiss and store weightReminderUpsellDismissedAt = now
+
+C) Re-prompt after 10 days if ignored
+On app open, if ALL true:
+- weightReminderEnabled == false
+- hasEverLoggedWeight == false
+- weightReminderUpsellDismissedAt is not null
+- now >= weightReminderUpsellDismissedAt + 10 days
+- (optional) do not show more than once in 10 days: ensure weightReminderUpsellLastShownAt is null OR now >= weightReminderUpsellLastShownAt + 10 days
+Then show the same “Track your weight?” popup again and update weightReminderUpsellLastShownAt = now.
+
+Do NOT show this popup if the user has ever enabled the reminder OR ever logged weight.
+Persist all flags locally.
