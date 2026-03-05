@@ -1,0 +1,117 @@
+Build Card 3 (Weekly Summary Card) for the Trackio – My Progress screen.
+
+This card shows a clean weekly summary with comparison vs the previous week and allows the user to share the summary as a PNG image.
+
+Follow the UI and behavior rules below.
+
+Card Position
+
+Card 3 appears below Card 2 (Training Metrics & Weekly Comparison) on the My Progress screen.
+
+Card Header
+
+Place a share icon in the top-right corner of the card.
+
+Behavior:
+
+When the user taps the share icon, the app generates a PNG image of the progress summary.
+
+After generating the image, open the native device share sheet.
+
+Do not add a title like “Share Summary”.The card should visually match the other cards.
+
+Card Content
+
+Display a weekly summary with comparison vs last week.
+
+At the top of the card show:
+
+Week 10Mar 2 – Mar 8
+
+Below that, display the following metrics as rows.
+
+Each row must contain:
+
+Label (small text)
+
+This week value (large number)
+
+Change vs last week (small comparison text)
+
+Metrics to show:
+
+Body WeightExample:78.4 kg-0.8 kg vs last week
+
+SessionsExample:5+1 vs last week
+
+Training TimeExample:4h 25m+35 min vs last week
+
+DistanceExample:18.6 km+3.2 km vs last week
+
+Training Weight (gym volume)Example:8,420 kg+920 kg vs last week
+
+Design Rules
+
+Keep the design consistent with the other cards:
+
+• Large numbers• Small labels• Minimal text• Clean spacing• No charts• No progress bars• No rings
+
+Comparison text should be smaller and secondary.
+
+Examples:
+
++35 min vs last week-0.8 kg vs last week
+
+Use simple + / - values, avoid strong colors that create pressure.
+
+Bottom Action
+
+At the bottom of the card add a button:
+
+Share as PNG
+
+This button performs the same action as the share icon.
+
+PNG Export Behavior
+
+When the user shares:
+
+Generate a PNG image that visually matches the Trackio app layout.
+
+The PNG should include:
+
+My ProgressWeek 10Mar 2 – Mar 8
+
+Quick Progress Overview (Card 1 data)
+
+Training Metrics & Weekly Comparison (Card 2 data)
+
+Weekly Summary (Card 3 content)
+
+Remove interactive UI elements from the PNG:
+
+calendar icon
+
+share icon
+
+buttons
+
+navigation bar
+
+Add the Trackio logo in the bottom-right corner of the PNG.
+
+The PNG background should match the app background and card style.
+
+Edge Cases
+
+Handle missing comparison data:
+
+If there is no data for last week, show:
+
+— vs last week
+
+If a metric was not recorded (example: body weight not logged):
+
+Display:
+
+Not logged
