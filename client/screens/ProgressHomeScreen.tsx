@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, FlatList, StyleSheet, RefreshControl } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -11,7 +11,7 @@ import { WeeklyStatsCard } from "@/components/WeeklyStatsCard";
 import { SessionHistoryCard } from "@/components/SessionHistoryCard";
 import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
-import { useWeeklyStats, useCompletedSessions } from "@/hooks/useData";
+import { useWeeklyStats, useCompletedSessions, useSettings } from "@/hooks/useData";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { ProgressStackParamList } from "@/navigation/ProgressStackNavigator";
 import type { CompletedSession } from "@/types";
@@ -26,10 +26,39 @@ export default function ProgressHomeScreen() {
 
   const { stats, loading: statsLoading, refresh: refreshStats } = useWeeklyStats();
   const { sessions, loading: sessionsLoading, refresh: refreshSessions } = useCompletedSessions();
+  const { settings, refresh: refreshSettings } = useSettings();
   const [refreshing, setRefreshing] = useState(false);
+
+  const weekInfo = useMemo(() => {
+    const now = new Date();
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+    const yearStart = new Date(d.getFullYear(), 0, 4);
+    const weekNum = 1 + Math.round(((d.getTime() - yearStart.getTime()) / 86400000 - 3 + ((yearStart.getDay() + 6) % 7)) / 7);
+
+    const day = now.getDay();
+    const monStart = new Date(now);
+    monStart.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+    monStart.setHours(0, 0, 0, 0);
+    const sunEnd = new Date(monStart);
+    sunEnd.setDate(monStart.getDate() + 6);
+
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const range = `${months[monStart.getMonth()]} ${monStart.getDate()} – ${months[sunEnd.getMonth()]} ${sunEnd.getDate()}`;
+    return { weekNum, range };
+  }, []);
 
   useEffect(() => {
     navigation.setOptions({
+      headerTitle: () => (
+        <View>
+          <ThemedText type="h2" style={{ fontSize: 18 }}>My Progress</ThemedText>
+          <ThemedText type="muted" style={{ fontSize: 12 }}>
+            {`Week ${weekInfo.weekNum} · ${weekInfo.range}`}
+          </ThemedText>
+        </View>
+      ),
       headerRight: () => (
         <HeaderButton
           testID="button-calendar"
@@ -39,18 +68,19 @@ export default function ProgressHomeScreen() {
         </HeaderButton>
       ),
     });
-  }, []);
+  }, [weekInfo]);
 
   useFocusEffect(
     useCallback(() => {
       refreshStats();
       refreshSessions();
+      refreshSettings();
     }, [])
   );
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refreshStats(), refreshSessions()]);
+    await Promise.all([refreshStats(), refreshSessions(), refreshSettings()]);
     setRefreshing(false);
   };
 
@@ -62,7 +92,7 @@ export default function ProgressHomeScreen() {
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <WeeklyStatsCard stats={stats} loading={statsLoading} completedSessions={sessions} />
+      <WeeklyStatsCard stats={stats} loading={statsLoading} userWeight={settings?.userWeight} weightUnit={settings?.weightUnit || "kg"} />
       {sessions.length > 0 ? (
         <View style={styles.sectionTitleRow}>
           <ThemedText type="h2">Recent Sessions</ThemedText>

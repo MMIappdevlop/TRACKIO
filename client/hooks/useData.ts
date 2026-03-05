@@ -273,9 +273,9 @@ export function useWeeklyStats() {
     setLoading(true);
     try {
       const now = new Date();
-      const dayOfWeek = now.getDay();
+      const day = now.getDay();
       const weekStart = new Date(now);
-      weekStart.setDate(now.getDate() - dayOfWeek);
+      weekStart.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
       weekStart.setHours(0, 0, 0, 0);
 
       const sessions = await completedSessionsStorage.getByWeek(weekStart);
@@ -284,10 +284,14 @@ export function useWeeklyStats() {
       let totalVolume = 0;
       let totalDistance = 0;
       let totalDuration = 0;
+      let totalExercises = 0;
+      let totalCalories = 0;
 
       for (const session of sessions) {
         totalDuration += session.durationSeconds;
+        totalCalories += session.estimatedCalories ?? 0;
         const sessionTasks = tasks.filter((t) => t.completedSessionId === session.id);
+        totalExercises += sessionTasks.length;
 
         for (const task of sessionTasks) {
           if (task.mode === "strength" && task.dataJson.sets) {
@@ -309,6 +313,8 @@ export function useWeeklyStats() {
         totalDurationSeconds: totalDuration,
         totalVolume,
         totalDistance,
+        totalExercises,
+        totalCalories,
       });
     } finally {
       setLoading(false);

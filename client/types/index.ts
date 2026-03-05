@@ -155,4 +155,6 @@ export interface WeeklyStats {
   totalDurationSeconds: number;
   totalVolume: number;
   totalDistance: number;
+  totalExercises: number;
+  totalCalories: number;
 }
