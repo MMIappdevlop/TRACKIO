@@ -68,6 +68,7 @@ export default function ProgressHomeScreen() {
   useEffect(() => {
     navigation.setOptions({
       headerTransparent: false,
+      headerTitleAlign: "left",
       headerStyle: { backgroundColor: theme.backgroundRoot },
       headerTitle: () => (
         <View>
