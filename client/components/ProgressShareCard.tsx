@@ -24,6 +24,8 @@ const TEXT_PRIMARY = "#E6E8EB";
 const TEXT_SECONDARY = "#9AA0AA";
 const TEXT_MUTED = "#6B7280";
 const ACCENT = "#4C7DFF";
+const GREEN = "#4CAF50";
+const RED = "#EF5350";
 const BORDER = "rgba(255,255,255,0.06)";
 
 function fmtDur(seconds: number): string {
@@ -66,24 +68,14 @@ function fmtCal(cal: number): string {
   return String(Math.round(cal));
 }
 
-function delta(cur: number, prev: number, fmt: (v: number) => string): string {
-  const diff = cur - prev;
-  if (prev === 0 && cur === 0) return "\u2014 vs last week";
-  if (Math.abs(diff) < 0.01) return "\u2014 vs last week";
-  const sign = diff > 0 ? "+" : "-";
-  return `${sign}${fmt(diff)} vs last week`;
-}
+type Direction = "up" | "down" | "same";
 
-function MetricRow({ label, value, comparison }: { label: string; value: string; comparison: string }) {
-  return (
-    <View style={s.metricRow}>
-      <View style={{ flex: 1 }}>
-        <Text style={s.metricLabel}>{label}</Text>
-        <Text style={s.metricValue}>{value}</Text>
-      </View>
-      <Text style={s.metricDelta}>{comparison}</Text>
-    </View>
-  );
+function delta(cur: number, prev: number, fmt: (v: number) => string): { text: string; dir: Direction } {
+  const diff = cur - prev;
+  if (prev === 0 && cur === 0) return { text: "no data", dir: "same" };
+  if (Math.abs(diff) < 0.01) return { text: "same as last week", dir: "same" };
+  const sign = diff > 0 ? "+" : "-";
+  return { text: `${sign}${fmt(diff)} vs last week`, dir: diff > 0 ? "up" : "down" };
 }
 
 function StatCell({ label, value }: { label: string; value: string }) {
@@ -95,10 +87,31 @@ function StatCell({ label, value }: { label: string; value: string }) {
   );
 }
 
+function ComparisonRow({ label, value, deltaInfo, isLast }: { label: string; value: string; deltaInfo: { text: string; dir: Direction }; isLast?: boolean }) {
+  const arrow = deltaInfo.dir === "up" ? "\u2191 " : deltaInfo.dir === "down" ? "\u2193 " : "";
+  const color = deltaInfo.dir === "up" ? GREEN : deltaInfo.dir === "down" ? RED : TEXT_MUTED;
+
+  return (
+    <View style={[s.compRow, isLast ? null : { borderBottomWidth: S(1), borderBottomColor: BORDER }]}>
+      <View style={{ flex: 1 }}>
+        <Text style={s.compLabel}>{label}</Text>
+        <Text style={s.compValue}>{value}</Text>
+      </View>
+      <Text style={[s.compDelta, { color }]}>{arrow}{deltaInfo.text}</Text>
+    </View>
+  );
+}
+
 export const ProgressShareCard = forwardRef<View, ProgressShareCardProps>(
   ({ stats, prevStats, userWeight, weightUnit = "kg", weekNum, weekRange }, ref) => {
     const cur = stats;
     const prev = prevStats;
+
+    const sessionsDelta = delta(cur?.sessionsCount ?? 0, prev?.sessionsCount ?? 0, (v) => String(Math.abs(Math.round(v))));
+    const durationDelta = delta(cur?.totalDurationSeconds ?? 0, prev?.totalDurationSeconds ?? 0, fmtDurDelta);
+    const distanceDelta = delta(cur?.totalDistance ?? 0, prev?.totalDistance ?? 0, fmtDistDelta);
+    const volumeDelta = delta(cur?.totalVolume ?? 0, prev?.totalVolume ?? 0, fmtVolDelta);
+    const weightDelta = { text: "no previous data", dir: "same" as Direction };
 
     return (
       <View style={s.outerWrapper}>
@@ -110,7 +123,7 @@ export const ProgressShareCard = forwardRef<View, ProgressShareCardProps>(
           </View>
 
           <View style={s.card}>
-            <Text style={s.cardTitle}>Quick Progress Overview</Text>
+            <Text style={s.cardTitle}>This Week</Text>
             <View style={s.gridRow}>
               <StatCell label="Weight" value={userWeight ? `${userWeight} ${weightUnit}` : `-- ${weightUnit}`} />
               <StatCell label="Workout Days" value={`${cur?.sessionsCount ?? 0} days`} />
@@ -125,12 +138,12 @@ export const ProgressShareCard = forwardRef<View, ProgressShareCardProps>(
           </View>
 
           <View style={s.card}>
-            <Text style={s.cardTitle}>Weekly Comparison</Text>
-            <MetricRow label="Distance" value={fmtDist(cur?.totalDistance ?? 0)} comparison={delta(cur?.totalDistance ?? 0, prev?.totalDistance ?? 0, fmtDistDelta)} />
-            <MetricRow label="Training Time" value={fmtDur(cur?.totalDurationSeconds ?? 0)} comparison={delta(cur?.totalDurationSeconds ?? 0, prev?.totalDurationSeconds ?? 0, fmtDurDelta)} />
-            <MetricRow label="Sessions" value={`${cur?.sessionsCount ?? 0} sessions`} comparison={delta(cur?.sessionsCount ?? 0, prev?.sessionsCount ?? 0, (v) => String(Math.abs(Math.round(v))))} />
-            <MetricRow label="Training Weight" value={fmtVol(cur?.totalVolume ?? 0)} comparison={delta(cur?.totalVolume ?? 0, prev?.totalVolume ?? 0, fmtVolDelta)} />
-            <MetricRow label="Body Weight" value={userWeight ? `${userWeight} ${weightUnit}` : "Not logged"} comparison={"\u2014 vs last week"} />
+            <Text style={s.cardTitle}>vs Last Week</Text>
+            <ComparisonRow label="Sessions" value={`${cur?.sessionsCount ?? 0} sessions`} deltaInfo={sessionsDelta} />
+            <ComparisonRow label="Training Time" value={fmtDur(cur?.totalDurationSeconds ?? 0)} deltaInfo={durationDelta} />
+            <ComparisonRow label="Distance" value={fmtDist(cur?.totalDistance ?? 0)} deltaInfo={distanceDelta} />
+            <ComparisonRow label="Training Weight" value={fmtVol(cur?.totalVolume ?? 0)} deltaInfo={volumeDelta} />
+            <ComparisonRow label="Body Weight" value={userWeight ? `${userWeight} ${weightUnit}` : "Not logged"} deltaInfo={weightDelta} isLast />
           </View>
 
           <View style={s.logoSection}>
@@ -216,29 +229,26 @@ const s = StyleSheet.create({
     color: TEXT_PRIMARY,
     fontFamily: Typography.stat.fontFamily,
   },
-  metricRow: {
+  compRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: S(16),
-    borderBottomWidth: S(1),
-    borderBottomColor: BORDER,
   },
-  metricLabel: {
+  compLabel: {
     fontSize: S(18),
     color: TEXT_MUTED,
     fontFamily: Typography.body.fontFamily,
     marginBottom: S(2),
   },
-  metricValue: {
+  compValue: {
     fontSize: S(28),
     fontWeight: "600",
     color: TEXT_PRIMARY,
     fontFamily: Typography.stat.fontFamily,
   },
-  metricDelta: {
+  compDelta: {
     fontSize: S(16),
-    color: TEXT_SECONDARY,
     fontFamily: Typography.body.fontFamily,
     textAlign: "right",
   },

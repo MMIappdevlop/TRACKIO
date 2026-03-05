@@ -11,7 +11,6 @@ import * as Sharing from "expo-sharing";
 import { ThemedText } from "@/components/ThemedText";
 import { WeeklyStatsCard } from "@/components/WeeklyStatsCard";
 import { WeeklyComparisonCard } from "@/components/WeeklyComparisonCard";
-import { WeeklySummaryCard } from "@/components/WeeklySummaryCard";
 import { ProgressShareCard } from "@/components/ProgressShareCard";
 import { SessionHistoryCard } from "@/components/SessionHistoryCard";
 import { useTheme } from "@/hooks/useTheme";
@@ -208,13 +207,6 @@ export default function ProgressHomeScreen() {
         ) : null}
 
         <WeeklyComparisonCard
-          stats={stats}
-          prevStats={prevStats}
-          userWeight={settings?.userWeight}
-          weightUnit={settings?.weightUnit || "kg"}
-        />
-
-        <WeeklySummaryCard
           stats={stats}
           prevStats={prevStats}
           userWeight={settings?.userWeight}

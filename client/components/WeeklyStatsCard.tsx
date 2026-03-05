@@ -29,44 +29,34 @@ function formatCalories(cal: number): string {
   return String(Math.round(cal));
 }
 
+function StatCell({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.cell}>
+      <ThemedText type="muted" style={styles.label}>{label}</ThemedText>
+      <ThemedText type="h1" style={styles.value}>{value}</ThemedText>
+    </View>
+  );
+}
+
 export function WeeklyStatsCard({ stats, userWeight, weightUnit = "kg" }: WeeklyStatsCardProps) {
   const { theme } = useTheme();
 
-  const weightDisplay = userWeight ? `${userWeight} ${weightUnit}` : `-- ${weightUnit}`;
-  const daysDisplay = `${stats?.sessionsCount ?? 0} days`;
-  const exercisesDisplay = `${stats?.totalExercises ?? 0} exercises`;
-  const caloriesDisplay = `${formatCalories(stats?.totalCalories ?? 0)} kcal`;
-  const durationDisplay = formatDuration(stats?.totalDurationSeconds ?? 0);
-
   return (
     <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
+      <ThemedText type="muted" style={styles.sectionLabel}>This Week</ThemedText>
+
       <View style={styles.row}>
-        <View style={styles.cell}>
-          <ThemedText type="muted" style={styles.label}>Weight</ThemedText>
-          <ThemedText type="h1" style={styles.value}>{weightDisplay}</ThemedText>
-        </View>
-        <View style={styles.cell}>
-          <ThemedText type="muted" style={styles.label}>Workout Days</ThemedText>
-          <ThemedText type="h1" style={styles.value}>{daysDisplay}</ThemedText>
-        </View>
+        <StatCell label="Weight" value={userWeight ? `${userWeight} ${weightUnit}` : `-- ${weightUnit}`} />
+        <StatCell label="Workout Days" value={`${stats?.sessionsCount ?? 0} days`} />
       </View>
 
       <View style={styles.row}>
-        <View style={styles.cell}>
-          <ThemedText type="muted" style={styles.label}>Total Exercises</ThemedText>
-          <ThemedText type="h1" style={styles.value}>{exercisesDisplay}</ThemedText>
-        </View>
-        <View style={styles.cell}>
-          <ThemedText type="muted" style={styles.label}>Calories Burned</ThemedText>
-          <ThemedText type="h1" style={styles.value}>{caloriesDisplay}</ThemedText>
-        </View>
+        <StatCell label="Total Exercises" value={`${stats?.totalExercises ?? 0} exercises`} />
+        <StatCell label="Calories Burned" value={`${formatCalories(stats?.totalCalories ?? 0)} kcal`} />
       </View>
 
       <View style={styles.rowCentered}>
-        <View style={styles.cellCentered}>
-          <ThemedText type="muted" style={styles.label}>Training Duration</ThemedText>
-          <ThemedText type="h1" style={styles.value}>{durationDisplay}</ThemedText>
-        </View>
+        <StatCell label="Training Duration" value={formatDuration(stats?.totalDurationSeconds ?? 0)} />
       </View>
     </View>
   );
@@ -77,7 +67,13 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     paddingVertical: 22,
     paddingHorizontal: 20,
-    marginBottom: Spacing.xl,
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 16,
   },
   row: {
     flexDirection: "row",
@@ -89,9 +85,6 @@ const styles = StyleSheet.create({
   },
   cell: {
     flex: 1,
-  },
-  cellCentered: {
-    alignItems: "center",
   },
   label: {
     fontSize: 12,
