@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, FlatList, StyleSheet, RefreshControl } from "react-native";
+import { View, ScrollView, StyleSheet, RefreshControl, Pressable } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useHeaderHeight, HeaderButton } from "@react-navigation/elements";
@@ -9,7 +9,6 @@ import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { WeeklyStatsCard } from "@/components/WeeklyStatsCard";
 import { SessionHistoryCard } from "@/components/SessionHistoryCard";
-import { EmptyState } from "@/components/EmptyState";
 import { useTheme } from "@/hooks/useTheme";
 import { useWeeklyStats, useCompletedSessions, useSettings } from "@/hooks/useData";
 import { Spacing, BorderRadius } from "@/constants/theme";
@@ -18,6 +17,15 @@ import type { CompletedSession } from "@/types";
 
 type NavigationProp = NativeStackNavigationProp<ProgressStackParamList>;
 
+function getMonWeekStart(): Date {
+  const now = new Date();
+  const day = now.getDay();
+  const d = new Date(now);
+  d.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 export default function ProgressHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
@@ -25,9 +33,10 @@ export default function ProgressHomeScreen() {
   const tabBarHeight = useBottomTabBarHeight();
 
   const { stats, loading: statsLoading, refresh: refreshStats } = useWeeklyStats();
-  const { sessions, loading: sessionsLoading, refresh: refreshSessions } = useCompletedSessions();
+  const { sessions, refresh: refreshSessions } = useCompletedSessions();
   const { settings, refresh: refreshSettings } = useSettings();
   const [refreshing, setRefreshing] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   const weekInfo = useMemo(() => {
     const now = new Date();
@@ -37,10 +46,7 @@ export default function ProgressHomeScreen() {
     const yearStart = new Date(d.getFullYear(), 0, 4);
     const weekNum = 1 + Math.round(((d.getTime() - yearStart.getTime()) / 86400000 - 3 + ((yearStart.getDay() + 6) % 7)) / 7);
 
-    const day = now.getDay();
-    const monStart = new Date(now);
-    monStart.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
-    monStart.setHours(0, 0, 0, 0);
+    const monStart = getMonWeekStart();
     const sunEnd = new Date(monStart);
     sunEnd.setDate(monStart.getDate() + 6);
 
@@ -48,6 +54,16 @@ export default function ProgressHomeScreen() {
     const range = `${months[monStart.getMonth()]} ${monStart.getDate()} – ${months[sunEnd.getMonth()]} ${sunEnd.getDate()}`;
     return { weekNum, range };
   }, []);
+
+  const thisWeekSessions = useMemo(() => {
+    const weekStart = getMonWeekStart();
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+    return sessions.filter((s) => {
+      const d = new Date(s.completedAt);
+      return d >= weekStart && d < weekEnd;
+    });
+  }, [sessions]);
 
   useEffect(() => {
     navigation.setOptions({
@@ -88,49 +104,15 @@ export default function ProgressHomeScreen() {
     navigation.navigate("SessionDetail", { sessionId: session.id });
   };
 
-  const loading = statsLoading || sessionsLoading;
-
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <WeeklyStatsCard stats={stats} loading={statsLoading} userWeight={settings?.userWeight} weightUnit={settings?.weightUnit || "kg"} />
-      {sessions.length > 0 ? (
-        <View style={styles.sectionTitleRow}>
-          <ThemedText type="h2">Recent Sessions</ThemedText>
-          <View style={[styles.countBadge, { backgroundColor: theme.backgroundSecondary }]}>
-            <ThemedText type="muted" style={styles.countText}>{sessions.length}</ThemedText>
-          </View>
-        </View>
-      ) : null}
-    </View>
-  );
-
-  const renderEmpty = () => {
-    if (loading) return null;
-    return (
-      <EmptyState
-        title="No Sessions Yet"
-        description="Complete your first workout to see your progress here"
-      />
-    );
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
-      <FlatList
-        data={sessions}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <SessionHistoryCard session={item} onPress={() => handleSessionPress(item)} />
-        )}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmpty}
+      <ScrollView
         contentContainerStyle={[
           styles.content,
           {
             paddingTop: headerHeight + Spacing.xl,
             paddingBottom: tabBarHeight + Spacing["4xl"],
           },
-          sessions.length === 0 && styles.emptyContent,
         ]}
         refreshControl={
           <RefreshControl
@@ -139,7 +121,43 @@ export default function ProgressHomeScreen() {
             tintColor={theme.link}
           />
         }
-      />
+      >
+        <WeeklyStatsCard stats={stats} loading={statsLoading} userWeight={settings?.userWeight} weightUnit={settings?.weightUnit || "kg"} />
+
+        {thisWeekSessions.length > 0 ? (
+          <View style={[styles.weekSessionsCard, { backgroundColor: theme.backgroundDefault }]}>
+            <Pressable
+              testID="button-toggle-week-sessions"
+              onPress={() => setExpanded((v) => !v)}
+              style={styles.weekSessionsHeader}
+            >
+              <View style={styles.weekSessionsTitleRow}>
+                <ThemedText type="h2">This Week</ThemedText>
+                <View style={[styles.countBadge, { backgroundColor: theme.backgroundSecondary }]}>
+                  <ThemedText type="muted" style={styles.countText}>{thisWeekSessions.length}</ThemedText>
+                </View>
+              </View>
+              <Feather
+                name={expanded ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={theme.textSecondary}
+              />
+            </Pressable>
+
+            {expanded ? (
+              <View style={styles.weekSessionsList}>
+                {thisWeekSessions.map((session) => (
+                  <SessionHistoryCard
+                    key={session.id}
+                    session={session}
+                    onPress={() => handleSessionPress(session)}
+                  />
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
+      </ScrollView>
     </View>
   );
 }
@@ -152,17 +170,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     flexGrow: 1,
   },
-  emptyContent: {
-    flex: 1,
+  weekSessionsCard: {
+    borderRadius: BorderRadius.xl,
+    overflow: "hidden",
   },
-  header: {
-    marginBottom: Spacing.md,
+  weekSessionsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
-  sectionTitleRow: {
+  weekSessionsTitleRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,
-    marginBottom: Spacing.md,
+  },
+  weekSessionsList: {
+    paddingHorizontal: Spacing.sm,
+    paddingBottom: Spacing.sm,
   },
   countBadge: {
     paddingHorizontal: Spacing.sm,
