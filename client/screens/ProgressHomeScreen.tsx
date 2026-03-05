@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, ScrollView, StyleSheet, RefreshControl, Pressable } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useHeaderHeight, HeaderButton } from "@react-navigation/elements";
+import { HeaderButton } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
 
@@ -29,7 +29,6 @@ function getMonWeekStart(): Date {
 export default function ProgressHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
-  const headerHeight = useHeaderHeight();
   const tabBarHeight = useBottomTabBarHeight();
 
   const { stats, loading: statsLoading, refresh: refreshStats } = useWeeklyStats();
@@ -67,6 +66,8 @@ export default function ProgressHomeScreen() {
 
   useEffect(() => {
     navigation.setOptions({
+      headerTransparent: false,
+      headerStyle: { backgroundColor: theme.backgroundRoot },
       headerTitle: () => (
         <View>
           <ThemedText type="h2" style={{ fontSize: 18 }}>My Progress</ThemedText>
@@ -110,7 +111,7 @@ export default function ProgressHomeScreen() {
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: headerHeight + Spacing.xl,
+            paddingTop: Spacing.xl,
             paddingBottom: tabBarHeight + Spacing["4xl"],
           },
         ]}
