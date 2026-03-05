@@ -7,6 +7,7 @@ import {
   completedTasksStorage,
   badgesStorage,
   settingsStorage,
+  weightLogStorage,
 } from "@/lib/storage";
 import type {
   Program,
@@ -17,6 +18,7 @@ import type {
   BadgeAward,
   Settings,
   WeeklyStats,
+  WeightLogEntry,
 } from "@/types";
 
 export function usePrograms() {
@@ -398,4 +400,39 @@ export function useSettings() {
   );
 
   return { settings, loading, refresh, updateSettings };
+}
+
+export function useWeightLog() {
+  const [entries, setEntries] = useState<WeightLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await weightLogStorage.getAll();
+      setEntries(data.sort((a, b) => b.date.localeCompare(a.date)));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const logWeight = useCallback(
+    async (weight: number, date?: string) => {
+      const entry = await weightLogStorage.create(weight, date);
+      await refresh();
+      return entry;
+    },
+    [refresh]
+  );
+
+  const getTodayEntry = useCallback(async () => {
+    const today = new Date().toISOString().split("T")[0];
+    return weightLogStorage.getByDate(today);
+  }, []);
+
+  return { entries, loading, refresh, logWeight, getTodayEntry };
 }

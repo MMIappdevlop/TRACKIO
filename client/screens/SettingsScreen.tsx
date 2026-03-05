@@ -6,12 +6,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
+
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { useSettings } from "@/hooks/useData";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 export default function SettingsScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
   const { theme } = useTheme();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
@@ -128,6 +133,23 @@ export default function SettingsScreen() {
               thumbColor={theme.buttonText}
             />
           </View>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <ThemedText type="h2" style={styles.sectionTitle}>Notifications</ThemedText>
+        <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
+          <Pressable
+            testID="button-reminders"
+            style={styles.settingRow}
+            onPress={() => navigation.navigate("WeightReminder")}
+          >
+            <View style={styles.settingInfo}>
+              <Feather name="bell" size={20} color={theme.link} />
+              <ThemedText type="body">Reminders</ThemedText>
+            </View>
+            <Feather name="chevron-right" size={20} color={theme.textMuted} />
+          </Pressable>
         </View>
       </View>
 

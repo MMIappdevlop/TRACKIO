@@ -5,6 +5,7 @@ import ProfileHomeScreen from "@/screens/ProfileHomeScreen";
 import BadgesScreen from "@/screens/BadgesScreen";
 import SettingsScreen from "@/screens/SettingsScreen";
 import DataBackupScreen from "@/screens/DataBackupScreen";
+import WeightReminderScreen from "@/screens/WeightReminderScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
 export type ProfileStackParamList = {
@@ -12,6 +13,7 @@ export type ProfileStackParamList = {
   Badges: undefined;
   Settings: undefined;
   DataBackup: undefined;
+  WeightReminder: { prefill?: boolean } | undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -47,6 +49,13 @@ export default function ProfileStackNavigator() {
         component={DataBackupScreen}
         options={{
           headerTitle: "Data & Backup",
+        }}
+      />
+      <Stack.Screen
+        name="WeightReminder"
+        component={WeightReminderScreen}
+        options={{
+          headerTitle: "Weight Reminder",
         }}
       />
     </Stack.Navigator>

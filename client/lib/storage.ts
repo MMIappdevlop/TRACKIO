@@ -9,6 +9,7 @@ import type {
   BadgeAward,
   Settings,
   ActiveSession,
+  WeightLogEntry,
 } from "@/types";
 
 const STORAGE_KEYS = {
@@ -20,6 +21,7 @@ const STORAGE_KEYS = {
   BADGES: "@trakio/badges",
   SETTINGS: "@trakio/settings",
   ACTIVE_SESSION: "@trakio/active_session",
+  WEIGHT_LOG: "@trakio/weight_log",
 };
 
 async function getItem<T>(key: string): Promise<T[]> {
@@ -483,6 +485,37 @@ export const backupStorage = {
 
   async clearAll(): Promise<void> {
     await AsyncStorage.multiRemove(Object.values(STORAGE_KEYS));
+  },
+};
+
+export const weightLogStorage = {
+  async getAll(): Promise<WeightLogEntry[]> {
+    return getItem<WeightLogEntry>(STORAGE_KEYS.WEIGHT_LOG);
+  },
+
+  async getByDate(date: string): Promise<WeightLogEntry | null> {
+    const entries = await this.getAll();
+    return entries.find((e) => e.date === date) || null;
+  },
+
+  async create(weight: number, date?: string): Promise<WeightLogEntry> {
+    const entries = await this.getAll();
+    const now = new Date();
+    const entryDate = date || now.toISOString().split("T")[0];
+    const existing = entries.findIndex((e) => e.date === entryDate);
+    const entry: WeightLogEntry = {
+      id: existing >= 0 ? entries[existing].id : uuidv4(),
+      date: entryDate,
+      weight,
+      timestamp: now.toISOString(),
+    };
+    if (existing >= 0) {
+      entries[existing] = entry;
+    } else {
+      entries.push(entry);
+    }
+    await setItem(STORAGE_KEYS.WEIGHT_LOG, entries);
+    return entry;
   },
 };
 

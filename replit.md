@@ -6,6 +6,7 @@ Trackio is a mobile-first personal training log built with React Native + Expo (
 **Core Promise**: "Bring your plan. Trackio records your training."
 
 ## Recent Changes
+- **2026-03-05**: In-app Weight Update Reminder — Settings → Reminders → Weight Reminder screen with toggle, day-of-week multi-select pills, hour/minute stepper time picker; in-app reminder popup on app open checks day/time/existing entry conditions; weight upsell popup after first workout + 10-day re-prompt; WeightLogModal for decimal weight input; all state persisted locally (no OS notifications)
 - **2026-03-05**: Progress screen consolidation — merged old Card 2 (grid comparison) and Card 3 (summary list) into a single Card 2 with clean list-style rows showing 5 metrics (Sessions, Training Time, Distance, Training Weight, Body Weight) with colored delta arrows + "Share as PNG" button; Card 1 now has "This Week" section label; PNG export updated to match 2-card layout; deleted WeeklySummaryCard.tsx
 - **2026-03-05**: Progress screen redesign — opaque header shows "My Progress" with "Week N · date range" subtitle; Card 1: Quick Progress Overview with 5 metrics (Weight, Workout Days, Total Exercises, Calories Burned, Training Duration); collapsible "This Week" sessions section; calendar icon in header navigates to Training History Calendar
 - **2026-03-05**: Training History Calendar — full month grid (Mon-Sun), dot indicators for training days, day selection shows sessions below, month navigation arrows, navigates to SessionDetail on tap
@@ -53,7 +54,10 @@ client/
 │   ├── TaskCard.tsx
 │   ├── ThemedText.tsx
 │   ├── ThemedView.tsx
-│   └── WeeklyStatsCard.tsx
+│   ├── WeeklyStatsCard.tsx
+│   ├── WeightLogModal.tsx
+│   ├── WeightReminderPopup.tsx
+│   └── WeightUpsellPopup.tsx
 ├── constants/
 │   └── theme.ts            # Design system (colors, spacing, typography)
 ├── hooks/
@@ -87,7 +91,8 @@ client/
 │   ├── SettingsScreen.tsx
 │   ├── TaskDetailScreen.tsx
 │   ├── TrainingCalendarScreen.tsx
-│   └── TrainingHomeScreen.tsx
+│   ├── TrainingHomeScreen.tsx
+│   └── WeightReminderScreen.tsx
 └── types/
     └── index.ts            # TypeScript type definitions
 ```

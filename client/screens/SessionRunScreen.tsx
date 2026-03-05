@@ -16,7 +16,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ExerciseTimer } from "@/components/ExerciseTimer";
 import { useTheme } from "@/hooks/useTheme";
 import { useSettings } from "@/hooks/useData";
-import { taskTemplatesStorage, completedSessionsStorage, completedTasksStorage, activeSessionStorage } from "@/lib/storage";
+import { taskTemplatesStorage, completedSessionsStorage, completedTasksStorage, activeSessionStorage, settingsStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, TaskModes, Colors } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { TaskTemplate, StrengthSetData, TaskDataJson, SplitTime, ExerciseMode } from "@/types";
@@ -454,6 +454,13 @@ export default function SessionRunScreen() {
       }
 
       const completionRatio = totalCount > 0 ? completedCount / totalCount : 1;
+
+      const currentSettings = await settingsStorage.get();
+      if (!currentSettings.firstWorkoutCompletedAt) {
+        await settingsStorage.update({
+          firstWorkoutCompletedAt: new Date().toISOString(),
+        });
+      }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       navigation.replace("SessionSummary", { completedSessionId: completedSession.id, completionRatio });

@@ -137,6 +137,22 @@ export interface Settings {
   userWeight?: number;
   userHeight?: number;
   userAge?: number;
+  weightReminderEnabled?: boolean;
+  weightReminderDays?: number[];
+  weightReminderTime?: string;
+  lastReminderShownDate?: string;
+  lastReminderDismissedDate?: string;
+  hasEverLoggedWeight?: boolean;
+  firstWorkoutCompletedAt?: string;
+  weightReminderUpsellDismissedAt?: string;
+  weightReminderUpsellLastShownAt?: string;
+}
+
+export interface WeightLogEntry {
+  id: string;
+  date: string;
+  weight: number;
+  timestamp: string;
 }
 
 export interface ActiveSession {
