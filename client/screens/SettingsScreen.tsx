@@ -20,7 +20,7 @@ export default function SettingsScreen() {
   const { theme } = useTheme();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
-  const { settings, loading, refresh, updateSettings } = useSettings();
+  const { settings, refresh, updateSettings } = useSettings();
 
   useFocusEffect(
     useCallback(() => {

@@ -80,8 +80,11 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
 
   const adjustMinute = async (delta: number) => {
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
-    const newM = (minutes + delta + 60) % 60;
-    await updateSettings({ weightReminderTime: formatTime(hours, newM) });
+    const totalMinutes = hours * 60 + minutes + delta;
+    const wrapped = ((totalMinutes % 1440) + 1440) % 1440;
+    const newH = Math.floor(wrapped / 60);
+    const newM = wrapped % 60;
+    await updateSettings({ weightReminderTime: formatTime(newH, newM) });
   };
 
   return (

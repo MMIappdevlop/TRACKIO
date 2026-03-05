@@ -14,7 +14,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { taskTemplatesStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, TaskModes, Typography, Colors } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import type { TaskMode, TaskConfig, TaskTemplate } from "@/types";
+import type { TaskMode, TaskConfig } from "@/types";
 
 type RoutePropType = RouteProp<RootStackParamList, "AddTask">;
 

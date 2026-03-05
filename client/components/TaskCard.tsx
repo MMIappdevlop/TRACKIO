@@ -60,7 +60,7 @@ export function TaskCard({
       try {
         await Linking.openURL(task.referenceLink);
       } catch (error) {
-        console.log("Failed to open link:", error);
+        console.error("Failed to open link:", error);
       }
     }
   };

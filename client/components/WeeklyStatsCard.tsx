@@ -3,7 +3,7 @@ import { View, StyleSheet } from "react-native";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { Spacing, BorderRadius } from "@/constants/theme";
+import { BorderRadius } from "@/constants/theme";
 import type { WeeklyStats } from "@/types";
 
 interface WeeklyStatsCardProps {

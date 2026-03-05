@@ -306,17 +306,6 @@ export const completedSessionsStorage = {
     return sessions.find((s) => s.id === id) || null;
   },
 
-  async getByWeek(weekStart: Date): Promise<CompletedSession[]> {
-    const sessions = await this.getAll();
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 7);
-
-    return sessions.filter((s) => {
-      const date = new Date(s.completedAt);
-      return date >= weekStart && date < weekEnd;
-    });
-  },
-
   async create(data: Omit<CompletedSession, "id">): Promise<CompletedSession> {
     const sessions = await this.getAll();
     const newSession: CompletedSession = {
@@ -388,20 +377,6 @@ export const badgesStorage = {
     return getItem<BadgeAward>(STORAGE_KEYS.BADGES);
   },
 
-  async create(data: Omit<BadgeAward, "id">): Promise<BadgeAward> {
-    const badges = await this.getAll();
-    const newBadge: BadgeAward = {
-      id: uuidv4(),
-      ...data,
-    };
-    await setItem(STORAGE_KEYS.BADGES, [...badges, newBadge]);
-    return newBadge;
-  },
-
-  async getByType(badgeType: string): Promise<BadgeAward[]> {
-    const badges = await this.getAll();
-    return badges.filter((b) => b.badgeType === badgeType);
-  },
 };
 
 export const settingsStorage = {
