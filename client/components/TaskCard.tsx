@@ -17,6 +17,8 @@ import type { TaskTemplate } from "@/types";
 interface TaskCardProps {
   task: TaskTemplate;
   onPress?: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
   onMove?: () => void;
   onDelete?: () => void;
   showDragHandle?: boolean;
@@ -28,6 +30,8 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 export function TaskCard({
   task,
   onPress,
+  onMoveUp,
+  onMoveDown,
   onMove,
   onDelete,
   showDragHandle = false,
@@ -156,6 +160,24 @@ export function TaskCard({
 
       {expanded && showActions ? (
         <View style={[styles.actionsRow, { backgroundColor: theme.backgroundSecondary }]}>
+          {onMoveUp ? (
+            <Pressable
+              onPress={onMoveUp}
+              style={[styles.actionButton, { backgroundColor: theme.backgroundDefault }]}
+              testID={`button-move-up-${task.id}`}
+            >
+              <Feather name="arrow-up" size={16} color={theme.textSecondary} />
+            </Pressable>
+          ) : null}
+          {onMoveDown ? (
+            <Pressable
+              onPress={onMoveDown}
+              style={[styles.actionButton, { backgroundColor: theme.backgroundDefault }]}
+              testID={`button-move-down-${task.id}`}
+            >
+              <Feather name="arrow-down" size={16} color={theme.textSecondary} />
+            </Pressable>
+          ) : null}
           {task.referenceLink ? (
             <Pressable
               onPress={handleOpenLink}

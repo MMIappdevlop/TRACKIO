@@ -34,7 +34,7 @@ export default function SessionTemplateDetailScreen() {
   const insets = useSafeAreaInsets();
   const { templateId, templateName, programId, programName } = route.params;
 
-  const { tasks, loading, refresh, deleteTask } = useTaskTemplates(templateId);
+  const { tasks, loading, refresh, deleteTask, reorderTasks } = useTaskTemplates(templateId);
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
   const [locationName, setLocationName] = useState("");
   const [allDays, setAllDays] = useState<SessionTemplate[]>([]);
@@ -145,6 +145,17 @@ export default function SessionTemplateDetailScreen() {
     setMovingExercise(null);
     await refresh();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleReorder = async (taskId: string, direction: "up" | "down") => {
+    const index = tasks.findIndex((t) => t.id === taskId);
+    if (index === -1) return;
+    const swapIndex = direction === "up" ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= tasks.length) return;
+    const newOrder = tasks.map((t) => t.id);
+    [newOrder[index], newOrder[swapIndex]] = [newOrder[swapIndex], newOrder[index]];
+    await reorderTasks(newOrder);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const groupedTasks = tasks.reduce(
@@ -261,15 +272,20 @@ export default function SessionTemplateDetailScreen() {
                 </ThemedText>
               </View>
             ) : null}
-            {groupedTasks[group].map((task) => (
-              <TaskCard
-                key={task.id}
-                task={task}
-                onPress={() => handleEditTask(task)}
-                onMove={allDays.length > 1 ? () => handleMoveTask(task) : undefined}
-                onDelete={() => handleDeleteTask(task)}
-              />
-            ))}
+            {groupedTasks[group].map((task) => {
+              const flatIndex = tasks.findIndex((t) => t.id === task.id);
+              return (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onPress={() => handleEditTask(task)}
+                  onMoveUp={flatIndex > 0 ? () => handleReorder(task.id, "up") : undefined}
+                  onMoveDown={flatIndex < tasks.length - 1 ? () => handleReorder(task.id, "down") : undefined}
+                  onMove={allDays.length > 1 ? () => handleMoveTask(task) : undefined}
+                  onDelete={() => handleDeleteTask(task)}
+                />
+              );
+            })}
           </View>
         )}
         ListEmptyComponent={!loading ? renderEmpty : null}
