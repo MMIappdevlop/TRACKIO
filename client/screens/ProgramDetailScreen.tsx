@@ -94,6 +94,14 @@ export default function ProgramDetailScreen() {
     >
       <View style={styles.templateContent}>
         <ThemedText type="h4">{item.name}</ThemedText>
+        {item.locationName ? (
+          <View style={styles.locationRow}>
+            <Feather name="map-pin" size={13} color={theme.textSecondary} />
+            <ThemedText type="secondary" style={styles.locationText} numberOfLines={1}>
+              {item.locationName}
+            </ThemedText>
+          </View>
+        ) : null}
         <ThemedText type="muted">Rest: {item.defaultRestSeconds}s</ThemedText>
       </View>
       <View style={styles.templateActions}>
@@ -265,6 +273,16 @@ const styles = StyleSheet.create({
   templateContent: {
     flex: 1,
     gap: 2,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginTop: 2,
+  },
+  locationText: {
+    fontSize: 13,
+    flex: 1,
   },
   templateActions: {
     flexDirection: "row",

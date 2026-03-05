@@ -19,6 +19,7 @@ export interface DayTemplate {
   order: number;
   defaultRestSeconds: number;
   days?: DayOfWeek[];
+  locationName?: string;
   createdAt: string;
   updatedAt: string;
 }

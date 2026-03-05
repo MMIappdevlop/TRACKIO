@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { View, FlatList, StyleSheet, Pressable, Alert } from "react-native";
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { View, FlatList, StyleSheet, Pressable, Alert, TextInput } from "react-native";
 import { useFocusEffect, useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -15,7 +15,7 @@ import { MoveExerciseModal } from "@/components/MoveExerciseModal";
 import { useTheme } from "@/hooks/useTheme";
 import { useTaskTemplates } from "@/hooks/useData";
 import { sessionTemplatesStorage, taskTemplatesStorage } from "@/lib/storage";
-import { Spacing, BorderRadius } from "@/constants/theme";
+import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 import type { TrainingStackParamList } from "@/navigation/TrainingStackNavigator";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { TaskTemplate, DayOfWeek, SessionTemplate } from "@/types";
@@ -36,20 +36,51 @@ export default function SessionTemplateDetailScreen() {
 
   const { tasks, loading, refresh, deleteTask } = useTaskTemplates(templateId);
   const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
+  const [locationName, setLocationName] = useState("");
   const [allDays, setAllDays] = useState<SessionTemplate[]>([]);
   const [movingExercise, setMovingExercise] = useState<TaskTemplate | null>(null);
+  const locationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLoadingRef = useRef(true);
+  const pendingLocationRef = useRef<string | null>(null);
+
+  const saveLocation = useCallback(async (text: string) => {
+    const trimmed = text.trim();
+    await sessionTemplatesStorage.update(templateId, {
+      locationName: trimmed || undefined,
+    });
+    pendingLocationRef.current = null;
+  }, [templateId]);
 
   useEffect(() => {
     const loadSessionData = async () => {
+      isLoadingRef.current = true;
       const session = await sessionTemplatesStorage.getById(templateId);
       if (session?.days) {
         setSelectedDays(session.days);
       }
+      setLocationName(session?.locationName || "");
+      isLoadingRef.current = false;
       const days = await sessionTemplatesStorage.getByProgramId(programId);
       setAllDays(days);
     };
     loadSessionData();
+    return () => {
+      if (locationTimerRef.current) clearTimeout(locationTimerRef.current);
+      if (pendingLocationRef.current !== null) {
+        saveLocation(pendingLocationRef.current);
+      }
+    };
   }, [templateId, programId]);
+
+  const handleLocationChange = (text: string) => {
+    setLocationName(text);
+    if (isLoadingRef.current) return;
+    pendingLocationRef.current = text;
+    if (locationTimerRef.current) clearTimeout(locationTimerRef.current);
+    locationTimerRef.current = setTimeout(() => {
+      saveLocation(text);
+    }, 500);
+  };
 
   const handleToggleDay = async (day: DayOfWeek) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -143,49 +174,74 @@ export default function SessionTemplateDetailScreen() {
   );
 
   const renderDayPicker = () => (
-    <View style={[styles.dayPickerCard, { backgroundColor: theme.backgroundDefault }]}>
-      <View style={styles.dayPickerHeader}>
-        <Feather name="calendar" size={16} color={theme.textSecondary} />
-        <ThemedText type="secondary">Schedule Days</ThemedText>
-      </View>
-      <View style={styles.dayPickerRow}>
-        {DAY_LABELS.map((label, index) => {
-          const day = index as DayOfWeek;
-          const isSelected = selectedDays.includes(day);
-          return (
-            <Pressable
-              key={index}
-              onPress={() => handleToggleDay(day)}
-              style={[
-                styles.dayButton,
-                { 
-                  backgroundColor: isSelected ? theme.link : theme.backgroundSecondary,
-                  borderColor: isSelected ? theme.link : theme.border,
-                },
-              ]}
-            >
-              <ThemedText
-                type="body"
+    <View>
+      <View style={[styles.dayPickerCard, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={styles.dayPickerHeader}>
+          <Feather name="calendar" size={16} color={theme.textSecondary} />
+          <ThemedText type="secondary">Schedule Days</ThemedText>
+        </View>
+        <View style={styles.dayPickerRow}>
+          {DAY_LABELS.map((label, index) => {
+            const day = index as DayOfWeek;
+            const isSelected = selectedDays.includes(day);
+            return (
+              <Pressable
+                key={index}
+                onPress={() => handleToggleDay(day)}
                 style={[
-                  styles.dayLabel,
-                  { color: isSelected ? theme.buttonText : theme.textSecondary },
+                  styles.dayButton,
+                  { 
+                    backgroundColor: isSelected ? theme.link : theme.backgroundSecondary,
+                    borderColor: isSelected ? theme.link : theme.border,
+                  },
                 ]}
               >
-                {label}
-              </ThemedText>
-            </Pressable>
-          );
-        })}
+                <ThemedText
+                  type="body"
+                  style={[
+                    styles.dayLabel,
+                    { color: isSelected ? theme.buttonText : theme.textSecondary },
+                  ]}
+                >
+                  {label}
+                </ThemedText>
+              </Pressable>
+            );
+          })}
+        </View>
+        {selectedDays.length > 0 ? (
+          <ThemedText type="muted" style={styles.dayHint}>
+            {selectedDays.map((d) => DAY_NAMES[d]).join(", ")}
+          </ThemedText>
+        ) : (
+          <ThemedText type="muted" style={styles.dayHint}>
+            No days assigned - available anytime
+          </ThemedText>
+        )}
       </View>
-      {selectedDays.length > 0 ? (
-        <ThemedText type="muted" style={styles.dayHint}>
-          {selectedDays.map((d) => DAY_NAMES[d]).join(", ")}
-        </ThemedText>
-      ) : (
-        <ThemedText type="muted" style={styles.dayHint}>
-          No days assigned - available anytime
-        </ThemedText>
-      )}
+
+      <View style={[styles.locationCard, { backgroundColor: theme.backgroundDefault }]}>
+        <View style={styles.dayPickerHeader}>
+          <Feather name="map-pin" size={16} color={theme.textSecondary} />
+          <ThemedText type="secondary">Location (optional)</ThemedText>
+        </View>
+        <TextInput
+          testID="input-location"
+          value={locationName}
+          onChangeText={handleLocationChange}
+          placeholder="Gym, home, stadium..."
+          placeholderTextColor={theme.textMuted}
+          returnKeyType="done"
+          style={[
+            styles.locationInput,
+            {
+              backgroundColor: theme.backgroundSecondary,
+              color: theme.textPrimary,
+              borderColor: theme.border,
+            },
+          ]}
+        />
+      </View>
     </View>
   );
 
@@ -310,7 +366,20 @@ const styles = StyleSheet.create({
   dayPickerCard: {
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  locationCard: {
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
     marginBottom: Spacing.lg,
+  },
+  locationInput: {
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    fontFamily: Typography.body.fontFamily,
+    fontSize: Typography.body.fontSize,
   },
   dayPickerHeader: {
     flexDirection: "row",
