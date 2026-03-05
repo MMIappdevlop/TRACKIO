@@ -164,14 +164,23 @@ export function generateDemoData(): string {
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const todayDay = today.getDay();
+  const todayDow = today.getDay();
+  const daysSinceMonday = todayDow === 0 ? 6 : todayDow - 1;
+  const thisMonday = new Date(today);
+  thisMonday.setDate(today.getDate() - daysSinceMonday);
 
   for (let week = 7; week >= 0; week--) {
     for (const slot of schedule) {
-      let daysAgo = (todayDay - slot.dayOfWeek + 7) % 7 + week * 7;
-      if (daysAgo === 0 && week > 0) daysAgo = 7 * week;
-      if (daysAgo < 0) continue;
+      const targetMonday = new Date(thisMonday);
+      targetMonday.setDate(thisMonday.getDate() - week * 7);
 
+      const slotDow = slot.dayOfWeek;
+      const targetDate = new Date(targetMonday);
+      targetDate.setDate(targetMonday.getDate() + (slotDow === 0 ? 6 : slotDow - 1));
+
+      if (targetDate > today) continue;
+
+      const daysAgo = Math.round((today.getTime() - targetDate.getTime()) / 86400000);
       const startTime = d(daysAgo, 7 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 30));
       const weekIndex = 7 - week;
       let durationSec: number;
