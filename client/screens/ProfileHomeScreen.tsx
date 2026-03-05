@@ -10,6 +10,8 @@ import { ThemedText } from "@/components/ThemedText";
 import { InputModal } from "@/components/InputModal";
 import { useTheme } from "@/hooks/useTheme";
 import { useSettings, useBadges } from "@/hooks/useData";
+import { backupStorage } from "@/lib/storage";
+import { generateDemoData } from "@/lib/demoData";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
 import type { ProfileStackParamList } from "@/navigation/ProfileStackNavigator";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
@@ -35,6 +37,8 @@ export default function ProfileHomeScreen() {
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [showHeightModal, setShowHeightModal] = useState(false);
   const [showAgeModal, setShowAgeModal] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoLoaded, setDemoLoaded] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -74,6 +78,21 @@ export default function ProfileHomeScreen() {
       await refreshSettings();
     }
     setShowAgeModal(false);
+  };
+
+  const handleLoadDemoData = async () => {
+    setDemoLoading(true);
+    try {
+      const json = generateDemoData();
+      const result = await backupStorage.importAll(json);
+      if (result.success) {
+        setDemoLoaded(true);
+        refreshSettings();
+        refreshBadges();
+      }
+    } finally {
+      setDemoLoading(false);
+    }
   };
 
   const weightUnit = settings?.weightUnit || "kg";
@@ -174,6 +193,34 @@ export default function ProfileHomeScreen() {
             </Pressable>
           ))}
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <ThemedText type="h2" style={styles.sectionTitle}>Demo</ThemedText>
+        <Pressable
+          testID="button-load-demo-data"
+          onPress={handleLoadDemoData}
+          disabled={demoLoading || demoLoaded}
+          style={[
+            styles.demoButton,
+            { backgroundColor: demoLoaded ? theme.backgroundElevated : theme.link },
+          ]}
+        >
+          <Feather
+            name={demoLoaded ? "check" : "download"}
+            size={18}
+            color={demoLoaded ? theme.textSecondary : theme.buttonText}
+          />
+          <ThemedText
+            type="body"
+            style={{ color: demoLoaded ? theme.textSecondary : theme.buttonText, fontWeight: "600" }}
+          >
+            {demoLoading ? "Loading..." : demoLoaded ? "Demo Data Loaded" : "Load Demo Data"}
+          </ThemedText>
+        </Pressable>
+        <ThemedText type="muted" style={styles.demoHint}>
+          Adds 4 weeks of sample training history
+        </ThemedText>
       </View>
 
       <InputModal
@@ -300,4 +347,16 @@ const styles = StyleSheet.create({
   menuTitle: {
     flex: 1,
   },
-  });
+  demoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+  },
+  demoHint: {
+    textAlign: "center",
+    marginTop: Spacing.sm,
+  },
+});
