@@ -265,8 +265,59 @@ export function useCompletedSessions() {
   return { sessions, loading, refresh };
 }
 
+function computeWeekStats(
+  weekStart: Date,
+  sessions: CompletedSession[],
+  allTasks: CompletedTask[]
+): WeeklyStats {
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 7);
+
+  const weekSessions = sessions.filter((s) => {
+    const d = new Date(s.completedAt);
+    return d >= weekStart && d < weekEnd;
+  });
+
+  let totalVolume = 0;
+  let totalDistance = 0;
+  let totalDuration = 0;
+  let totalExercises = 0;
+  let totalCalories = 0;
+
+  for (const session of weekSessions) {
+    totalDuration += session.durationSeconds;
+    totalCalories += session.estimatedCalories ?? 0;
+    const sessionTasks = allTasks.filter((t) => t.completedSessionId === session.id);
+    totalExercises += sessionTasks.length;
+
+    for (const task of sessionTasks) {
+      if (task.mode === "strength" && task.dataJson.sets) {
+        for (const set of task.dataJson.sets) {
+          if (set.isCompleted && set.weight && set.reps) {
+            totalVolume += set.weight * set.reps;
+          }
+        }
+      }
+      if (task.mode === "distance" && task.dataJson.distance) {
+        totalDistance += task.dataJson.distance;
+      }
+    }
+  }
+
+  return {
+    weekStart: weekStart.toISOString(),
+    sessionsCount: weekSessions.length,
+    totalDurationSeconds: totalDuration,
+    totalVolume,
+    totalDistance,
+    totalExercises,
+    totalCalories,
+  };
+}
+
 export function useWeeklyStats() {
   const [stats, setStats] = useState<WeeklyStats | null>(null);
+  const [prevStats, setPrevStats] = useState<WeeklyStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -278,44 +329,14 @@ export function useWeeklyStats() {
       weekStart.setDate(now.getDate() - (day === 0 ? 6 : day - 1));
       weekStart.setHours(0, 0, 0, 0);
 
-      const sessions = await completedSessionsStorage.getByWeek(weekStart);
-      const tasks = await completedTasksStorage.getAll();
+      const prevWeekStart = new Date(weekStart);
+      prevWeekStart.setDate(prevWeekStart.getDate() - 7);
 
-      let totalVolume = 0;
-      let totalDistance = 0;
-      let totalDuration = 0;
-      let totalExercises = 0;
-      let totalCalories = 0;
+      const allSessions = await completedSessionsStorage.getAll();
+      const allTasks = await completedTasksStorage.getAll();
 
-      for (const session of sessions) {
-        totalDuration += session.durationSeconds;
-        totalCalories += session.estimatedCalories ?? 0;
-        const sessionTasks = tasks.filter((t) => t.completedSessionId === session.id);
-        totalExercises += sessionTasks.length;
-
-        for (const task of sessionTasks) {
-          if (task.mode === "strength" && task.dataJson.sets) {
-            for (const set of task.dataJson.sets) {
-              if (set.isCompleted && set.weight && set.reps) {
-                totalVolume += set.weight * set.reps;
-              }
-            }
-          }
-          if (task.mode === "distance" && task.dataJson.distance) {
-            totalDistance += task.dataJson.distance;
-          }
-        }
-      }
-
-      setStats({
-        weekStart: weekStart.toISOString(),
-        sessionsCount: sessions.length,
-        totalDurationSeconds: totalDuration,
-        totalVolume,
-        totalDistance,
-        totalExercises,
-        totalCalories,
-      });
+      setStats(computeWeekStats(weekStart, allSessions, allTasks));
+      setPrevStats(computeWeekStats(prevWeekStart, allSessions, allTasks));
     } finally {
       setLoading(false);
     }
@@ -325,7 +346,7 @@ export function useWeeklyStats() {
     refresh();
   }, [refresh]);
 
-  return { stats, loading, refresh };
+  return { stats, prevStats, loading, refresh };
 }
 
 export function useBadges() {

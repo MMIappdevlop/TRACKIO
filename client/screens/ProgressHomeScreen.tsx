@@ -8,6 +8,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
 import { WeeklyStatsCard } from "@/components/WeeklyStatsCard";
+import { WeeklyComparisonCard } from "@/components/WeeklyComparisonCard";
 import { SessionHistoryCard } from "@/components/SessionHistoryCard";
 import { useTheme } from "@/hooks/useTheme";
 import { useWeeklyStats, useCompletedSessions, useSettings } from "@/hooks/useData";
@@ -31,7 +32,7 @@ export default function ProgressHomeScreen() {
   const { theme } = useTheme();
   const tabBarHeight = useBottomTabBarHeight();
 
-  const { stats, loading: statsLoading, refresh: refreshStats } = useWeeklyStats();
+  const { stats, prevStats, loading: statsLoading, refresh: refreshStats } = useWeeklyStats();
   const { sessions, refresh: refreshSessions } = useCompletedSessions();
   const { settings, refresh: refreshSettings } = useSettings();
   const [refreshing, setRefreshing] = useState(false);
@@ -158,6 +159,13 @@ export default function ProgressHomeScreen() {
             ) : null}
           </View>
         ) : null}
+
+        <WeeklyComparisonCard
+          stats={stats}
+          prevStats={prevStats}
+          userWeight={settings?.userWeight}
+          weightUnit={settings?.weightUnit || "kg"}
+        />
       </ScrollView>
     </View>
   );
