@@ -1,14 +1,18 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, ScrollView, StyleSheet, RefreshControl, Pressable } from "react-native";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { View, ScrollView, StyleSheet, RefreshControl, Pressable, Platform } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { HeaderButton } from "@react-navigation/elements";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { Feather } from "@expo/vector-icons";
+import { captureRef } from "react-native-view-shot";
+import * as Sharing from "expo-sharing";
 
 import { ThemedText } from "@/components/ThemedText";
 import { WeeklyStatsCard } from "@/components/WeeklyStatsCard";
 import { WeeklyComparisonCard } from "@/components/WeeklyComparisonCard";
+import { WeeklySummaryCard } from "@/components/WeeklySummaryCard";
+import { ProgressShareCard } from "@/components/ProgressShareCard";
 import { SessionHistoryCard } from "@/components/SessionHistoryCard";
 import { useTheme } from "@/hooks/useTheme";
 import { useWeeklyStats, useCompletedSessions, useSettings } from "@/hooks/useData";
@@ -37,6 +41,7 @@ export default function ProgressHomeScreen() {
   const { settings, refresh: refreshSettings } = useSettings();
   const [refreshing, setRefreshing] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const shareCardRef = useRef<View>(null);
 
   const weekInfo = useMemo(() => {
     const now = new Date();
@@ -107,6 +112,47 @@ export default function ProgressHomeScreen() {
     navigation.navigate("SessionDetail", { sessionId: session.id });
   };
 
+  const handleShare = async () => {
+    if (!shareCardRef.current) return;
+    try {
+      const uri = await captureRef(shareCardRef, {
+        format: "png",
+        quality: 1,
+        result: "tmpfile",
+        width: 1080,
+        height: 1920,
+      });
+
+      if (Platform.OS === "web") {
+        try {
+          const response = await fetch(uri);
+          const blob = await response.blob();
+          const item = new ClipboardItem({ "image/png": blob });
+          await navigator.clipboard.write([item]);
+        } catch {
+          const isAvailable = await Sharing.isAvailableAsync();
+          if (isAvailable) {
+            await Sharing.shareAsync(uri, {
+              mimeType: "image/png",
+              dialogTitle: "Share your weekly progress",
+              UTI: "public.png",
+            });
+          }
+        }
+      } else {
+        const isAvailable = await Sharing.isAvailableAsync();
+        if (isAvailable) {
+          await Sharing.shareAsync(uri, {
+            mimeType: "image/png",
+            dialogTitle: "Share your weekly progress",
+            UTI: "public.png",
+          });
+        }
+      }
+    } catch {
+    }
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
       <ScrollView
@@ -167,7 +213,27 @@ export default function ProgressHomeScreen() {
           userWeight={settings?.userWeight}
           weightUnit={settings?.weightUnit || "kg"}
         />
+
+        <WeeklySummaryCard
+          stats={stats}
+          prevStats={prevStats}
+          userWeight={settings?.userWeight}
+          weightUnit={settings?.weightUnit || "kg"}
+          weekNum={weekInfo.weekNum}
+          weekRange={weekInfo.range}
+          onShare={handleShare}
+        />
       </ScrollView>
+
+      <ProgressShareCard
+        ref={shareCardRef}
+        stats={stats}
+        prevStats={prevStats}
+        userWeight={settings?.userWeight}
+        weightUnit={settings?.weightUnit || "kg"}
+        weekNum={weekInfo.weekNum}
+        weekRange={weekInfo.range}
+      />
     </View>
   );
 }

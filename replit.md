@@ -6,6 +6,7 @@ Trackio is a mobile-first personal training log built with React Native + Expo (
 **Core Promise**: "Bring your plan. Trackio records your training."
 
 ## Recent Changes
+- **2026-03-05**: Card 3 Weekly Summary + PNG export — WeeklySummaryCard shows 5 metrics (Body Weight, Sessions, Training Time, Distance, Training Weight) with week-over-week deltas; share icon + "Share as PNG" button captures off-screen ProgressShareCard (1080x1920) via react-native-view-shot + expo-sharing; PNG includes Card 1/2/3 data + TrackioLogo
 - **2026-03-05**: Progress screen redesign — opaque header shows "My Progress" with "Week N · date range" subtitle; Card 1: Quick Progress Overview with 5 metrics (Weight, Workout Days, Total Exercises, Calories Burned, Training Duration); collapsible "This Week" sessions section; Card 2: Training Metrics & Weekly Comparison with 5 metrics + week-over-week deltas (Distance, Training Time, Sessions, Training Weight, Body Weight); calendar icon in header navigates to Training History Calendar
 - **2026-03-05**: Training History Calendar — full month grid (Mon-Sun), dot indicators for training days, day selection shows sessions below, month navigation arrows, navigates to SessionDetail on tap
 - **2026-03-05**: Add Exercise button moved from header to exercise name row — pill-shaped "Add" button styled like "Add Set", positioned right of exercise name
