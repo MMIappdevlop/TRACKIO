@@ -43,8 +43,6 @@ export function WeeklyStatsCard({ stats, userWeight, weightUnit = "kg" }: Weekly
 
   return (
     <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
-      <ThemedText type="muted" style={styles.sectionLabel}>This Week</ThemedText>
-
       <View style={styles.row}>
         <StatCell label="Weight" value={userWeight ? `${userWeight} ${weightUnit}` : `-- ${weightUnit}`} />
         <StatCell label="Workout Days" value={`${stats?.sessionsCount ?? 0} days`} />
@@ -67,13 +65,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     paddingVertical: 22,
     paddingHorizontal: 20,
-  },
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 16,
   },
   row: {
     flexDirection: "row",

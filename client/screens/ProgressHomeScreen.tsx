@@ -173,7 +173,7 @@ export default function ProgressHomeScreen() {
         <WeeklyStatsCard stats={stats} loading={statsLoading} userWeight={settings?.userWeight} weightUnit={settings?.weightUnit || "kg"} />
 
         {thisWeekSessions.length > 0 ? (
-          <View style={[styles.weekSessionsCard, { backgroundColor: theme.backgroundDefault }]}>
+          <View style={[styles.weekSessionsCard, { backgroundColor: theme.backgroundDefault, marginTop: Spacing.lg }]}>
             <Pressable
               testID="button-toggle-week-sessions"
               onPress={() => setExpanded((v) => !v)}
