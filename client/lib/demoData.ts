@@ -82,7 +82,7 @@ function strengthSets(
 
 export function generateDemoData(): string {
   const now = new Date();
-  const createdAt = iso(d(30, 9, 0));
+  const createdAt = iso(d(58, 9, 0));
 
   const programs: Program[] = [
     {
@@ -166,14 +166,14 @@ export function generateDemoData(): string {
   today.setHours(0, 0, 0, 0);
   const todayDay = today.getDay();
 
-  for (let week = 3; week >= 0; week--) {
+  for (let week = 7; week >= 0; week--) {
     for (const slot of schedule) {
       let daysAgo = (todayDay - slot.dayOfWeek + 7) % 7 + week * 7;
       if (daysAgo === 0 && week > 0) daysAgo = 7 * week;
       if (daysAgo < 0) continue;
 
       const startTime = d(daysAgo, 7 + Math.floor(Math.random() * 3), Math.floor(Math.random() * 30));
-      const weekIndex = 3 - week;
+      const weekIndex = 7 - week;
       let durationSec: number;
       let calories: number;
 
@@ -283,7 +283,7 @@ export function generateDemoData(): string {
       badgeType: "training_days",
       badgeTier: "bronze",
       value: 10,
-      earnedAt: iso(d(7, 10, 0)),
+      earnedAt: iso(d(35, 10, 0)),
       description: "Completed 10 training days",
     },
     {
@@ -292,7 +292,7 @@ export function generateDemoData(): string {
       badgeTier: "bronze",
       taskTemplateId: TT_BENCH,
       value: 65,
-      earnedAt: iso(d(14, 10, 0)),
+      earnedAt: iso(d(42, 10, 0)),
       description: "Bench Press: 65 kg",
     },
     {
@@ -301,8 +301,25 @@ export function generateDemoData(): string {
       badgeTier: "silver",
       taskTemplateId: TT_5K,
       value: 5,
-      earnedAt: iso(d(21, 10, 0)),
+      earnedAt: iso(d(49, 10, 0)),
       description: "5K Run completed",
+    },
+    {
+      id: "demo-badge-004",
+      badgeType: "training_days",
+      badgeTier: "silver",
+      value: 25,
+      earnedAt: iso(d(14, 10, 0)),
+      description: "Completed 25 training days",
+    },
+    {
+      id: "demo-badge-005",
+      badgeType: "strength_milestone",
+      badgeTier: "silver",
+      taskTemplateId: TT_SQUAT,
+      value: 97.5,
+      earnedAt: iso(d(7, 10, 0)),
+      description: "Squats: 97.5 kg",
     },
   ];
 
