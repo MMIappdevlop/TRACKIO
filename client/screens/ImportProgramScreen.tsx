@@ -138,33 +138,33 @@ export default function ImportProgramScreen() {
   const getTemplateContent = (templateId: string): string => {
     switch (templateId) {
       case "strength":
-        return `session,task,mode,sets,reps,weight,rest_seconds,notes
-Push Day,Bench Press,strength,4,8,60,90,Main compound lift
-Push Day,Incline Dumbbell Press,strength,3,10,25,60,Focus on stretch
-Push Day,Overhead Press,strength,3,8,40,90,Strict form
-Pull Day,Barbell Rows,strength,4,8,60,90,Main compound lift
-Pull Day,Pull-ups,strength,3,8,,60,Bodyweight
-Leg Day,Squats,strength,4,6,80,120,Main compound lift
-Leg Day,Romanian Deadlifts,strength,3,10,60,90,Hamstring focus`;
+        return `session,task,mode,sets,reps,weight,rest_seconds,notes,reference_link
+Push Day,Bench Press,strength,4,8,60,90,Main compound lift,https://www.youtube.com/watch?v=example1
+Push Day,Incline Dumbbell Press,strength,3,10,25,60,Focus on stretch,
+Push Day,Overhead Press,strength,3,8,40,90,Strict form,https://www.youtube.com/watch?v=example2
+Pull Day,Barbell Rows,strength,4,8,60,90,Main compound lift,
+Pull Day,Pull-ups,strength,3,8,,60,Bodyweight,
+Leg Day,Squats,strength,4,6,80,120,Main compound lift,https://www.youtube.com/watch?v=example3
+Leg Day,Romanian Deadlifts,strength,3,10,60,90,Hamstring focus,`;
       case "endurance":
-        return `session,task,mode,distance,distance_unit,duration_minutes,notes
-Easy Run,Morning Run,distance,5,km,30,Zone 2 heart rate
-Long Run,Weekend Long Run,distance,15,km,90,Build aerobic base
-Tempo Run,Warm Up Jog,distance,2,km,12,Easy pace
-Tempo Run,Tempo Effort,distance,5,km,25,Threshold pace
-Recovery,Light Jog,distance,3,km,25,Very easy effort`;
+        return `session,task,mode,distance,distance_unit,duration_minutes,notes,reference_link
+Easy Run,Morning Run,distance,5,km,30,Zone 2 heart rate,
+Long Run,Weekend Long Run,distance,15,km,90,Build aerobic base,
+Tempo Run,Warm Up Jog,distance,2,km,12,Easy pace,
+Tempo Run,Tempo Effort,distance,5,km,25,Threshold pace,
+Recovery,Light Jog,distance,3,km,25,Very easy effort,`;
       case "interval":
-        return `session,task,mode,work_seconds,rest_seconds,rounds,notes
-HIIT Session,Jump Squats,interval,30,15,4,Explosive power
-HIIT Session,Burpees,interval,30,15,4,Full body cardio
-Tabata Core,Bicycle Crunches,interval,20,10,8,Classic tabata
-Sprint Intervals,Sprint,interval,30,90,6,Maximum effort`;
+        return `session,task,mode,work_seconds,rest_seconds,rounds,notes,reference_link
+HIIT Session,Jump Squats,interval,30,15,4,Explosive power,
+HIIT Session,Burpees,interval,30,15,4,Full body cardio,
+Tabata Core,Bicycle Crunches,interval,20,10,8,Classic tabata,
+Sprint Intervals,Sprint,interval,30,90,6,Maximum effort,`;
       case "sports-drill":
-        return `session,task,mode,sets,reps,duration_minutes,notes
-Basketball Practice,Layup Drills,time,,,10,Alternating sides
-Basketball Practice,Free Throw Practice,strength,5,10,,50 shots total
-Soccer Training,Passing Drills,time,,,15,Short and long range
-Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
+        return `session,task,mode,sets,reps,duration_minutes,notes,reference_link
+Basketball Practice,Layup Drills,time,,,10,Alternating sides,
+Basketball Practice,Free Throw Practice,strength,5,10,,50 shots total,
+Soccer Training,Passing Drills,time,,,15,Short and long range,
+Soccer Training,Sprint Drills,interval,20,40,8,Game simulation,`;
       default:
         return "";
     }
@@ -258,6 +258,7 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
     newMapping.rest_seconds = findColumn(["rest", "rest_seconds"]) || "";
     newMapping.rounds = findColumn(["rounds", "round", "cycles"]) || "";
     newMapping.notes = findColumn(["notes", "note", "comment", "description"]) || "";
+    newMapping.reference_link = findColumn(["reference_link", "link", "url", "video"]) || "";
 
     setColumnMapping(newMapping);
   };
@@ -298,6 +299,7 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
         restSeconds: parseInt(getValue("rest_seconds")) || undefined,
         rounds: parseInt(getValue("rounds")) || undefined,
         notes: getValue("notes") || undefined,
+        referenceLink: getValue("reference_link") || undefined,
       };
 
       if (!parsed.session) {
@@ -377,6 +379,7 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation`;
           name: row.task,
           mode: row.mode,
           trackMilestones: false,
+          referenceLink: row.referenceLink,
           config: {
             sets: row.sets,
             reps: row.reps,

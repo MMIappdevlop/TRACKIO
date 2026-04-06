@@ -17,6 +17,7 @@ export interface ColumnMapping {
   rest_seconds: string;
   rounds: string;
   notes: string;
+  reference_link: string;
 }
 
 export interface MappingPreset {
@@ -39,6 +40,7 @@ export interface ParsedRow {
   restSeconds?: number;
   rounds?: number;
   notes?: string;
+  referenceLink?: string;
   error?: string;
   rowNumber: number;
 }
@@ -57,6 +59,7 @@ export const DEFAULT_MAPPING: ColumnMapping = {
   rest_seconds: "rest_seconds",
   rounds: "rounds",
   notes: "notes",
+  reference_link: "reference_link",
 };
 
 export const TEMPLATE_INFO = [
@@ -105,6 +108,7 @@ export const formatFieldLabel = (field: string): string => {
     rest_seconds: "Rest (sec)",
     rounds: "Rounds",
     notes: "Notes",
+    reference_link: "Reference Link",
   };
   return labelMap[field] || field.replace(/_/g, " ");
 };

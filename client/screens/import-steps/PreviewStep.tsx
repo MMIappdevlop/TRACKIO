@@ -94,11 +94,16 @@ export function PreviewStep({
               <ThemedText type="small" numberOfLines={1}>{row.task}</ThemedText>
             </View>
             <View style={styles.previewCell}>
-              {row.error ? (
-                <Feather name="alert-circle" size={14} color={Colors.dark.error} />
-              ) : (
-                <Feather name="check-circle" size={14} color={Colors.dark.success} />
-              )}
+              <View style={styles.statusIcons}>
+                {row.error ? (
+                  <Feather name="alert-circle" size={14} color={Colors.dark.error} />
+                ) : (
+                  <Feather name="check-circle" size={14} color={Colors.dark.success} />
+                )}
+                {row.referenceLink ? (
+                  <Feather name="link" size={12} color={theme.link} />
+                ) : null}
+              </View>
             </View>
           </View>
         ))}
@@ -196,6 +201,11 @@ const styles = StyleSheet.create({
   previewCell: {
     width: 40,
     alignItems: "center",
+  },
+  statusIcons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   previewCellWide: {
     flex: 1,
