@@ -148,10 +148,10 @@ Leg Day,Squats,strength,4,6,80,120,Main compound lift,https://www.youtube.com/wa
 Leg Day,Romanian Deadlifts,strength,3,10,60,90,Hamstring focus,`;
       case "endurance":
         return `session,task,mode,distance,distance_unit,duration_minutes,notes,reference_link
-Easy Run,Morning Run,distance,5,km,30,Zone 2 heart rate,
+Easy Run,Morning Run,distance,5,km,30,Zone 2 heart rate,https://www.youtube.com/watch?v=example4
 Long Run,Weekend Long Run,distance,15,km,90,Build aerobic base,
 Tempo Run,Warm Up Jog,distance,2,km,12,Easy pace,
-Tempo Run,Tempo Effort,distance,5,km,25,Threshold pace,
+Tempo Run,Tempo Effort,distance,5,km,25,Threshold pace,https://www.youtube.com/watch?v=example5
 Recovery,Light Jog,distance,3,km,25,Very easy effort,`;
       case "interval":
         return `session,task,mode,work_seconds,rest_seconds,rounds,notes,reference_link
@@ -232,7 +232,6 @@ Soccer Training,Sprint Drills,interval,20,40,8,Game simulation,`;
   };
 
   const autoDetectMapping = (columns: string[]) => {
-    const lowerColumns = columns.map(c => c.toLowerCase());
     const newMapping = { ...DEFAULT_MAPPING };
 
     const findColumn = (keywords: string[]): string => {
