@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, StyleSheet, Pressable, TextInput, Modal, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { View, StyleSheet, Pressable, TextInput, Modal, Alert, KeyboardAvoidingView, Platform, Linking } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -548,6 +548,24 @@ export default function SessionRunScreen() {
           </Pressable>
         </View>
 
+        {currentTask.referenceLink ? (
+          <Pressable
+            testID="button-reference-link"
+            onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                await Linking.openURL(currentTask.referenceLink!);
+              } catch (e) {
+                console.error("Failed to open link:", e);
+              }
+            }}
+            style={[styles.referenceLinkButton, { backgroundColor: theme.linkBackground }]}
+          >
+            <Feather name="external-link" size={14} color={theme.link} />
+            <ThemedText type="small" style={{ color: theme.link }}>Reference</ThemedText>
+          </Pressable>
+        ) : null}
+
         {/* Target */}
         <ThemedText type="secondary" style={styles.targetText}>
           {getTargetText(currentTask)}
@@ -982,6 +1000,16 @@ const styles = StyleSheet.create({
   },
   taskName: {
     flex: 1,
+  },
+  referenceLinkButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.sm,
+    marginBottom: Spacing.xs,
   },
   addExerciseButton: {
     flexDirection: "row",
