@@ -13,11 +13,14 @@ import { WeeklyStatsCard } from "@/components/WeeklyStatsCard";
 import { WeeklyComparisonCard } from "@/components/WeeklyComparisonCard";
 import { ProgressShareCard } from "@/components/ProgressShareCard";
 import { SessionHistoryCard } from "@/components/SessionHistoryCard";
+import { StreakCard, computeStreaks } from "@/components/StreakCard";
+import { MonthlyComparisonCard, computeMonthStats } from "@/components/MonthlyComparisonCard";
 import { useTheme } from "@/hooks/useTheme";
 import { useWeeklyStats, useCompletedSessions, useSettings } from "@/hooks/useData";
+import { completedSessionsStorage, completedTasksStorage } from "@/lib/storage";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { ProgressStackParamList } from "@/navigation/ProgressStackNavigator";
-import type { CompletedSession } from "@/types";
+import type { CompletedSession, CompletedTask } from "@/types";
 
 type NavigationProp = NativeStackNavigationProp<ProgressStackParamList>;
 
@@ -30,6 +33,11 @@ function getMonWeekStart(): Date {
   return d;
 }
 
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
 export default function ProgressHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { theme } = useTheme();
@@ -41,6 +49,18 @@ export default function ProgressHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const shareCardRef = useRef<View>(null);
+
+  const [allSessions, setAllSessions] = useState<CompletedSession[]>([]);
+  const [allTasks, setAllTasks] = useState<CompletedTask[]>([]);
+
+  const loadAllData = useCallback(async () => {
+    const [s, t] = await Promise.all([
+      completedSessionsStorage.getAll(),
+      completedTasksStorage.getAll(),
+    ]);
+    setAllSessions(s);
+    setAllTasks(t);
+  }, []);
 
   const weekInfo = useMemo(() => {
     const now = new Date();
@@ -58,6 +78,23 @@ export default function ProgressHomeScreen() {
     const range = `${months[monStart.getMonth()]} ${monStart.getDate()} – ${months[sunEnd.getMonth()]} ${sunEnd.getDate()}`;
     return { weekNum, range };
   }, []);
+
+  const streaks = useMemo(() => computeStreaks(allSessions), [allSessions]);
+
+  const monthStats = useMemo(() => {
+    const now = new Date();
+    const curYear = now.getFullYear();
+    const curMonth = now.getMonth();
+
+    const prevDate = new Date(curYear, curMonth - 1, 1);
+    const prevYear = prevDate.getFullYear();
+    const prevMonth = prevDate.getMonth();
+
+    const current = computeMonthStats(allSessions, allTasks, curYear, curMonth);
+    const previous = computeMonthStats(allSessions, allTasks, prevYear, prevMonth);
+    const monthLabel = `${MONTH_NAMES[curMonth]} ${curYear}`;
+    return { current, previous, monthLabel };
+  }, [allSessions, allTasks]);
 
   const thisWeekSessions = useMemo(() => {
     const weekStart = getMonWeekStart();
@@ -106,12 +143,18 @@ export default function ProgressHomeScreen() {
       refreshStats();
       refreshSessions();
       refreshSettings();
-    }, [])
+      loadAllData();
+    }, [loadAllData])
   );
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refreshStats(), refreshSessions(), refreshSettings()]);
+    await Promise.all([
+      refreshStats(),
+      refreshSessions(),
+      refreshSettings(),
+      loadAllData(),
+    ]);
     setRefreshing(false);
   };
 
@@ -179,6 +222,17 @@ export default function ProgressHomeScreen() {
         }
       >
         <WeeklyStatsCard stats={stats} loading={statsLoading} userWeight={settings?.userWeight} weightUnit={settings?.weightUnit || "kg"} />
+
+        <StreakCard
+          currentStreak={streaks.currentStreak}
+          longestStreak={streaks.longestStreak}
+        />
+
+        <MonthlyComparisonCard
+          current={monthStats.current}
+          previous={monthStats.previous}
+          monthLabel={monthStats.monthLabel}
+        />
 
         {thisWeekSessions.length > 0 ? (
           <View style={[styles.weekSessionsCard, { backgroundColor: theme.backgroundDefault, marginTop: Spacing.lg }]}>
