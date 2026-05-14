@@ -101,7 +101,7 @@ export default function LongTermProgressScreen() {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const chartWidth = width - Spacing.lg * 2;
+  const chartWidth = width - Spacing.lg * 4;
 
   const [loading, setLoading] = useState(true);
   const [allSessions, setAllSessions] = useState<CompletedSession[]>([]);
@@ -173,8 +173,8 @@ export default function LongTermProgressScreen() {
     [allTasks, selectedExercise, strengthRange]
   );
   const volumeData = useMemo(
-    () => getWeeklyVolume(allTasks, volumeRange),
-    [allTasks, volumeRange]
+    () => getWeeklyVolume(allTasks, allSessions, volumeRange),
+    [allTasks, allSessions, volumeRange]
   );
   const distData = useMemo(
     () => getWeeklyDistance(allTasks, distRange, distanceUnit),
