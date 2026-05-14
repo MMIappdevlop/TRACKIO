@@ -8,6 +8,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
 import { ModeIcon } from "@/components/icons/ModeIcon";
+import { SessionComparisonCard } from "@/components/SessionComparisonCard";
 import { useTheme } from "@/hooks/useTheme";
 import { completedSessionsStorage, completedTasksStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, TaskModes, Colors } from "@/constants/theme";
@@ -54,18 +55,48 @@ export default function SessionDetailScreen() {
 
   const [session, setSession] = useState<CompletedSession | null>(null);
   const [tasks, setTasks] = useState<CompletedTask[]>([]);
+  const [prevSession, setPrevSession] = useState<CompletedSession | null>(null);
+  const [prevTasks, setPrevTasks] = useState<CompletedTask[]>([]);
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
-    const loadedSession = await completedSessionsStorage.getById(sessionId);
+    const [loadedSession, allSessions] = await Promise.all([
+      completedSessionsStorage.getById(sessionId),
+      completedSessionsStorage.getAll(),
+    ]);
+
     setSession(loadedSession);
+
     if (loadedSession) {
       navigation.setOptions({ headerTitle: loadedSession.sessionTemplateName });
-      const loadedTasks = await completedTasksStorage.getBySessionId(sessionId);
+
+      const [loadedTasks, prior] = await Promise.all([
+        completedTasksStorage.getBySessionId(sessionId),
+        Promise.resolve(
+          allSessions
+            .filter(
+              (s) =>
+                s.sessionTemplateId === loadedSession.sessionTemplateId &&
+                s.id !== sessionId
+            )
+            .sort(
+              (a, b) =>
+                new Date(b.completedAt).getTime() -
+                new Date(a.completedAt).getTime()
+            )[0] ?? null
+        ),
+      ]);
+
       setTasks(loadedTasks);
+      setPrevSession(prior);
+
+      if (prior) {
+        const pt = await completedTasksStorage.getBySessionId(prior.id);
+        setPrevTasks(pt);
+      }
     }
   };
 
@@ -176,7 +207,15 @@ export default function SessionDetailScreen() {
                 <ThemedText type="body">{session.programName}</ThemedText>
               </View>
             </View>
-            <ThemedText type="h2" style={styles.sectionTitle}>Tasks</ThemedText>
+
+            <SessionComparisonCard
+              session={session}
+              prevSession={prevSession}
+              tasks={tasks}
+              prevTasks={prevTasks}
+            />
+
+            <ThemedText type="h2" style={styles.sectionTitle}>Exercises</ThemedText>
           </View>
         }
         contentContainerStyle={[
