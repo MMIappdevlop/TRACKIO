@@ -8,7 +8,10 @@ import { Spacing, BorderRadius } from "@/constants/theme";
 import type { CompletedSession } from "@/types";
 
 function toDateKey(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 export function computeStreaks(sessions: CompletedSession[]): {
@@ -46,8 +49,8 @@ export function computeStreaks(sessions: CompletedSession[]): {
   let prev: Date | null = null;
 
   for (const key of allDays) {
-    const parts = key.split("-").map(Number);
-    const d = new Date(parts[0], parts[1], parts[2]);
+    const [y, m, day] = key.split("-").map(Number);
+    const d = new Date(y, m - 1, day);
     if (prev !== null) {
       const diff = (d.getTime() - prev.getTime()) / 86400000;
       if (diff === 1) {

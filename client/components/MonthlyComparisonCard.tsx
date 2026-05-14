@@ -76,12 +76,12 @@ type Direction = "up" | "down" | "same";
 function getDelta(current: number, previous: number): {
   direction: Direction;
   pct: number;
+  noData: boolean;
 } {
-  if (previous === 0 && current === 0) return { direction: "same", pct: 0 };
-  if (previous === 0) return { direction: "up", pct: 100 };
+  if (previous === 0) return { direction: "same", pct: 0, noData: true };
   const pct = ((current - previous) / previous) * 100;
-  if (Math.abs(pct) < 1) return { direction: "same", pct: 0 };
-  return { direction: pct > 0 ? "up" : "down", pct };
+  if (Math.abs(pct) < 1) return { direction: "same", pct: 0, noData: false };
+  return { direction: pct > 0 ? "up" : "down", pct, noData: false };
 }
 
 function MetricRow({
@@ -98,20 +98,17 @@ function MetricRow({
   isLast?: boolean;
 }) {
   const { theme } = useTheme();
-  const { direction, pct } = getDelta(current, previous);
+  const { direction, pct, noData } = getDelta(current, previous);
 
   const deltaColor =
-    direction === "up"
-      ? "#4CAF50"
-      : direction === "down"
-        ? "#EF5350"
-        : theme.textMuted;
+    direction === "up" ? "#4CAF50" : theme.textMuted;
 
   const arrow =
     direction === "up" ? "\u2191 " : direction === "down" ? "\u2193 " : "";
 
-  const deltaText =
-    direction === "same"
+  const deltaText = noData
+    ? "no prior data"
+    : direction === "same"
       ? "same as last month"
       : `${arrow}${Math.abs(Math.round(pct))}% vs last month`;
 
