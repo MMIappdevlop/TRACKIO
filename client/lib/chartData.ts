@@ -118,6 +118,7 @@ export function getStrengthProgression(
 
 export function getWeeklyVolume(
   tasks: CompletedTask[],
+  sessions: CompletedSession[],
   range: ChartRange
 ): ChartPoint[] {
   const start = getStartDate(range);

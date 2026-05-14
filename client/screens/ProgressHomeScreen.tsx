@@ -83,12 +83,20 @@ export default function ProgressHomeScreen() {
         </View>
       ),
       headerRight: () => (
-        <HeaderButton
-          testID="button-calendar"
-          onPress={() => navigation.navigate("TrainingCalendar")}
-        >
-          <Feather name="calendar" size={22} color={theme.text} />
-        </HeaderButton>
+        <View style={{ flexDirection: "row" }}>
+          <HeaderButton
+            testID="button-charts"
+            onPress={() => navigation.navigate("LongTermProgress")}
+          >
+            <Feather name="bar-chart-2" size={22} color={theme.text} />
+          </HeaderButton>
+          <HeaderButton
+            testID="button-calendar"
+            onPress={() => navigation.navigate("TrainingCalendar")}
+          >
+            <Feather name="calendar" size={22} color={theme.text} />
+          </HeaderButton>
+        </View>
       ),
     });
   }, [weekInfo]);
