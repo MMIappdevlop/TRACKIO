@@ -31,7 +31,10 @@ function getStartDate(range: ChartRange): Date | null {
   }
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
 
 function getWeekStart(date: Date): Date {
   const d = new Date(date);
@@ -47,9 +50,31 @@ function weekLabel(date: Date): string {
 }
 
 function dayLabel(dateStr: string): string {
-  const d = new Date(dateStr);
+  const d = new Date(dateStr + "T00:00:00");
   return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
 }
+
+/** Convert a stored distance value to the user's display unit. */
+function toDisplayUnit(
+  value: number,
+  storedUnit: "km" | "mi" | "m" | undefined,
+  displayUnit: "km" | "mi"
+): number {
+  const stored = storedUnit || "km";
+  let km: number;
+  if (stored === "km") {
+    km = value;
+  } else if (stored === "mi") {
+    km = value * 1.60934;
+  } else {
+    km = value / 1000;
+  }
+  return displayUnit === "km" ? km : km * 0.621371;
+}
+
+// ---------------------------------------------------------------------------
+// Workout frequency
+// ---------------------------------------------------------------------------
 
 export function getWorkoutFrequency(
   sessions: CompletedSession[],
@@ -79,6 +104,10 @@ export function getWorkoutFrequency(
     .map(([label, { count, sortKey }]) => ({ label, value: count, date: sortKey }));
 }
 
+// ---------------------------------------------------------------------------
+// Strength progression (one point per session, not per calendar day)
+// ---------------------------------------------------------------------------
+
 export function getStrengthProgression(
   tasks: CompletedTask[],
   exerciseName: string,
@@ -92,9 +121,10 @@ export function getStrengthProgression(
       (!start || new Date(t.completedAt) >= start)
   );
 
-  const dateMap = new Map<string, number>();
+  // Group by completedSessionId so multiple entries on the same calendar day
+  // each produce their own data point.
+  const sessionMap = new Map<string, { maxWeight: number; completedAt: string }>();
   for (const t of filtered) {
-    const dateStr = t.completedAt.split("T")[0];
     let maxWeight = 0;
     if (t.dataJson.sets) {
       for (const set of t.dataJson.sets) {
@@ -103,22 +133,30 @@ export function getStrengthProgression(
         }
       }
     }
-    if (maxWeight > 0) {
-      const existing = dateMap.get(dateStr);
-      if (existing === undefined || maxWeight > existing) {
-        dateMap.set(dateStr, maxWeight);
-      }
+    if (maxWeight <= 0) continue;
+
+    const key = t.completedSessionId;
+    const existing = sessionMap.get(key);
+    if (!existing || maxWeight > existing.maxWeight) {
+      sessionMap.set(key, { maxWeight, completedAt: t.completedAt });
     }
   }
 
-  return Array.from(dateMap.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([date, value]) => ({ label: dayLabel(date), value, date }));
+  return Array.from(sessionMap.values())
+    .sort((a, b) => a.completedAt.localeCompare(b.completedAt))
+    .map(({ maxWeight, completedAt }) => ({
+      label: dayLabel(completedAt.split("T")[0]),
+      value: maxWeight,
+      date: completedAt,
+    }));
 }
+
+// ---------------------------------------------------------------------------
+// Weekly training volume (strength only)
+// ---------------------------------------------------------------------------
 
 export function getWeeklyVolume(
   tasks: CompletedTask[],
-  sessions: CompletedSession[],
   range: ChartRange
 ): ChartPoint[] {
   const start = getStartDate(range);
@@ -157,9 +195,14 @@ export function getWeeklyVolume(
     }));
 }
 
+// ---------------------------------------------------------------------------
+// Weekly distance (normalised to the user's display unit)
+// ---------------------------------------------------------------------------
+
 export function getWeeklyDistance(
   tasks: CompletedTask[],
-  range: ChartRange
+  range: ChartRange,
+  displayUnit: "km" | "mi" = "km"
 ): ChartPoint[] {
   const start = getStartDate(range);
   const filtered = tasks.filter(
@@ -176,12 +219,16 @@ export function getWeeklyDistance(
     const ws = getWeekStart(d);
     const label = weekLabel(d);
     const sortKey = ws.toISOString();
-    const dist = t.dataJson.distance || 0;
+    const normalised = toDisplayUnit(
+      t.dataJson.distance || 0,
+      t.dataJson.distanceUnit,
+      displayUnit
+    );
     const existing = weekMap.get(label);
     if (existing) {
-      existing.dist += dist;
+      existing.dist += normalised;
     } else {
-      weekMap.set(label, { dist, sortKey });
+      weekMap.set(label, { dist: normalised, sortKey });
     }
   }
 
@@ -189,10 +236,14 @@ export function getWeeklyDistance(
     .sort((a, b) => a[1].sortKey.localeCompare(b[1].sortKey))
     .map(([label, { dist, sortKey }]) => ({
       label,
-      value: parseFloat(dist.toFixed(1)),
+      value: parseFloat(dist.toFixed(2)),
       date: sortKey,
     }));
 }
+
+// ---------------------------------------------------------------------------
+// Body weight trend
+// ---------------------------------------------------------------------------
 
 export function getBodyWeightTrend(
   entries: WeightLogEntry[],
@@ -211,6 +262,10 @@ export function getBodyWeightTrend(
       date: e.date,
     }));
 }
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
 export function getUniqueStrengthExercises(tasks: CompletedTask[]): string[] {
   const names = new Set<string>();

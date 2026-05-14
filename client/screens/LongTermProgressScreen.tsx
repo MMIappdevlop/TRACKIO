@@ -173,12 +173,12 @@ export default function LongTermProgressScreen() {
     [allTasks, selectedExercise, strengthRange]
   );
   const volumeData = useMemo(
-    () => getWeeklyVolume(allTasks, allSessions, volumeRange),
-    [allTasks, allSessions, volumeRange]
+    () => getWeeklyVolume(allTasks, volumeRange),
+    [allTasks, volumeRange]
   );
   const distData = useMemo(
-    () => getWeeklyDistance(allTasks, distRange),
-    [allTasks, distRange]
+    () => getWeeklyDistance(allTasks, distRange, distanceUnit),
+    [allTasks, distRange, distanceUnit]
   );
   const bwData = useMemo(
     () => getBodyWeightTrend(weightEntries, bwRange),
