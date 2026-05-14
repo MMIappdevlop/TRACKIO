@@ -10,7 +10,7 @@ import { ThemedText } from "@/components/ThemedText";
 import { ModeIcon } from "@/components/icons/ModeIcon";
 import { SessionComparisonCard } from "@/components/SessionComparisonCard";
 import { useTheme } from "@/hooks/useTheme";
-import { completedSessionsStorage, completedTasksStorage } from "@/lib/storage";
+import { completedSessionsStorage, completedTasksStorage, settingsStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, TaskModes, Colors } from "@/constants/theme";
 import type { ProgressStackParamList } from "@/navigation/ProgressStackNavigator";
 import type { CompletedSession, CompletedTask } from "@/types";
@@ -57,46 +57,49 @@ export default function SessionDetailScreen() {
   const [tasks, setTasks] = useState<CompletedTask[]>([]);
   const [prevSession, setPrevSession] = useState<CompletedSession | null>(null);
   const [prevTasks, setPrevTasks] = useState<CompletedTask[]>([]);
+  const [weightUnit, setWeightUnit] = useState<string>("kg");
 
   useEffect(() => {
     loadData();
   }, []);
 
   const loadData = async () => {
-    const [loadedSession, allSessions] = await Promise.all([
+    const [loadedSession, allSessions, settings] = await Promise.all([
       completedSessionsStorage.getById(sessionId),
       completedSessionsStorage.getAll(),
+      settingsStorage.get(),
     ]);
+
+    if (settings?.weightUnit) {
+      setWeightUnit(settings.weightUnit);
+    }
 
     setSession(loadedSession);
 
     if (loadedSession) {
       navigation.setOptions({ headerTitle: loadedSession.sessionTemplateName });
 
-      const [loadedTasks, prior] = await Promise.all([
+      const prior =
+        allSessions
+          .filter(
+            (s) =>
+              s.sessionTemplateId === loadedSession.sessionTemplateId &&
+              s.id !== sessionId
+          )
+          .sort(
+            (a, b) =>
+              new Date(b.completedAt).getTime() -
+              new Date(a.completedAt).getTime()
+          )[0] ?? null;
+
+      const [loadedTasks, pt] = await Promise.all([
         completedTasksStorage.getBySessionId(sessionId),
-        Promise.resolve(
-          allSessions
-            .filter(
-              (s) =>
-                s.sessionTemplateId === loadedSession.sessionTemplateId &&
-                s.id !== sessionId
-            )
-            .sort(
-              (a, b) =>
-                new Date(b.completedAt).getTime() -
-                new Date(a.completedAt).getTime()
-            )[0] ?? null
-        ),
+        prior ? completedTasksStorage.getBySessionId(prior.id) : Promise.resolve([]),
       ]);
 
       setTasks(loadedTasks);
       setPrevSession(prior);
-
-      if (prior) {
-        const pt = await completedTasksStorage.getBySessionId(prior.id);
-        setPrevTasks(pt);
-      }
+      setPrevTasks(pt);
     }
   };
 
@@ -213,6 +216,7 @@ export default function SessionDetailScreen() {
               prevSession={prevSession}
               tasks={tasks}
               prevTasks={prevTasks}
+              weightUnit={weightUnit}
             />
 
             <ThemedText type="h2" style={styles.sectionTitle}>Exercises</ThemedText>

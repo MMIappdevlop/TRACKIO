@@ -26,10 +26,10 @@ function formatPrevDate(dateString: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-function formatVolumeDelta(delta: number): string {
+function formatVolumeDelta(delta: number, unit: string): string {
   const abs = Math.round(Math.abs(delta));
-  if (abs >= 1000) return `${(Math.abs(delta) / 1000).toFixed(1)}k kg`;
-  return `${abs} kg`;
+  if (abs >= 1000) return `${(Math.abs(delta) / 1000).toFixed(1)}k ${unit}`;
+  return `${abs} ${unit}`;
 }
 
 function formatDurationDelta(seconds: number): string {
@@ -82,6 +82,7 @@ interface SessionComparisonCardProps {
   prevSession: CompletedSession | null;
   tasks: CompletedTask[];
   prevTasks: CompletedTask[];
+  weightUnit?: string;
 }
 
 export function SessionComparisonCard({
@@ -89,6 +90,7 @@ export function SessionComparisonCard({
   prevSession,
   tasks,
   prevTasks,
+  weightUnit = "kg",
 }: SessionComparisonCardProps) {
   const { theme } = useTheme();
 
@@ -115,7 +117,7 @@ export function SessionComparisonCard({
   const volumeMain =
     Math.abs(volumeDelta) < 1
       ? "Same"
-      : (volumeDelta > 0 ? "+" : "-") + formatVolumeDelta(volumeDelta);
+      : (volumeDelta > 0 ? "+" : "-") + formatVolumeDelta(volumeDelta, weightUnit);
 
   const exerciseMain =
     exerciseDelta === 0
