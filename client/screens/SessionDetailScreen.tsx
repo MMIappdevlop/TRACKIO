@@ -103,6 +103,53 @@ export default function SessionDetailScreen() {
     }
   };
 
+  const getBestStrengthSet = (sets: CompletedTask["dataJson"]["sets"]) => {
+    if (!sets || sets.length === 0) return null;
+    const completed = sets.filter((s) => s.isCompleted && s.weight != null);
+    if (completed.length === 0) return null;
+    return completed.reduce((best, s) =>
+      (s.weight ?? 0) > (best.weight ?? 0) ? s : best
+    );
+  };
+
+  const renderLastTime = (task: CompletedTask) => {
+    const prev = prevTasks.find((pt) => pt.taskTemplateId === task.taskTemplateId);
+    if (!prev) return null;
+
+    if (task.mode === "strength") {
+      const best = getBestStrengthSet(prev.dataJson.sets);
+      if (!best) return null;
+      return (
+        <View style={[styles.lastTimeRow, { borderTopColor: theme.border }]}>
+          <Feather name="clock" size={12} color={theme.textMuted} />
+          <ThemedText type="muted" style={styles.lastTimeLabel}>Last time:</ThemedText>
+          <ThemedText type="muted" style={styles.lastTimeValue}>
+            {best.weight ?? "-"}{weightUnit} x {best.reps ?? "-"}
+          </ThemedText>
+          <ThemedText type="muted" style={styles.lastTimeSub}>(best set)</ThemedText>
+        </View>
+      );
+    }
+
+    if (task.mode === "distance") {
+      const d = prev.dataJson.distance;
+      const dur = prev.dataJson.durationSeconds;
+      const unit = prev.dataJson.distanceUnit || "km";
+      if (d == null) return null;
+      return (
+        <View style={[styles.lastTimeRow, { borderTopColor: theme.border }]}>
+          <Feather name="clock" size={12} color={theme.textMuted} />
+          <ThemedText type="muted" style={styles.lastTimeLabel}>Last time:</ThemedText>
+          <ThemedText type="muted" style={styles.lastTimeValue}>
+            {d} {unit}{dur ? ` in ${formatDuration(dur)}` : ""}
+          </ThemedText>
+        </View>
+      );
+    }
+
+    return null;
+  };
+
   const renderTask = ({ item: task }: { item: CompletedTask }) => {
     const modeConfig = TaskModes[task.mode];
 
@@ -174,6 +221,7 @@ export default function SessionDetailScreen() {
           <ThemedText type="h4">{task.taskTemplateName}</ThemedText>
         </View>
         {renderData()}
+        {renderLastTime(task)}
       </View>
     );
   };
@@ -292,5 +340,23 @@ const styles = StyleSheet.create({
   },
   notesText: {
     fontStyle: "italic",
+  },
+  lastTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  lastTimeLabel: {
+    fontSize: 12,
+  },
+  lastTimeValue: {
+    fontSize: 12,
+    flex: 1,
+  },
+  lastTimeSub: {
+    fontSize: 11,
   },
 });
