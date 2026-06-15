@@ -141,17 +141,36 @@ export default function SessionRunScreen() {
   const loadPreviousData = async (loadedTasks: TaskTemplate[]) => {
     const prevMap: Record<string, StrengthSetData[]> = {};
     const strengthTasks = loadedTasks.filter((t) => t.mode === "strength");
-    await Promise.all(
-      strengthTasks.map(async (task) => {
-        const history = await completedTasksStorage.getByTaskTemplateId(task.id);
-        if (history.length > 0 && history[0].dataJson.sets) {
-          const completedSets = history[0].dataJson.sets.filter((s) => s.isCompleted);
-          if (completedSets.length > 0) {
-            prevMap[task.id] = completedSets;
-          }
+    if (strengthTasks.length === 0) {
+      setPreviousData(prevMap);
+      return;
+    }
+
+    const allCompleted = await completedTasksStorage.getAll();
+    const byName = new Map<string, typeof allCompleted>();
+    for (const ct of allCompleted) {
+      if (ct.mode !== "strength") continue;
+      const key = ct.taskTemplateName.trim().toLowerCase();
+      if (!byName.has(key)) byName.set(key, []);
+      byName.get(key)!.push(ct);
+    }
+
+    for (const task of strengthTasks) {
+      const key = task.name.trim().toLowerCase();
+      const history = byName.get(key);
+      if (!history || history.length === 0) continue;
+      history.sort(
+        (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+      );
+      const mostRecent = history[0];
+      if (mostRecent.dataJson.sets) {
+        const completedSets = mostRecent.dataJson.sets.filter((s) => s.isCompleted);
+        if (completedSets.length > 0) {
+          prevMap[task.id] = completedSets;
         }
-      })
-    );
+      }
+    }
+
     setPreviousData(prevMap);
   };
 
