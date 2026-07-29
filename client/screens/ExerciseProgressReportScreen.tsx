@@ -4,7 +4,6 @@ import {
   ScrollView,
   StyleSheet,
   Pressable,
-  TextInput,
   ActivityIndicator,
   Alert,
   Platform,
@@ -81,13 +80,6 @@ function toDateString(d: Date): string {
   return d.toISOString().split("T")[0];
 }
 
-function parseDate(s: string): Date | null {
-  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!m) return null;
-  const d = new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
-  return isNaN(d.getTime()) ? null : d;
-}
-
 function fmtColDate(dateKey: string): string {
   const parts = dateKey.split("-");
   return `${parts[2]}/${parts[1]}`;
@@ -154,6 +146,176 @@ function generateCsv(groups: ReportDayGroup[], from: Date, to: Date): string {
   return lines.join("\n");
 }
 
+// ─── Month names ─────────────────────────────────────────────────────────────
+const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// ─── MonthYearPicker component ────────────────────────────────────────────────
+interface MonthYear { year: number; month: number } // month: 0-indexed
+
+interface MonthYearPickerProps {
+  label: string;
+  value: MonthYear;
+  onChange: (v: MonthYear) => void;
+  /** Months before this value are dimmed (optional) */
+  minValue?: MonthYear;
+  /** Months after this value are dimmed (optional) */
+  maxValue?: MonthYear;
+  /** Highlight range: months between rangeStart and rangeEnd get a tint */
+  rangeStart?: MonthYear;
+  rangeEnd?: MonthYear;
+}
+
+function monthYearToNum(mv: MonthYear): number {
+  return mv.year * 12 + mv.month;
+}
+
+function MonthYearPicker({
+  label,
+  value,
+  onChange,
+  minValue,
+  maxValue,
+  rangeStart,
+  rangeEnd,
+}: MonthYearPickerProps) {
+  const { theme } = useTheme();
+  const [viewYear, setViewYear] = useState(value.year);
+
+  // Keep view year in sync when value changes externally
+  useEffect(() => {
+    setViewYear(value.year);
+  }, [value.year]);
+
+  const rangeStartNum = rangeStart ? monthYearToNum(rangeStart) : null;
+  const rangeEndNum = rangeEnd ? monthYearToNum(rangeEnd) : null;
+  const minNum = minValue ? monthYearToNum(minValue) : null;
+  const maxNum = maxValue ? monthYearToNum(maxValue) : null;
+
+  return (
+    <View style={pickerStyles.container}>
+      <ThemedText style={[pickerStyles.label, { color: theme.textMuted }]}>{label}</ThemedText>
+
+      {/* Year navigation */}
+      <View style={pickerStyles.yearRow}>
+        <Pressable
+          onPress={() => setViewYear((y) => y - 1)}
+          hitSlop={8}
+          style={pickerStyles.yearArrow}
+        >
+          <Feather name="chevron-left" size={18} color={theme.textSecondary} />
+        </Pressable>
+        <ThemedText style={pickerStyles.yearText}>{viewYear}</ThemedText>
+        <Pressable
+          onPress={() => setViewYear((y) => y + 1)}
+          hitSlop={8}
+          style={pickerStyles.yearArrow}
+        >
+          <Feather name="chevron-right" size={18} color={theme.textSecondary} />
+        </Pressable>
+      </View>
+
+      {/* Month grid: 3 columns × 4 rows */}
+      <View style={pickerStyles.monthGrid}>
+        {MONTH_SHORT.map((name, m) => {
+          const thisNum = monthYearToNum({ year: viewYear, month: m });
+          const isSelected = value.year === viewYear && value.month === m;
+          const isDisabledMin = minNum !== null && thisNum < minNum;
+          const isDisabledMax = maxNum !== null && thisNum > maxNum;
+          const isDisabled = isDisabledMin || isDisabledMax;
+          const inRange =
+            rangeStartNum !== null &&
+            rangeEndNum !== null &&
+            thisNum >= rangeStartNum &&
+            thisNum <= rangeEndNum;
+
+          let cellBg: string = "transparent";
+          let textColor: string = isDisabled ? theme.textMuted : theme.text;
+          if (isSelected) {
+            cellBg = theme.link;
+            textColor = "#fff";
+          } else if (inRange) {
+            cellBg = theme.linkBackground;
+            textColor = theme.link;
+          }
+
+          return (
+            <Pressable
+              key={m}
+              onPress={() => {
+                if (!isDisabled) onChange({ year: viewYear, month: m });
+              }}
+              style={[
+                pickerStyles.monthCell,
+                { backgroundColor: cellBg },
+                isSelected && pickerStyles.monthCellSelected,
+              ]}
+            >
+              <ThemedText
+                style={[
+                  pickerStyles.monthText,
+                  { color: textColor, fontWeight: isSelected ? "700" : "500" },
+                ]}
+              >
+                {name}
+              </ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+const pickerStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    gap: Spacing.xs,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: "600",
+    textAlign: "center",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    fontFamily: Typography.body.fontFamily,
+  },
+  yearRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 2,
+  },
+  yearArrow: {
+    padding: 4,
+  },
+  yearText: {
+    fontSize: 15,
+    fontWeight: "600",
+    fontFamily: Typography.body.fontFamily,
+  },
+  monthGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 4,
+  },
+  monthCell: {
+    // 3 columns with gap=4: (flex basis roughly 1/3 minus gap)
+    width: "30%",
+    flexGrow: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 7,
+    borderRadius: BorderRadius.sm,
+  },
+  monthCellSelected: {
+    borderRadius: BorderRadius.md,
+  },
+  monthText: {
+    fontSize: 13,
+    fontFamily: Typography.body.fontFamily,
+  },
+});
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function ExerciseProgressReportScreen() {
   const navigation = useNavigation<NavigationProp>();
@@ -162,11 +324,16 @@ export default function ExerciseProgressReportScreen() {
   const insets = useSafeAreaInsets();
 
   const [preset, setPreset] = useState<DatePreset>("this_month");
-  const [customFromText, setCustomFromText] = useState(() => {
+
+  // Custom range stored as month/year pairs
+  const [customFrom, setCustomFrom] = useState<MonthYear>(() => {
     const d = new Date();
-    return toDateString(new Date(d.getFullYear(), d.getMonth(), 1));
+    return { year: d.getFullYear(), month: d.getMonth() };
   });
-  const [customToText, setCustomToText] = useState(() => toDateString(new Date()));
+  const [customTo, setCustomTo] = useState<MonthYear>(() => {
+    const d = new Date();
+    return { year: d.getFullYear(), month: d.getMonth() };
+  });
 
   const [loading, setLoading] = useState(true);
   const [allSessions, setAllSessions] = useState<CompletedSession[]>([]);
@@ -179,13 +346,18 @@ export default function ExerciseProgressReportScreen() {
   // ── Date range ──────────────────────────────────────────────────────────────
   const { from, to } = useMemo(() => {
     if (preset === "custom") {
-      const f = parseDate(customFromText);
-      const t = parseDate(customToText);
-      if (f && t && f <= t) return { from: f, to: t };
-      return getPresetRange("this_month");
+      const fromNum = monthYearToNum(customFrom);
+      const toNum = monthYearToNum(customTo);
+      // Ensure from <= to (swap silently if user picks end before start)
+      const [earlier, later] =
+        fromNum <= toNum ? [customFrom, customTo] : [customTo, customFrom];
+      return {
+        from: new Date(earlier.year, earlier.month, 1),
+        to: new Date(later.year, later.month + 1, 0), // last day of month
+      };
     }
     return getPresetRange(preset);
-  }, [preset, customFromText, customToText]);
+  }, [preset, customFrom, customTo]);
 
   // ── Load data ───────────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
@@ -301,6 +473,12 @@ export default function ExerciseProgressReportScreen() {
       return next;
     });
   };
+
+  // For range highlight in the pickers
+  const fromNum = monthYearToNum(customFrom);
+  const toNum = monthYearToNum(customTo);
+  const rangeStart = fromNum <= toNum ? customFrom : customTo;
+  const rangeEnd = fromNum <= toNum ? customTo : customFrom;
 
   const renderDayGroup = (group: ReportDayGroup) => {
     const expanded = expandedDays.has(group.sessionTemplateId);
@@ -547,46 +725,29 @@ export default function ExerciseProgressReportScreen() {
           </ScrollView>
         ) : null}
 
+        {/* Custom month/year pickers */}
         {preset === "custom" ? (
-          <View style={styles.customRow}>
-            <View style={styles.customInputGroup}>
-              <ThemedText type="muted" style={styles.customLabel}>From</ThemedText>
-              <TextInput
-                value={customFromText}
-                onChangeText={setCustomFromText}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={theme.textMuted}
-                style={[
-                  styles.customInput,
-                  {
-                    color: theme.text,
-                    backgroundColor: theme.backgroundSecondary,
-                    borderColor: parseDate(customFromText) ? theme.border : theme.error,
-                  },
-                ]}
-                autoCorrect={false}
-                autoCapitalize="none"
-              />
-            </View>
-            <View style={styles.customInputGroup}>
-              <ThemedText type="muted" style={styles.customLabel}>To</ThemedText>
-              <TextInput
-                value={customToText}
-                onChangeText={setCustomToText}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={theme.textMuted}
-                style={[
-                  styles.customInput,
-                  {
-                    color: theme.text,
-                    backgroundColor: theme.backgroundSecondary,
-                    borderColor: parseDate(customToText) ? theme.border : theme.error,
-                  },
-                ]}
-                autoCorrect={false}
-                autoCapitalize="none"
-              />
-            </View>
+          <View
+            style={[
+              styles.customPickerRow,
+              { borderTopColor: theme.border },
+            ]}
+          >
+            <MonthYearPicker
+              label="From"
+              value={customFrom}
+              onChange={setCustomFrom}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+            />
+            <View style={[styles.customPickerDivider, { backgroundColor: theme.border }]} />
+            <MonthYearPicker
+              label="To"
+              value={customTo}
+              onChange={setCustomTo}
+              rangeStart={rangeStart}
+              rangeEnd={rangeEnd}
+            />
           </View>
         ) : null}
 
@@ -641,26 +802,19 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontFamily: Typography.body.fontFamily,
   },
-  customRow: {
+
+  // Custom month/year picker layout
+  customPickerRow: {
     flexDirection: "row",
     gap: Spacing.md,
-    marginTop: Spacing.xs,
+    paddingTop: Spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
-  customInputGroup: {
-    flex: 1,
-    gap: 4,
+  customPickerDivider: {
+    width: StyleSheet.hairlineWidth,
+    alignSelf: "stretch",
   },
-  customLabel: {
-    fontSize: 11,
-  },
-  customInput: {
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 7,
-    fontSize: 13,
-    fontFamily: Typography.body.fontFamily,
-    borderWidth: 1,
-  },
+
   rangeLabel: {
     fontSize: 12,
     textAlign: "center",
