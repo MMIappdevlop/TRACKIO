@@ -20,11 +20,11 @@ import * as Clipboard from "expo-clipboard";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { completedSessionsStorage, completedTasksStorage } from "@/lib/storage";
+import { completedSessionsStorage, completedTasksStorage, programsStorage } from "@/lib/storage";
 import { getProgressReport, ReportDayGroup } from "@/lib/chartData";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 import type { ProgressStackParamList } from "@/navigation/ProgressStackNavigator";
-import type { CompletedSession, CompletedTask } from "@/types";
+import type { CompletedSession, CompletedTask, Program } from "@/types";
 
 type NavigationProp = NativeStackNavigationProp<ProgressStackParamList>;
 
@@ -171,6 +171,8 @@ export default function ExerciseProgressReportScreen() {
   const [loading, setLoading] = useState(true);
   const [allSessions, setAllSessions] = useState<CompletedSession[]>([]);
   const [allTasks, setAllTasks] = useState<CompletedTask[]>([]);
+  const [allPrograms, setAllPrograms] = useState<Program[]>([]);
+  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const [exporting, setExporting] = useState(false);
 
@@ -188,12 +190,14 @@ export default function ExerciseProgressReportScreen() {
   // ── Load data ───────────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [sessions, tasks] = await Promise.all([
+    const [sessions, tasks, programs] = await Promise.all([
       completedSessionsStorage.getAll(),
       completedTasksStorage.getAll(),
+      programsStorage.getAll(),
     ]);
     setAllSessions(sessions);
     setAllTasks(tasks);
+    setAllPrograms(programs);
     setLoading(false);
   }, []);
 
@@ -201,10 +205,32 @@ export default function ExerciseProgressReportScreen() {
     loadData();
   }, [loadData]);
 
+  // ── Programs that have sessions in the selected range ───────────────────────
+  const programsInRange = useMemo(() => {
+    const fromMs = new Date(from.getFullYear(), from.getMonth(), from.getDate()).getTime();
+    const toMs   = new Date(to.getFullYear(),   to.getMonth(),   to.getDate(), 23, 59, 59, 999).getTime();
+    const ids = new Set(
+      allSessions
+        .filter((s) => {
+          const t = new Date(s.completedAt).getTime();
+          return t >= fromMs && t <= toMs;
+        })
+        .map((s) => s.programId)
+    );
+    return allPrograms.filter((p) => ids.has(p.id));
+  }, [allSessions, allPrograms, from, to]);
+
+  // Reset selectedProgramId if it's no longer in range
+  useEffect(() => {
+    if (selectedProgramId && !programsInRange.some((p) => p.id === selectedProgramId)) {
+      setSelectedProgramId(null);
+    }
+  }, [programsInRange, selectedProgramId]);
+
   // ── Compute report ──────────────────────────────────────────────────────────
   const reportData = useMemo(
-    () => getProgressReport(allTasks, allSessions, from, to),
-    [allTasks, allSessions, from, to]
+    () => getProgressReport(allTasks, allSessions, from, to, selectedProgramId ?? undefined),
+    [allTasks, allSessions, from, to, selectedProgramId]
   );
 
   // Default-expand all day groups when data changes
@@ -467,6 +493,59 @@ export default function ExerciseProgressReportScreen() {
             );
           })}
         </ScrollView>
+
+        {/* Plan filter — only shown when more than one program has sessions */}
+        {programsInRange.length > 1 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.presetRow}
+          >
+            <Pressable
+              onPress={() => setSelectedProgramId(null)}
+              style={[
+                styles.presetPill,
+                {
+                  backgroundColor:
+                    selectedProgramId === null ? theme.link : theme.backgroundSecondary,
+                },
+              ]}
+            >
+              <ThemedText
+                style={[
+                  styles.presetPillText,
+                  { color: selectedProgramId === null ? "#fff" : theme.textSecondary },
+                ]}
+              >
+                All plans
+              </ThemedText>
+            </Pressable>
+            {programsInRange.map((p) => {
+              const active = selectedProgramId === p.id;
+              return (
+                <Pressable
+                  key={p.id}
+                  onPress={() => setSelectedProgramId(p.id)}
+                  style={[
+                    styles.presetPill,
+                    {
+                      backgroundColor: active ? theme.link : theme.backgroundSecondary,
+                    },
+                  ]}
+                >
+                  <ThemedText
+                    style={[
+                      styles.presetPillText,
+                      { color: active ? "#fff" : theme.textSecondary },
+                    ]}
+                  >
+                    {p.name}
+                  </ThemedText>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        ) : null}
 
         {preset === "custom" ? (
           <View style={styles.customRow}>

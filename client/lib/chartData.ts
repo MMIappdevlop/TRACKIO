@@ -305,13 +305,16 @@ export function getProgressReport(
   sessions: CompletedSession[],
   from: Date,
   to: Date,
+  programId?: string,
 ): ReportDayGroup[] {
   const fromMs = new Date(from.getFullYear(), from.getMonth(), from.getDate()).getTime();
   const toMs   = new Date(to.getFullYear(),   to.getMonth(),   to.getDate(), 23, 59, 59, 999).getTime();
 
   const filteredSessions = sessions.filter(s => {
     const t = new Date(s.completedAt).getTime();
-    return t >= fromMs && t <= toMs;
+    if (t < fromMs || t > toMs) return false;
+    if (programId && s.programId !== programId) return false;
+    return true;
   });
   if (filteredSessions.length === 0) return [];
 
