@@ -73,6 +73,56 @@ export default function App() {
     return () => subscription.remove();
   }, []);
 
+  // Handle cold-start notification taps: when the app was fully closed and the
+  // user tapped a notification to open it, `addNotificationResponseReceivedListener`
+  // won't fire. Read the last response once after the navigation container is ready.
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+
+    let cancelled = false;
+
+    const handleColdStartNotification = async () => {
+      // Wait until the navigation container is mounted and ready
+      const waitForNav = () =>
+        new Promise<void>((resolve) => {
+          const interval = setInterval(() => {
+            if (navigationRef.isReady()) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 100);
+        });
+
+      await waitForNav();
+
+      if (cancelled) return;
+
+      const lastResponse = await Notifications.getLastNotificationResponseAsync();
+      if (!lastResponse) return;
+
+      const identifier = lastResponse.notification.request.identifier;
+
+      if (identifier.startsWith(WEIGHT_REMINDER_PREFIX)) {
+        setWeightLogVisible(true);
+      } else if (identifier.startsWith(TRAINING_REMINDER_PREFIX)) {
+        navigationRef.dispatch(
+          CommonActions.navigate({
+            name: "Main",
+            params: {
+              screen: "Home",
+            },
+          })
+        );
+      }
+    };
+
+    handleColdStartNotification();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   if (!fontsLoaded && !fontError) {
     return null;
   }
