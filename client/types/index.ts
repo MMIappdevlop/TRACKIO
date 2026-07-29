@@ -147,6 +147,9 @@ export interface Settings {
   firstWorkoutCompletedAt?: string;
   weightReminderUpsellDismissedAt?: string;
   weightReminderUpsellLastShownAt?: string;
+  trainingReminderEnabled?: boolean;
+  trainingReminderDays?: number[];
+  trainingReminderTime?: string;
 }
 
 export interface WeightLogEntry {

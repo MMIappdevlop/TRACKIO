@@ -6,6 +6,8 @@ import BadgesScreen from "@/screens/BadgesScreen";
 import SettingsScreen from "@/screens/SettingsScreen";
 import DataBackupScreen from "@/screens/DataBackupScreen";
 import WeightReminderScreen from "@/screens/WeightReminderScreen";
+import TrainingReminderScreen from "@/screens/TrainingReminderScreen";
+import RemindersScreen from "@/screens/RemindersScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
 export type ProfileStackParamList = {
@@ -13,7 +15,9 @@ export type ProfileStackParamList = {
   Badges: undefined;
   Settings: undefined;
   DataBackup: undefined;
+  Reminders: undefined;
   WeightReminder: { prefill?: boolean } | undefined;
+  TrainingReminder: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -52,10 +56,24 @@ export default function ProfileStackNavigator() {
         }}
       />
       <Stack.Screen
+        name="Reminders"
+        component={RemindersScreen}
+        options={{
+          headerTitle: "Reminders",
+        }}
+      />
+      <Stack.Screen
         name="WeightReminder"
         component={WeightReminderScreen}
         options={{
           headerTitle: "Weight Reminder",
+        }}
+      />
+      <Stack.Screen
+        name="TrainingReminder"
+        component={TrainingReminderScreen}
+        options={{
+          headerTitle: "Training Reminder",
         }}
       />
     </Stack.Navigator>

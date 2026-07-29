@@ -14,6 +14,7 @@ import { WeightLogModal } from "@/components/WeightLogModal";
 import { useTheme } from "@/hooks/useTheme";
 import { useSettings } from "@/hooks/useData";
 import { weightLogStorage } from "@/lib/storage";
+import { getNotificationPermissionStatus } from "@/lib/notifications";
 import { Spacing, BorderRadius } from "@/constants/theme";
 
 interface WeightReminderPopupProps {
@@ -30,6 +31,9 @@ export function WeightReminderPopup({ onShown }: WeightReminderPopupProps) {
   const checkConditions = useCallback(async () => {
     if (!settings) return false;
     if (settings.weightReminderEnabled !== true) return false;
+
+    const permStatus = await getNotificationPermissionStatus();
+    if (permStatus === "granted") return false;
 
     const days = settings.weightReminderDays ?? [];
     if (days.length === 0) return false;

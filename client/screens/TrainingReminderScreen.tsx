@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { View, StyleSheet, ScrollView, Switch, Pressable, Platform, Linking } from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,24 +15,17 @@ import {
   requestNotificationPermission,
   scheduleWeeklyReminders,
   cancelNotificationsByPrefix,
-  WEIGHT_REMINDER_PREFIX,
+  TRAINING_REMINDER_PREFIX,
   type NotificationPermissionStatus,
 } from "@/lib/notifications";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-interface WeightReminderScreenProps {
-  route?: { params?: { prefill?: boolean } };
-}
-
-export default function WeightReminderScreen({ route }: WeightReminderScreenProps) {
+export default function TrainingReminderScreen() {
   const { theme } = useTheme();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
-  const { settings, loading, refresh, updateSettings } = useSettings();
-  const prefill = route?.params?.prefill;
-
-  const [didPrefill, setDidPrefill] = useState(false);
+  const { settings, refresh, updateSettings } = useSettings();
   const [permissionStatus, setPermissionStatus] = useState<NotificationPermissionStatus>("undetermined");
   const [justDenied, setJustDenied] = useState(false);
 
@@ -43,23 +36,11 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
     }, [])
   );
 
-  useEffect(() => {
-    if (prefill && settings && !didPrefill) {
-      setDidPrefill(true);
-      updateSettings({
-        weightReminderEnabled: true,
-        weightReminderDays: [0],
-        weightReminderTime: "09:00",
-      });
-    }
-  }, [prefill, settings, didPrefill]);
-
   if (!settings) return null;
 
-  const enabled = settings.weightReminderEnabled ?? false;
-  const selectedDays = settings.weightReminderDays ?? [];
-  const time = settings.weightReminderTime ?? "09:00";
-
+  const enabled = settings.trainingReminderEnabled ?? false;
+  const selectedDays = settings.trainingReminderDays ?? [];
+  const time = settings.trainingReminderTime ?? "08:00";
   const [hours, minutes] = time.split(":").map(Number);
 
   const syncNotifications = async (
@@ -69,13 +50,13 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
     m: number
   ) => {
     if (!isEnabled || days.length === 0) {
-      await cancelNotificationsByPrefix(WEIGHT_REMINDER_PREFIX);
+      await cancelNotificationsByPrefix(TRAINING_REMINDER_PREFIX);
       return;
     }
     await scheduleWeeklyReminders({
-      prefix: WEIGHT_REMINDER_PREFIX,
+      prefix: TRAINING_REMINDER_PREFIX,
       title: "Trackio",
-      body: "Time to log your weight",
+      body: "Time to train",
       days,
       hour: h,
       minute: m,
@@ -90,13 +71,13 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
       setPermissionStatus(status);
       if (status !== "granted") {
         setJustDenied(true);
-        await updateSettings({ weightReminderEnabled: false });
+        await updateSettings({ trainingReminderEnabled: false });
         return;
       }
     }
 
     setJustDenied(false);
-    await updateSettings({ weightReminderEnabled: value });
+    await updateSettings({ trainingReminderEnabled: value });
     const [h, m] = time.split(":").map(Number);
     await syncNotifications(value, selectedDays, h, m);
   };
@@ -110,7 +91,7 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
     } else {
       current.push(dayIndex);
     }
-    await updateSettings({ weightReminderDays: current });
+    await updateSettings({ trainingReminderDays: current });
     const [h, m] = time.split(":").map(Number);
     await syncNotifications(enabled, current, h, m);
   };
@@ -123,7 +104,7 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
     const newH = (hours + delta + 24) % 24;
     const newTime = formatTime(newH, minutes);
-    await updateSettings({ weightReminderTime: newTime });
+    await updateSettings({ trainingReminderTime: newTime });
     await syncNotifications(enabled, selectedDays, newH, minutes);
   };
 
@@ -134,7 +115,7 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
     const newH = Math.floor(wrapped / 60);
     const newM = wrapped % 60;
     const newTime = formatTime(newH, newM);
-    await updateSettings({ weightReminderTime: newTime });
+    await updateSettings({ trainingReminderTime: newTime });
     await syncNotifications(enabled, selectedDays, newH, newM);
   };
 
@@ -155,7 +136,7 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
       ]}
     >
       {Platform.OS === "web" ? (
-        <View style={[styles.infoContainer, { backgroundColor: theme.backgroundDefault, borderRadius: BorderRadius.lg, padding: Spacing.lg, marginBottom: Spacing.xl }]}>
+        <View style={[styles.webBanner, { backgroundColor: theme.backgroundDefault, borderRadius: BorderRadius.lg }]}>
           <Feather name="smartphone" size={16} color={theme.textMuted} />
           <ThemedText type="muted" style={styles.infoText}>
             Notifications require the Trackio mobile app.
@@ -167,11 +148,11 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
         <View style={[styles.card, { backgroundColor: theme.backgroundDefault }]}>
           <View style={styles.settingRow}>
             <View style={styles.settingInfo}>
-              <Feather name="bell" size={20} color={theme.link} />
-              <ThemedText type="body">Weight Update Reminder</ThemedText>
+              <Feather name="zap" size={20} color={theme.link} />
+              <ThemedText type="body">Training Reminder</ThemedText>
             </View>
             <Switch
-              testID="toggle-weight-reminder"
+              testID="toggle-training-reminder"
               value={enabled}
               onValueChange={handleToggle}
               trackColor={{ false: theme.backgroundSecondary, true: theme.link }}
@@ -205,7 +186,7 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
                 return (
                   <Pressable
                     key={index}
-                    testID={`day-pill-${index}`}
+                    testID={`training-day-pill-${index}`}
                     onPress={() => handleDayToggle(index)}
                     style={[
                       styles.dayPill,
@@ -232,7 +213,7 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
               <View style={styles.timePickerRow}>
                 <View style={styles.timeUnit}>
                   <Pressable
-                    testID="button-hour-up"
+                    testID="button-training-hour-up"
                     onPress={() => adjustHour(1)}
                     style={[styles.stepperButton, { backgroundColor: theme.backgroundSecondary }]}
                   >
@@ -242,7 +223,7 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
                     <ThemedText type="stat">{String(hours).padStart(2, "0")}</ThemedText>
                   </View>
                   <Pressable
-                    testID="button-hour-down"
+                    testID="button-training-hour-down"
                     onPress={() => adjustHour(-1)}
                     style={[styles.stepperButton, { backgroundColor: theme.backgroundSecondary }]}
                   >
@@ -254,7 +235,7 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
 
                 <View style={styles.timeUnit}>
                   <Pressable
-                    testID="button-minute-up"
+                    testID="button-training-minute-up"
                     onPress={() => adjustMinute(5)}
                     style={[styles.stepperButton, { backgroundColor: theme.backgroundSecondary }]}
                   >
@@ -264,7 +245,7 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
                     <ThemedText type="stat">{String(minutes).padStart(2, "0")}</ThemedText>
                   </View>
                   <Pressable
-                    testID="button-minute-down"
+                    testID="button-training-minute-down"
                     onPress={() => adjustMinute(-5)}
                     style={[styles.stepperButton, { backgroundColor: theme.backgroundSecondary }]}
                   >
@@ -283,7 +264,7 @@ export default function WeightReminderScreen({ route }: WeightReminderScreenProp
           <ThemedText type="muted" style={styles.infoText}>
             {permissionStatus === "granted"
               ? "You will receive a device notification on selected days."
-              : "Reminder will appear when you open Trackio if notifications are unavailable."}
+              : "Enable notifications in device settings to receive reminders."}
           </ThemedText>
         </View>
       ) : null}
@@ -370,6 +351,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   permissionBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    padding: Spacing.lg,
+    marginBottom: Spacing.xl,
+  },
+  webBanner: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.sm,

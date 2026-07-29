@@ -142,7 +142,7 @@ export default function SettingsScreen() {
           <Pressable
             testID="button-reminders"
             style={styles.settingRow}
-            onPress={() => navigation.navigate("WeightReminder")}
+            onPress={() => navigation.navigate("Reminders")}
           >
             <View style={styles.settingInfo}>
               <Feather name="bell" size={20} color={theme.link} />
