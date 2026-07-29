@@ -40,6 +40,12 @@ export default function SettingsScreen() {
 
   if (!settings) return null;
 
+  const activeReminderCount =
+    (settings.weightReminderEnabled ? 1 : 0) +
+    (settings.trainingReminderEnabled ? 1 : 0);
+  const reminderLabel =
+    activeReminderCount === 0 ? "None" : `${activeReminderCount} active`;
+
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
@@ -148,7 +154,10 @@ export default function SettingsScreen() {
               <Feather name="bell" size={20} color={theme.link} />
               <ThemedText type="body">Reminders</ThemedText>
             </View>
-            <Feather name="chevron-right" size={20} color={theme.textMuted} />
+            <View style={styles.reminderRight}>
+              <ThemedText type="secondary">{reminderLabel}</ThemedText>
+              <Feather name="chevron-right" size={20} color={theme.textMuted} />
+            </View>
           </Pressable>
         </View>
       </View>
@@ -220,5 +229,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: Spacing.lg,
+  },
+  reminderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
   },
 });
