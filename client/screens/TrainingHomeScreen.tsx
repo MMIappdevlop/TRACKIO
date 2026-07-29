@@ -147,7 +147,14 @@ export default function TrainingHomeScreen() {
   const lastSession = sessions.length > 0 ? sessions[0] : null;
   
   const todayDayOfWeek = new Date().getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6;
-  
+
+  // Auto-select today's assigned day when templates load
+  React.useEffect(() => {
+    if (templates.length === 0) return;
+    const idx = templates.findIndex((t) => t.days?.includes(todayDayOfWeek));
+    setSelectedSessionIndex(idx >= 0 ? idx : 0);
+  }, [templates]);
+
   // Always show all days, but start on today's assigned day if available
   const safeIndex = Math.min(selectedSessionIndex, Math.max(0, templates.length - 1));
   const selectedSession = templates.length > 0 ? templates[safeIndex] : null;
