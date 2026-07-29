@@ -98,14 +98,11 @@ export default function TaskDetailScreen() {
         case "strength":
           if (!item.dataJson.sets) return null;
           const completedSets = item.dataJson.sets.filter((s) => s.isCompleted);
-          const topSet = completedSets.reduce(
+          const topSet = completedSets.reduce<{ weight: number; reps: number }>(
             (best, set) => {
-              const weight = set.weight || 0;
-              const reps = set.reps || 0;
-              if (weight > (best.weight || 0)) {
-                return set;
-              }
-              return best;
+              const weight = set.weight ?? 0;
+              const reps = set.reps ?? 0;
+              return weight > best.weight ? { weight, reps } : best;
             },
             { weight: 0, reps: 0 }
           );
@@ -162,7 +159,7 @@ export default function TaskDetailScreen() {
                     <ThemedText type="muted">Best Weight</ThemedText>
                   </View>
                   <View style={styles.bestStat}>
-                    <ThemedText type="stat">{Math.round(best.maxVolume)}kg</ThemedText>
+                    <ThemedText type="stat">{Math.round((best as { maxVolume: number }).maxVolume)}kg</ThemedText>
                     <ThemedText type="muted">Best Set Volume</ThemedText>
                   </View>
                 </View>

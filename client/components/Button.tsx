@@ -11,6 +11,7 @@ export interface ButtonProps {
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
   variant?: "primary" | "secondary";
+  testID?: string;
 }
 
 export function Button({
@@ -19,6 +20,7 @@ export function Button({
   style,
   disabled = false,
   variant = "primary",
+  testID,
 }: ButtonProps) {
   const { theme } = useTheme();
   const isSecondary = variant === "secondary";
@@ -27,6 +29,7 @@ export function Button({
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      testID={testID}
       style={({ pressed }) => [
         styles.button,
         {

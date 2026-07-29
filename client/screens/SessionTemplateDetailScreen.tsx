@@ -247,7 +247,7 @@ export default function SessionTemplateDetailScreen() {
             styles.locationInput,
             {
               backgroundColor: theme.backgroundSecondary,
-              color: theme.textPrimary,
+              color: theme.text,
               borderColor: theme.border,
             },
           ]}

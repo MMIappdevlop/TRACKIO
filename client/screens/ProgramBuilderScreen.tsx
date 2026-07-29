@@ -203,7 +203,7 @@ export default function ProgramBuilderScreen() {
               reps: task.reps,
               weight: task.weight,
               targetDistance: task.distance,
-              distanceUnit: task.distanceUnit || "km",
+              distanceUnit: (task.distanceUnit || "km") as "km" | "mi" | "m",
               workSeconds: task.workSeconds,
               restSeconds: task.restSeconds,
               rounds: task.rounds,

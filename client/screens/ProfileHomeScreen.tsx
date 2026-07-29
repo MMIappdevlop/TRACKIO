@@ -203,7 +203,7 @@ export default function ProfileHomeScreen() {
           disabled={demoLoading || demoLoaded}
           style={[
             styles.demoButton,
-            { backgroundColor: demoLoaded ? theme.backgroundElevated : theme.link },
+            { backgroundColor: demoLoaded ? theme.backgroundSecondary : theme.link },
           ]}
         >
           <Feather

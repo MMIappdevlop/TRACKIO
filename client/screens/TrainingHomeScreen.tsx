@@ -406,7 +406,6 @@ const styles = StyleSheet.create({
   },
   blurredText: {
     color: "transparent",
-    textShadow: "0 0 12px #E6E8EB",
   },
   sessionCard: {
     borderRadius: BorderRadius.lg,
