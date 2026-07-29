@@ -122,6 +122,12 @@ export default function ProgressHomeScreen() {
       headerRight: () => (
         <View style={{ flexDirection: "row" }}>
           <HeaderButton
+            testID="button-progress-report"
+            onPress={() => navigation.navigate("ExerciseProgressReport")}
+          >
+            <Feather name="grid" size={20} color={theme.text} />
+          </HeaderButton>
+          <HeaderButton
             testID="button-charts"
             onPress={() => navigation.navigate("LongTermProgress")}
           >

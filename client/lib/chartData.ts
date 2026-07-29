@@ -275,3 +275,134 @@ export function getUniqueStrengthExercises(tasks: CompletedTask[]): string[] {
   }
   return Array.from(names).sort();
 }
+
+// ---------------------------------------------------------------------------
+// Progress Report — full day breakdown across a date range
+// ---------------------------------------------------------------------------
+
+export interface ReportBestSet {
+  sessionId: string;
+  display: string;  // e.g. "80×4", "5.2km", "32m"
+  rawValue: number; // for delta comparison
+}
+
+export interface ReportExerciseRow {
+  name: string;
+  mode: string;
+  cells: { [dateKey: string]: ReportBestSet | null };
+}
+
+export interface ReportDayGroup {
+  dayName: string;
+  sessionTemplateId: string;
+  dates: string[];                          // "YYYY-MM-DD" sorted ascending
+  sessionIdByDate: { [dateKey: string]: string };
+  exercises: ReportExerciseRow[];
+}
+
+export function getProgressReport(
+  tasks: CompletedTask[],
+  sessions: CompletedSession[],
+  from: Date,
+  to: Date,
+): ReportDayGroup[] {
+  const fromMs = new Date(from.getFullYear(), from.getMonth(), from.getDate()).getTime();
+  const toMs   = new Date(to.getFullYear(),   to.getMonth(),   to.getDate(), 23, 59, 59, 999).getTime();
+
+  const filteredSessions = sessions.filter(s => {
+    const t = new Date(s.completedAt).getTime();
+    return t >= fromMs && t <= toMs;
+  });
+  if (filteredSessions.length === 0) return [];
+
+  const sessionIdSet = new Set(filteredSessions.map(s => s.id));
+  const filteredTasks = tasks.filter(t => sessionIdSet.has(t.completedSessionId));
+
+  // group sessions by training-day template
+  const dayMap = new Map<string, { dayName: string; sessions: CompletedSession[] }>();
+  for (const s of filteredSessions) {
+    const entry = dayMap.get(s.sessionTemplateId);
+    if (entry) {
+      entry.sessions.push(s);
+    } else {
+      dayMap.set(s.sessionTemplateId, { dayName: s.sessionTemplateName, sessions: [s] });
+    }
+  }
+
+  // tasks keyed by sessionId
+  const tasksBySession = new Map<string, CompletedTask[]>();
+  for (const t of filteredTasks) {
+    const arr = tasksBySession.get(t.completedSessionId) ?? [];
+    arr.push(t);
+    tasksBySession.set(t.completedSessionId, arr);
+  }
+
+  const result: ReportDayGroup[] = [];
+
+  for (const [sessionTemplateId, { dayName, sessions: daySessions }] of dayMap.entries()) {
+    // sort sessions ascending; later session on same date wins
+    const sorted = [...daySessions].sort((a, b) => a.completedAt.localeCompare(b.completedAt));
+    const dateToSid = new Map<string, string>();
+    for (const s of sorted) {
+      dateToSid.set(s.completedAt.split("T")[0], s.id);
+    }
+    const dates = Array.from(dateToSid.keys()).sort();
+
+    // collect exercise names in order of first appearance
+    const exerciseOrder = new Map<string, { mode: string; idx: number }>();
+    let idx = 0;
+    for (const dateKey of dates) {
+      const sid = dateToSid.get(dateKey)!;
+      for (const t of tasksBySession.get(sid) ?? []) {
+        if (!exerciseOrder.has(t.taskTemplateName)) {
+          exerciseOrder.set(t.taskTemplateName, { mode: t.mode, idx: idx++ });
+        }
+      }
+    }
+
+    const exercises: ReportExerciseRow[] = Array.from(exerciseOrder.entries())
+      .sort((a, b) => a[1].idx - b[1].idx)
+      .map(([name, { mode }]) => {
+        const cells: { [d: string]: ReportBestSet | null } = {};
+        for (const dateKey of dates) {
+          const sid = dateToSid.get(dateKey)!;
+          const task = (tasksBySession.get(sid) ?? []).find(t => t.taskTemplateName === name);
+          cells[dateKey] = task ? computeBestSet(task, sid) : null;
+        }
+        return { name, mode, cells };
+      });
+
+    result.push({ dayName, sessionTemplateId, dates, sessionIdByDate: Object.fromEntries(dateToSid), exercises });
+  }
+
+  return result.sort((a, b) => (a.dates[0] ?? "").localeCompare(b.dates[0] ?? ""));
+}
+
+function computeBestSet(task: CompletedTask, sessionId: string): ReportBestSet | null {
+  switch (task.mode) {
+    case "strength": {
+      const done = task.dataJson.sets?.filter(s => s.isCompleted && s.weight != null);
+      if (!done || done.length === 0) return null;
+      const best = done.reduce((a, b) => (b.weight ?? 0) > (a.weight ?? 0) ? b : a);
+      return { sessionId, display: `${best.weight}×${best.reps ?? "?"}`, rawValue: best.weight ?? 0 };
+    }
+    case "distance": {
+      const d = task.dataJson.distance;
+      if (!d) return null;
+      return { sessionId, display: `${d}${task.dataJson.distanceUnit ?? "km"}`, rawValue: d };
+    }
+    case "time": {
+      const dur = task.dataJson.durationSeconds;
+      if (!dur) return null;
+      const m = Math.floor(dur / 60), s = dur % 60;
+      return { sessionId, display: s > 0 ? `${m}m${s}s` : `${m}m`, rawValue: dur };
+    }
+    case "interval": {
+      const r = task.dataJson.roundsCompleted;
+      if (r == null) return null;
+      return { sessionId, display: `${r}rds`, rawValue: r };
+    }
+    default:
+      return null;
+  }
+}

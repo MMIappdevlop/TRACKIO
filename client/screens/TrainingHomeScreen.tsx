@@ -148,12 +148,20 @@ export default function TrainingHomeScreen() {
   
   const todayDayOfWeek = new Date().getDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-  // Auto-select today's assigned day when templates load
+  // Stable key based on actual template IDs — only re-run when the list
+  // structure truly changes, not just when useFocusEffect re-fetches with a
+  // new array reference carrying the same data.
+  const templateIdsKey = React.useMemo(
+    () => templates.map((t) => t.id).join(","),
+    [templates]
+  );
+
+  // Auto-select today's assigned day when the template list changes
   React.useEffect(() => {
     if (templates.length === 0) return;
     const idx = templates.findIndex((t) => t.days?.includes(todayDayOfWeek));
     setSelectedSessionIndex(idx >= 0 ? idx : 0);
-  }, [templates]);
+  }, [templateIdsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Always show all days, but start on today's assigned day if available
   const safeIndex = Math.min(selectedSessionIndex, Math.max(0, templates.length - 1));

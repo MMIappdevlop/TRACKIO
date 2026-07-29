@@ -6,6 +6,7 @@ import SessionDetailScreen from "@/screens/SessionDetailScreen";
 import TaskDetailScreen from "@/screens/TaskDetailScreen";
 import TrainingCalendarScreen from "@/screens/TrainingCalendarScreen";
 import LongTermProgressScreen from "@/screens/LongTermProgressScreen";
+import ExerciseProgressReportScreen from "@/screens/ExerciseProgressReportScreen";
 import { useScreenOptions } from "@/hooks/useScreenOptions";
 
 export type ProgressStackParamList = {
@@ -14,6 +15,7 @@ export type ProgressStackParamList = {
   TaskDetail: { taskTemplateId: string; taskName: string };
   TrainingCalendar: undefined;
   LongTermProgress: undefined;
+  ExerciseProgressReport: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProgressStackParamList>();
@@ -56,6 +58,13 @@ export default function ProgressStackNavigator() {
         component={LongTermProgressScreen}
         options={{
           headerTitle: "Long-Term Progress",
+        }}
+      />
+      <Stack.Screen
+        name="ExerciseProgressReport"
+        component={ExerciseProgressReportScreen}
+        options={{
+          headerTitle: "Progress Report",
         }}
       />
     </Stack.Navigator>
