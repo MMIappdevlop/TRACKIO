@@ -10,6 +10,7 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation } from "@react-navigation/native";
@@ -59,14 +60,19 @@ export default function ProgramBuilderScreen() {
   const [newTaskSets, setNewTaskSets] = useState("");
   const [newTaskReps, setNewTaskReps] = useState("");
 
+  const [newTaskGifFrameUrls, setNewTaskGifFrameUrls] = useState<string[]>([]);
+  const gifSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gifSearchCounterRef = useRef(0);
+
   // GIF linking modal state
   const [gifModal, setGifModal] = useState<{
     sessionId: string;
     taskId: string;
     taskName: string;
-    loading: boolean;
-    frameUrls: string[];
-    notFound: boolean;
+    searchQuery: string;
+    searchResults: { name: string; frameUrls: string[] }[];
+    searchLoading: boolean;
+    selectedFrameUrls: string[];
   } | null>(null);
 
   const canFinish =
@@ -151,12 +157,14 @@ export default function ProgramBuilderScreen() {
 
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     const taskId = Date.now().toString();
+    const gifAlreadyLinked = newTaskGifFrameUrls.length > 0;
     const newTask: TaskDraft = {
       id: taskId,
       name: newTaskName.trim(),
       mode: session.selectedTaskType,
       sets: newTaskSets ? parseInt(newTaskSets) : undefined,
       reps: newTaskReps ? parseInt(newTaskReps) : undefined,
+      gifFrameUrls: gifAlreadyLinked ? newTaskGifFrameUrls : undefined,
     };
 
     setSessions(
@@ -172,39 +180,34 @@ export default function ProgramBuilderScreen() {
       ),
     );
     setNewTaskName("");
+    setNewTaskGifFrameUrls([]);
     setNewTaskSets("");
     setNewTaskReps("");
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    // Auto-link GIF in the background — updates state once the lookup resolves
-    const taskName = newTask.name;
-    fetch(
-      `${getApiUrl()}api/exercise-lookup?name=${encodeURIComponent(taskName)}`,
-    )
-      .then((r) => (r.ok ? r.json() : null))
-      .then((json) => {
-        if (
-          json?.found &&
-          Array.isArray(json.frameUrls) &&
-          json.frameUrls.length > 0
-        ) {
-          setSessions((prev) =>
-            prev.map((s) =>
-              s.id === sessionId
-                ? {
-                    ...s,
-                    tasks: s.tasks.map((t) =>
-                      t.id === taskId
-                        ? { ...t, gifFrameUrls: json.frameUrls as string[] }
-                        : t,
-                    ),
-                  }
-                : s,
-            ),
-          );
-        }
-      })
-      .catch(() => {});
+    // Auto-link GIF in background only if autocomplete didn't already pick one
+    if (!gifAlreadyLinked) {
+      const taskName = newTask.name;
+      fetch(`${getApiUrl()}api/exercise-lookup?name=${encodeURIComponent(taskName)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((json) => {
+          if (json?.found && Array.isArray(json.frameUrls) && json.frameUrls.length > 0) {
+            setSessions((prev) =>
+              prev.map((s) =>
+                s.id === sessionId
+                  ? {
+                      ...s,
+                      tasks: s.tasks.map((t) =>
+                        t.id === taskId ? { ...t, gifFrameUrls: json.frameUrls as string[] } : t,
+                      ),
+                    }
+                  : s,
+              ),
+            );
+          }
+        })
+        .catch(() => {});
+    }
   };
 
   const handleCancelTask = (sessionId: string) => {
@@ -217,6 +220,7 @@ export default function ProgramBuilderScreen() {
       ),
     );
     setNewTaskName("");
+    setNewTaskGifFrameUrls([]);
     setNewTaskSets("");
     setNewTaskReps("");
   };
@@ -233,49 +237,83 @@ export default function ProgramBuilderScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
+  const handleGifModalSearch = (query: string) => {
+    setGifModal((prev) =>
+      prev
+        ? { ...prev, searchQuery: query, searchLoading: !!query.trim(), searchResults: query.trim() ? prev.searchResults : [] }
+        : prev,
+    );
+    if (gifSearchTimerRef.current) clearTimeout(gifSearchTimerRef.current);
+    const reqId = ++gifSearchCounterRef.current; // always increment to invalidate in-flight requests
+    if (!query.trim()) return;
+    gifSearchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${getApiUrl()}api/exercise-search?q=${encodeURIComponent(query.trim())}&limit=8`,
+        );
+        if (!res.ok || reqId !== gifSearchCounterRef.current) return;
+        const json = await res.json();
+        if (reqId === gifSearchCounterRef.current) {
+          setGifModal((prev) =>
+            prev ? { ...prev, searchLoading: false, searchResults: json.results } : prev,
+          );
+        }
+      } catch {
+        if (reqId === gifSearchCounterRef.current) {
+          setGifModal((prev) => prev ? { ...prev, searchLoading: false } : prev);
+        }
+      }
+    }, 300);
+  };
+
   const handleLinkGif = async (
     sessionId: string,
     taskId: string,
     taskName: string,
   ) => {
+    const existingTask = sessions
+      .find((s) => s.id === sessionId)
+      ?.tasks.find((t) => t.id === taskId);
+    const reqId = ++gifSearchCounterRef.current;
     setGifModal({
       sessionId,
       taskId,
       taskName,
-      loading: true,
-      frameUrls: [],
-      notFound: false,
+      searchQuery: taskName,
+      searchResults: [],
+      searchLoading: true,
+      selectedFrameUrls: existingTask?.gifFrameUrls ?? [],
     });
     try {
       const res = await fetch(
-        `${getApiUrl()}api/exercise-lookup?name=${encodeURIComponent(taskName)}`,
+        `${getApiUrl()}api/exercise-search?q=${encodeURIComponent(taskName)}&limit=8`,
       );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok || reqId !== gifSearchCounterRef.current) return;
       const json = await res.json();
-      if (
-        json.found &&
-        Array.isArray(json.frameUrls) &&
-        json.frameUrls.length > 0
-      ) {
-        setGifModal((prev) =>
-          prev
-            ? { ...prev, loading: false, frameUrls: json.frameUrls as string[] }
-            : prev,
-        );
-      } else {
-        setGifModal((prev) =>
-          prev ? { ...prev, loading: false, notFound: true } : prev,
-        );
-      }
-    } catch {
+      if (reqId !== gifSearchCounterRef.current) return;
+      const results = json.results as { name: string; frameUrls: string[] }[];
       setGifModal((prev) =>
-        prev ? { ...prev, loading: false, notFound: true } : prev,
+        prev
+          ? {
+              ...prev,
+              searchLoading: false,
+              searchResults: results,
+              selectedFrameUrls:
+                prev.selectedFrameUrls.length === 0 && results.length > 0
+                  ? results[0].frameUrls
+                  : prev.selectedFrameUrls,
+            }
+          : prev,
       );
+    } catch {
+      if (reqId === gifSearchCounterRef.current) {
+        setGifModal((prev) => prev ? { ...prev, searchLoading: false } : prev);
+      }
     }
   };
 
   const handleConfirmGif = () => {
-    if (!gifModal || gifModal.frameUrls.length === 0) return;
+    if (!gifModal || gifModal.selectedFrameUrls.length === 0) return;
     setSessions(
       sessions.map((s) =>
         s.id === gifModal.sessionId
@@ -283,7 +321,7 @@ export default function ProgramBuilderScreen() {
               ...s,
               tasks: s.tasks.map((t) =>
                 t.id === gifModal.taskId
-                  ? { ...t, gifFrameUrls: gifModal.frameUrls }
+                  ? { ...t, gifFrameUrls: gifModal.selectedFrameUrls }
                   : t,
               ),
             }
@@ -440,6 +478,8 @@ export default function ProgramBuilderScreen() {
               onLinkGif={handleLinkGif}
               newTaskName={newTaskName}
               setNewTaskName={setNewTaskName}
+              newTaskGifFrameUrls={newTaskGifFrameUrls}
+              setNewTaskGifFrameUrls={setNewTaskGifFrameUrls}
               newTaskSets={newTaskSets}
               setNewTaskSets={setNewTaskSets}
               newTaskReps={newTaskReps}
@@ -569,54 +609,107 @@ export default function ProgramBuilderScreen() {
                 { backgroundColor: theme.textMuted },
               ]}
             />
-            <ThemedText type="h2" style={styles.gifModalTitle}>
-              {gifModal?.taskName ?? ""}
-            </ThemedText>
 
-            {gifModal?.loading ? (
+            {/* Search bar */}
+            <View style={[styles.gifSearchRow, { backgroundColor: theme.backgroundSecondary }]}>
+              <Feather name="search" size={16} color={theme.textMuted} />
+              <TextInput
+                style={[styles.gifSearchInput, { color: theme.text }]}
+                value={gifModal?.searchQuery ?? ""}
+                onChangeText={handleGifModalSearch}
+                placeholder="Search exercises…"
+                placeholderTextColor={theme.textMuted}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {gifModal?.searchLoading ? (
+                <ActivityIndicator size="small" color={theme.link} />
+              ) : null}
+            </View>
+
+            {/* Results list */}
+            {!gifModal?.searchLoading && (gifModal?.searchResults ?? []).length === 0 ? (
               <View style={styles.gifModalLoader}>
-                <ActivityIndicator color={theme.link} />
-                <ThemedText type="secondary" style={styles.gifModalLoaderText}>
-                  Finding exercise GIF…
-                </ThemedText>
+                <ThemedText type="secondary">No results — try a different name</ThemedText>
               </View>
-            ) : gifModal?.notFound ? (
-              <View style={styles.gifModalLoader}>
-                <ThemedText type="secondary">
-                  No GIF found for this exercise.
-                </ThemedText>
-              </View>
-            ) : gifModal?.frameUrls.length ? (
+            ) : (
+              <ScrollView
+                style={styles.gifResultsList}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                {(gifModal?.searchResults ?? []).map((result) => {
+                  const isSelected = gifModal?.selectedFrameUrls[0] === result.frameUrls[0];
+                  return (
+                    <Pressable
+                      key={result.name}
+                      style={[
+                        styles.gifResultRow,
+                        isSelected && { backgroundColor: theme.link + "15" },
+                      ]}
+                      onPress={() =>
+                        setGifModal((prev) =>
+                          prev ? { ...prev, selectedFrameUrls: result.frameUrls } : prev,
+                        )
+                      }
+                    >
+                      <Image
+                        source={{ uri: result.frameUrls[0] }}
+                        style={styles.gifResultThumb}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                      />
+                      <ThemedText
+                        type="body"
+                        style={[
+                          styles.gifResultName,
+                          { color: isSelected ? theme.link : theme.text },
+                          isSelected && { fontWeight: "600" },
+                        ]}
+                        numberOfLines={2}
+                      >
+                        {result.name}
+                      </ThemedText>
+                      {isSelected ? (
+                        <Feather name="check-circle" size={18} color={theme.link} />
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
+
+            {/* Selected preview */}
+            {gifModal?.selectedFrameUrls.length ? (
               <Image
-                source={{ uri: gifModal.frameUrls[0] }}
-                style={[
-                  styles.gifModalPreview,
-                  { backgroundColor: theme.backgroundSecondary },
-                ]}
+                source={{ uri: gifModal.selectedFrameUrls[0] }}
+                style={[styles.gifModalPreview, { backgroundColor: theme.backgroundSecondary }]}
                 contentFit="contain"
                 cachePolicy="memory-disk"
               />
             ) : null}
 
-            {!gifModal?.loading && !gifModal?.notFound ? (
-              <Pressable
-                style={[
-                  styles.gifModalPrimaryBtn,
-                  { backgroundColor: theme.link },
-                ]}
-                onPress={handleConfirmGif}
-                disabled={!gifModal?.frameUrls.length}
+            {/* Confirm */}
+            <Pressable
+              style={[
+                styles.gifModalPrimaryBtn,
+                {
+                  backgroundColor: theme.link,
+                  opacity: (gifModal?.selectedFrameUrls.length ?? 0) > 0 ? 1 : 0.4,
+                },
+              ]}
+              onPress={handleConfirmGif}
+              disabled={!gifModal?.selectedFrameUrls.length}
+            >
+              <ThemedText
+                type="body"
+                style={{ color: theme.buttonText, fontWeight: "700" }}
               >
-                <ThemedText
-                  type="body"
-                  style={{ color: theme.buttonText, fontWeight: "700" }}
-                >
-                  Use this GIF
-                </ThemedText>
-              </Pressable>
-            ) : null}
+                Use this GIF
+              </ThemedText>
+            </Pressable>
 
-            {/* Show "Remove GIF" when the task already has one */}
+            {/* Remove GIF when task already has one */}
             {(() => {
               const sess = gifModal
                 ? sessions.find((s) => s.id === gifModal.sessionId)
@@ -761,20 +854,14 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
     opacity: 0.4,
   },
-  gifModalTitle: {
-    marginBottom: Spacing.sm,
-  },
   gifModalLoader: {
     alignItems: "center",
     paddingVertical: Spacing.xl,
     gap: Spacing.md,
   },
-  gifModalLoaderText: {
-    marginTop: Spacing.sm,
-  },
   gifModalPreview: {
     width: "100%",
-    height: 200,
+    height: 160,
     borderRadius: BorderRadius.lg,
   },
   gifModalPrimaryBtn: {
@@ -788,5 +875,37 @@ const styles = StyleSheet.create({
     height: 48,
     alignItems: "center",
     justifyContent: "center",
+  },
+  gifSearchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  gifSearchInput: {
+    flex: 1,
+    fontSize: 14,
+  },
+  gifResultsList: {
+    maxHeight: 200,
+  },
+  gifResultRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  gifResultThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.sm,
+  },
+  gifResultName: {
+    flex: 1,
+    fontSize: 14,
   },
 });

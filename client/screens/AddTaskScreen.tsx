@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, TextInput, Pressable, Modal, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, StyleSheet, TextInput, Pressable, Modal, ActivityIndicator, ScrollView } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -51,10 +51,16 @@ export default function AddTaskScreen() {
   const [targetDistanceStr, setTargetDistanceStr] = useState<string | null>(null);
   const [gifFrameUrls, setGifFrameUrls] = useState<string[]>([]);
   const [gifModal, setGifModal] = useState<{
-    loading: boolean;
-    frameUrls: string[];
-    notFound: boolean;
+    searchQuery: string;
+    searchResults: { name: string; frameUrls: string[] }[];
+    searchLoading: boolean;
+    selectedFrameUrls: string[];
   } | null>(null);
+  const [suggestions, setSuggestions] = useState<{ name: string; frameUrls: string[] }[]>([]);
+  const nameSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gifSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nameSearchCounterRef = useRef(0);
+  const gifSearchCounterRef = useRef(0);
 
   const isEditing = !!taskId;
 
@@ -106,21 +112,84 @@ export default function AddTaskScreen() {
     navigation.goBack();
   };
 
+  const handleNameChange = (text: string) => {
+    setName(text);
+    setGifFrameUrls([]); // clear any previously linked GIF when user edits name manually
+    setSuggestions([]);
+    if (nameSearchTimerRef.current) clearTimeout(nameSearchTimerRef.current);
+    const reqId = ++nameSearchCounterRef.current; // always increment to invalidate in-flight requests
+    if (text.trim().length < 2) return;
+    nameSearchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${getApiUrl()}api/exercise-search?q=${encodeURIComponent(text.trim())}&limit=6`,
+        );
+        if (!res.ok || reqId !== nameSearchCounterRef.current) return;
+        const json = await res.json();
+        if (reqId === nameSearchCounterRef.current) {
+          setSuggestions(json.results as { name: string; frameUrls: string[] }[]);
+        }
+      } catch {}
+    }, 300);
+  };
+
+  const handleGifModalSearch = (query: string) => {
+    setGifModal((prev) =>
+      prev
+        ? { ...prev, searchQuery: query, searchLoading: !!query.trim(), searchResults: query.trim() ? prev.searchResults : [] }
+        : prev,
+    );
+    if (gifSearchTimerRef.current) clearTimeout(gifSearchTimerRef.current);
+    const reqId = ++gifSearchCounterRef.current; // always increment to invalidate in-flight requests
+    if (!query.trim()) return;
+    gifSearchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${getApiUrl()}api/exercise-search?q=${encodeURIComponent(query.trim())}&limit=8`,
+        );
+        if (!res.ok || reqId !== gifSearchCounterRef.current) return;
+        const json = await res.json();
+        if (reqId === gifSearchCounterRef.current) {
+          setGifModal((prev) =>
+            prev ? { ...prev, searchLoading: false, searchResults: json.results } : prev,
+          );
+        }
+      } catch {
+        if (reqId === gifSearchCounterRef.current) {
+          setGifModal((prev) => prev ? { ...prev, searchLoading: false } : prev);
+        }
+      }
+    }, 300);
+  };
+
   const handleOpenGifModal = async () => {
-    setGifModal({ loading: true, frameUrls: gifFrameUrls, notFound: false });
+    const query = name.trim();
+    const reqId = ++gifSearchCounterRef.current;
+    setGifModal({ searchQuery: query, searchResults: [], searchLoading: true, selectedFrameUrls: gifFrameUrls });
     try {
       const res = await fetch(
-        `${getApiUrl()}api/exercise-lookup?name=${encodeURIComponent(name.trim())}`,
+        `${getApiUrl()}api/exercise-search?q=${encodeURIComponent(query)}&limit=8`,
       );
-      if (!res.ok) throw new Error();
+      if (!res.ok || reqId !== gifSearchCounterRef.current) return;
       const json = await res.json();
-      if (json.found && Array.isArray(json.frameUrls) && json.frameUrls.length > 0) {
-        setGifModal((prev) => prev ? { ...prev, loading: false, frameUrls: json.frameUrls } : prev);
-      } else {
-        setGifModal((prev) => prev ? { ...prev, loading: false, notFound: true } : prev);
-      }
+      if (reqId !== gifSearchCounterRef.current) return;
+      const results = json.results as { name: string; frameUrls: string[] }[];
+      setGifModal((prev) =>
+        prev
+          ? {
+              ...prev,
+              searchLoading: false,
+              searchResults: results,
+              selectedFrameUrls: prev.selectedFrameUrls.length === 0 && results.length > 0
+                ? results[0].frameUrls
+                : prev.selectedFrameUrls,
+            }
+          : prev,
+      );
     } catch {
-      setGifModal((prev) => prev ? { ...prev, loading: false, notFound: true } : prev);
+      if (reqId === gifSearchCounterRef.current) {
+        setGifModal((prev) => prev ? { ...prev, searchLoading: false } : prev);
+      }
     }
   };
 
@@ -286,11 +355,42 @@ export default function AddTaskScreen() {
         <TextInput
           style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text, borderColor: theme.border }]}
           value={name}
-          onChangeText={setName}
+          onChangeText={handleNameChange}
           placeholder="e.g., Bench Press"
           placeholderTextColor={theme.textMuted}
           autoFocus={!isEditing}
         />
+        {/* Autocomplete suggestions */}
+        {suggestions.length > 0 ? (
+          <View style={[styles.suggestionsBox, { backgroundColor: theme.backgroundDefault, borderColor: theme.border }]}>
+            {suggestions.map((s) => (
+              <Pressable
+                key={s.name}
+                style={[styles.suggestionRow, { borderBottomColor: theme.border }]}
+                onPress={() => {
+                  setName(s.name);
+                  setGifFrameUrls(s.frameUrls);
+                  setSuggestions([]);
+                }}
+              >
+                {s.frameUrls.length > 0 ? (
+                  <Image
+                    source={{ uri: s.frameUrls[0] }}
+                    style={styles.suggestionThumb}
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                  />
+                ) : (
+                  <Feather name="film" size={16} color={theme.textMuted} />
+                )}
+                <ThemedText type="body" style={[styles.suggestionText, { color: theme.text }]} numberOfLines={1}>
+                  {s.name}
+                </ThemedText>
+                <Feather name="arrow-up-left" size={14} color={theme.textMuted} />
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
         {/* GIF pill button */}
         <Pressable
           style={({ pressed }) => [
@@ -407,45 +507,108 @@ export default function AddTaskScreen() {
           onPress={() => {}}
         >
           <View style={[styles.gifModalHandle, { backgroundColor: theme.textMuted }]} />
-          <ThemedText type="h2" style={styles.gifModalTitle}>{name}</ThemedText>
 
-          {gifModal?.loading ? (
-            <View style={styles.gifModalLoader}>
-              <ActivityIndicator color={theme.link} />
-              <ThemedText type="secondary" style={{ marginTop: Spacing.sm }}>
-                Finding exercise GIF…
-              </ThemedText>
+          {/* Search bar */}
+          <View style={[styles.gifSearchRow, { backgroundColor: theme.backgroundSecondary }]}>
+            <Feather name="search" size={16} color={theme.textMuted} />
+            <TextInput
+              style={[styles.gifSearchInput, { color: theme.text }]}
+              value={gifModal?.searchQuery ?? ""}
+              onChangeText={handleGifModalSearch}
+              placeholder="Search exercises…"
+              placeholderTextColor={theme.textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            {gifModal?.searchLoading ? (
+              <ActivityIndicator size="small" color={theme.link} />
+            ) : null}
+          </View>
+
+          {/* Results list */}
+          {!gifModal?.searchLoading && (gifModal?.searchResults ?? []).length === 0 ? (
+            <View style={styles.gifModalEmpty}>
+              <ThemedText type="secondary">No results — try a different name</ThemedText>
             </View>
-          ) : gifModal?.notFound ? (
-            <View style={styles.gifModalLoader}>
-              <ThemedText type="secondary">No GIF found for this exercise.</ThemedText>
-            </View>
-          ) : gifModal?.frameUrls.length ? (
+          ) : (
+            <ScrollView
+              style={styles.gifResultsList}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {(gifModal?.searchResults ?? []).map((result) => {
+                const isSelected = gifModal?.selectedFrameUrls[0] === result.frameUrls[0];
+                return (
+                  <Pressable
+                    key={result.name}
+                    style={[
+                      styles.gifResultRow,
+                      isSelected && { backgroundColor: theme.link + "15" },
+                    ]}
+                    onPress={() =>
+                      setGifModal((prev) =>
+                        prev ? { ...prev, selectedFrameUrls: result.frameUrls } : prev,
+                      )
+                    }
+                  >
+                    <Image
+                      source={{ uri: result.frameUrls[0] }}
+                      style={styles.gifResultThumb}
+                      contentFit="cover"
+                      cachePolicy="memory-disk"
+                    />
+                    <ThemedText
+                      type="body"
+                      style={[
+                        styles.gifResultName,
+                        { color: isSelected ? theme.link : theme.text },
+                        isSelected && { fontWeight: "600" },
+                      ]}
+                      numberOfLines={2}
+                    >
+                      {result.name}
+                    </ThemedText>
+                    {isSelected ? (
+                      <Feather name="check-circle" size={18} color={theme.link} />
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          )}
+
+          {/* Selected preview */}
+          {gifModal?.selectedFrameUrls.length ? (
             <Image
-              source={{ uri: gifModal.frameUrls[0] }}
+              source={{ uri: gifModal.selectedFrameUrls[0] }}
               style={[styles.gifModalPreview, { backgroundColor: theme.backgroundSecondary }]}
               contentFit="contain"
               cachePolicy="memory-disk"
             />
           ) : null}
 
-          {!gifModal?.loading && !gifModal?.notFound ? (
-            <Pressable
-              style={[styles.gifModalPrimaryBtn, { backgroundColor: theme.link }]}
-              onPress={() => {
-                if (gifModal?.frameUrls.length) {
-                  setGifFrameUrls(gifModal.frameUrls);
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                }
-                setGifModal(null);
-              }}
-              disabled={!gifModal?.frameUrls.length}
-            >
-              <ThemedText type="body" style={{ color: theme.buttonText, fontWeight: "700" }}>
-                Use this GIF
-              </ThemedText>
-            </Pressable>
-          ) : null}
+          {/* Confirm */}
+          <Pressable
+            style={[
+              styles.gifModalPrimaryBtn,
+              {
+                backgroundColor: theme.link,
+                opacity: (gifModal?.selectedFrameUrls.length ?? 0) > 0 ? 1 : 0.4,
+              },
+            ]}
+            onPress={() => {
+              if (gifModal?.selectedFrameUrls.length) {
+                setGifFrameUrls(gifModal.selectedFrameUrls);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              }
+              setGifModal(null);
+            }}
+            disabled={!gifModal?.selectedFrameUrls.length}
+          >
+            <ThemedText type="body" style={{ color: theme.buttonText, fontWeight: "700" }}>
+              Use this GIF
+            </ThemedText>
+          </Pressable>
 
           {gifFrameUrls.length > 0 ? (
             <Pressable
@@ -583,28 +746,18 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     paddingBottom: Spacing.xl * 2,
     gap: Spacing.md,
-    alignItems: "center",
   },
   gifModalHandle: {
     width: 40,
     height: 4,
     borderRadius: 2,
     marginBottom: Spacing.sm,
-  },
-  gifModalTitle: {
-    textAlign: "center",
-    marginBottom: Spacing.sm,
-  },
-  gifModalLoader: {
-    alignItems: "center",
-    paddingVertical: Spacing.xl,
-    gap: Spacing.sm,
+    alignSelf: "center",
   },
   gifModalPreview: {
     width: "100%",
-    aspectRatio: 1,
+    height: 160,
     borderRadius: BorderRadius.lg,
-    marginBottom: Spacing.sm,
   },
   gifModalPrimaryBtn: {
     width: "100%",
@@ -616,5 +769,64 @@ const styles = StyleSheet.create({
     width: "100%",
     padding: Spacing.md,
     alignItems: "center",
+  },
+  gifModalEmpty: {
+    paddingVertical: Spacing.lg,
+    alignItems: "center",
+  },
+  gifSearchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.md,
+  },
+  gifSearchInput: {
+    flex: 1,
+    fontSize: 14,
+  },
+  gifResultsList: {
+    maxHeight: 200,
+  },
+  gifResultRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  gifResultThumb: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.sm,
+  },
+  gifResultName: {
+    flex: 1,
+    fontSize: 14,
+  },
+  suggestionsBox: {
+    borderRadius: BorderRadius.md,
+    overflow: "hidden",
+    marginTop: Spacing.xs,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  suggestionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  suggestionThumb: {
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.xs,
+  },
+  suggestionText: {
+    flex: 1,
+    fontSize: 14,
   },
 });

@@ -31,6 +31,8 @@ interface SessionCardProps {
   onLinkGif: (sessionId: string, taskId: string, taskName: string) => void;
   newTaskName: string;
   setNewTaskName: (value: string) => void;
+  newTaskGifFrameUrls: string[];
+  setNewTaskGifFrameUrls: (value: string[]) => void;
   newTaskSets: string;
   setNewTaskSets: (value: string) => void;
   newTaskReps: string;
@@ -83,6 +85,8 @@ function TaskForm({
   theme,
   newTaskName,
   setNewTaskName,
+  newTaskGifFrameUrls,
+  setNewTaskGifFrameUrls,
   newTaskSets,
   setNewTaskSets,
   newTaskReps,
@@ -94,6 +98,8 @@ function TaskForm({
   theme: SessionCardProps["theme"];
   newTaskName: string;
   setNewTaskName: (value: string) => void;
+  newTaskGifFrameUrls: string[];
+  setNewTaskGifFrameUrls: (value: string[]) => void;
   newTaskSets: string;
   setNewTaskSets: (value: string) => void;
   newTaskReps: string;
@@ -102,26 +108,27 @@ function TaskForm({
   onCancelTask: (sessionId: string) => void;
 }) {
   const isStrength = session.selectedTaskType === "strength";
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<{ name: string; frameUrls: string[] }[]>([]);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchCounterRef = useRef(0);
 
   const handleNameChange = (text: string) => {
     setNewTaskName(text);
+    if (text !== newTaskName) setNewTaskGifFrameUrls([]);
+    setSuggestions([]);
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    if (text.trim().length < 2) {
-      setSuggestions([]);
-      return;
-    }
+    const reqId = ++searchCounterRef.current; // always increment to invalidate in-flight requests
+    if (text.trim().length < 2) return;
     searchTimerRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
           `${getApiUrl()}api/exercise-search?q=${encodeURIComponent(text)}&limit=6`,
         );
-        if (!res.ok) return;
+        if (!res.ok || reqId !== searchCounterRef.current) return;
         const json = await res.json();
-        setSuggestions(
-          (json.results as { name: string }[]).map((r) => r.name),
-        );
+        if (reqId === searchCounterRef.current) {
+          setSuggestions(json.results as { name: string; frameUrls: string[] }[]);
+        }
       } catch {}
     }, 300);
   };
@@ -158,22 +165,32 @@ function TaskForm({
             { backgroundColor: theme.backgroundDefault },
           ]}
         >
-          {suggestions.map((name) => (
+          {suggestions.map((s) => (
             <Pressable
-              key={name}
+              key={s.name}
               style={styles.suggestionRow}
               onPress={() => {
-                setNewTaskName(name);
+                setNewTaskName(s.name);
+                setNewTaskGifFrameUrls(s.frameUrls);
                 setSuggestions([]);
               }}
             >
-              <Feather name="search" size={12} color={theme.textMuted} />
+              {s.frameUrls.length > 0 ? (
+                <Image
+                  source={{ uri: s.frameUrls[0] }}
+                  style={styles.suggestionThumb}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
+              ) : (
+                <Feather name="film" size={16} color={theme.textMuted} />
+              )}
               <ThemedText
                 type="body"
                 style={[styles.suggestionText, { color: theme.text }]}
                 numberOfLines={1}
               >
-                {name}
+                {s.name}
               </ThemedText>
             </Pressable>
           ))}
@@ -266,6 +283,8 @@ export function SessionCard({
   onLinkGif,
   newTaskName,
   setNewTaskName,
+  newTaskGifFrameUrls,
+  setNewTaskGifFrameUrls,
   newTaskSets,
   setNewTaskSets,
   newTaskReps,
@@ -404,6 +423,8 @@ export function SessionCard({
                 theme={theme}
                 newTaskName={newTaskName}
                 setNewTaskName={setNewTaskName}
+                newTaskGifFrameUrls={newTaskGifFrameUrls}
+                setNewTaskGifFrameUrls={setNewTaskGifFrameUrls}
                 newTaskSets={newTaskSets}
                 setNewTaskSets={setNewTaskSets}
                 newTaskReps={newTaskReps}
@@ -598,6 +619,11 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
+  },
+  suggestionThumb: {
+    width: 32,
+    height: 32,
+    borderRadius: BorderRadius.xs,
   },
   suggestionText: {
     flex: 1,
