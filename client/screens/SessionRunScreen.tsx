@@ -11,6 +11,7 @@ import * as Haptics from "expo-haptics";
 import { useKeepAwake } from "expo-keep-awake";
 
 import { ThemedText } from "@/components/ThemedText";
+import { ExerciseIllustration } from "@/components/ExerciseIllustration";
 import { RestTimerSheet } from "@/components/RestTimerSheet";
 import { EmptyState } from "@/components/EmptyState";
 import { ExerciseTimer } from "@/components/ExerciseTimer";
@@ -584,6 +585,9 @@ export default function SessionRunScreen() {
             <ThemedText type="small" style={{ color: theme.link }}>Reference</ThemedText>
           </Pressable>
         ) : null}
+
+        {/* Exercise illustration — collapsible form guide */}
+        <ExerciseIllustration exerciseName={currentTask.name} collapsible />
 
         {/* Target */}
         <ThemedText type="secondary" style={styles.targetText}>

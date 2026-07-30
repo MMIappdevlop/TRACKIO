@@ -7,6 +7,7 @@ import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
 import { ModeIcon } from "@/components/icons/ModeIcon";
+import { ExerciseIllustration } from "@/components/ExerciseIllustration";
 import { useTheme } from "@/hooks/useTheme";
 import { completedTasksStorage, taskTemplatesStorage } from "@/lib/storage";
 import { Spacing, BorderRadius, TaskModes } from "@/constants/theme";
@@ -151,6 +152,8 @@ export default function TaskDetailScreen() {
               </View>
               <ThemedText type="h2" style={styles.taskName}>{task.name}</ThemedText>
               <ThemedText type="muted">{history.length} logged sessions</ThemedText>
+
+              <ExerciseIllustration exerciseName={task.name} />
 
               {best && task.mode === "strength" ? (
                 <View style={styles.bestStats}>
