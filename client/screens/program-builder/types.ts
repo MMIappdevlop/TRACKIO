@@ -13,6 +13,8 @@ export interface TaskDraft {
   workSeconds?: number;
   restSeconds?: number;
   rounds?: number;
+  /** Frame URLs for the animated exercise GIF panel (set via "Link GIF" in the plan editor). */
+  gifFrameUrls?: string[];
 }
 
 export interface SessionDraft {

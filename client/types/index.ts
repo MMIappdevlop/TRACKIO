@@ -1,4 +1,9 @@
-export type ExerciseMode = "strength" | "distance" | "interval" | "time" | "notes";
+export type ExerciseMode =
+  | "strength"
+  | "distance"
+  | "interval"
+  | "time"
+  | "notes";
 
 export interface Plan {
   id: string;
@@ -35,6 +40,12 @@ export interface ExerciseTemplate {
   config: ExerciseConfig;
   trackMilestones: boolean;
   referenceLink?: string;
+  /**
+   * Frame URLs for the animated exercise demonstration panel.
+   * Free-exercise-db provides 2 frames (start + end pose); cycling between
+   * them at 600 ms creates a looping motion effect.  Set via plan editor.
+   */
+  gifFrameUrls?: string[];
   createdAt: string;
   updatedAt: string;
 }

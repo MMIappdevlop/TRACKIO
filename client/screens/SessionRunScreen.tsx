@@ -1,5 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { View, StyleSheet, Pressable, TextInput, Modal, Alert, KeyboardAvoidingView, Platform, Linking } from "react-native";
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  TextInput,
+  Modal,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Linking,
+} from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -11,16 +21,28 @@ import * as Haptics from "expo-haptics";
 import { useKeepAwake } from "expo-keep-awake";
 
 import { ThemedText } from "@/components/ThemedText";
-import { ExerciseIllustration } from "@/components/ExerciseIllustration";
+import { ExerciseGifPanel } from "@/components/ExerciseGifPanel";
 import { RestTimerSheet } from "@/components/RestTimerSheet";
 import { EmptyState } from "@/components/EmptyState";
 import { ExerciseTimer } from "@/components/ExerciseTimer";
 import { useTheme } from "@/hooks/useTheme";
 import { useSettings } from "@/hooks/useData";
-import { taskTemplatesStorage, completedSessionsStorage, completedTasksStorage, activeSessionStorage, settingsStorage } from "@/lib/storage";
+import {
+  taskTemplatesStorage,
+  completedSessionsStorage,
+  completedTasksStorage,
+  activeSessionStorage,
+  settingsStorage,
+} from "@/lib/storage";
 import { Spacing, BorderRadius, TaskModes, Colors } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
-import type { TaskTemplate, StrengthSetData, TaskDataJson, SplitTime, ExerciseMode } from "@/types";
+import type {
+  TaskTemplate,
+  StrengthSetData,
+  TaskDataJson,
+  SplitTime,
+  ExerciseMode,
+} from "@/types";
 
 type RoutePropType = RouteProp<RootStackParamList, "SessionRun">;
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -38,7 +60,13 @@ export default function SessionRunScreen() {
   const { settings } = useSettings();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
-  const { sessionTemplateId, sessionTemplateName, programId, programName, resumeSession } = route.params;
+  const {
+    sessionTemplateId,
+    sessionTemplateName,
+    programId,
+    programName,
+    resumeSession,
+  } = route.params;
 
   const [tasks, setTasks] = useState<TaskTemplate[]>([]);
   const [taskLogs, setTaskLogs] = useState<TaskLogState[]>([]);
@@ -51,9 +79,15 @@ export default function SessionRunScreen() {
   const [adhocName, setAdhocName] = useState("");
   const [adhocMode, setAdhocMode] = useState<ExerciseMode>("strength");
   const [adhocSets, setAdhocSets] = useState(3);
-  const [previousData, setPreviousData] = useState<Record<string, StrengthSetData[]>>({});
-  const [distanceInputStr, setDistanceInputStr] = useState<Record<string, string>>({});
-  const [durationInputStr, setDurationInputStr] = useState<Record<string, string>>({});
+  const [previousData, setPreviousData] = useState<
+    Record<string, StrengthSetData[]>
+  >({});
+  const [distanceInputStr, setDistanceInputStr] = useState<
+    Record<string, string>
+  >({});
+  const [durationInputStr, setDurationInputStr] = useState<
+    Record<string, string>
+  >({});
   const startTimeRef = useRef(new Date());
   const taskLogsRef = useRef<TaskLogState[]>([]);
   const tasksRef = useRef<TaskTemplate[]>([]);
@@ -61,6 +95,10 @@ export default function SessionRunScreen() {
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const initializedRef = useRef(false);
   const exitingRef = useRef(false);
+  // Track GIF panel expand/collapse per exercise without re-mounting on navigation.
+  // Defaults to expanded (true).  useRef avoids re-rendering the whole screen on toggle.
+  const gifExpandedMapRef = useRef<Record<string, boolean>>({});
+  const [gifExpandedTick, setGifExpandedTick] = useState(0); // incremented to trigger re-render
 
   useEffect(() => {
     tasksRef.current = tasks;
@@ -75,7 +113,9 @@ export default function SessionRunScreen() {
     navigation.setOptions({
       headerRight: () => (
         <HeaderButton onPress={() => handleFinishRef.current()}>
-          <ThemedText type="link" style={{ fontWeight: "600" }}>Finish</ThemedText>
+          <ThemedText type="link" style={{ fontWeight: "600" }}>
+            Finish
+          </ThemedText>
         </HeaderButton>
       ),
       headerLeft: () => (
@@ -107,7 +147,8 @@ export default function SessionRunScreen() {
   }, [taskLogs, currentTaskIndex]);
 
   const loadSession = async () => {
-    const loadedTasks = await taskTemplatesStorage.getBySessionTemplateId(sessionTemplateId);
+    const loadedTasks =
+      await taskTemplatesStorage.getBySessionTemplateId(sessionTemplateId);
     tasksRef.current = loadedTasks;
     setTasks(loadedTasks);
 
@@ -161,11 +202,14 @@ export default function SessionRunScreen() {
       const history = byName.get(key);
       if (!history || history.length === 0) continue;
       history.sort(
-        (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+        (a, b) =>
+          new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime(),
       );
       const mostRecent = history[0];
       if (mostRecent.dataJson.sets) {
-        const completedSets = mostRecent.dataJson.sets.filter((s) => s.isCompleted);
+        const completedSets = mostRecent.dataJson.sets.filter(
+          (s) => s.isCompleted,
+        );
         if (completedSets.length > 0) {
           prevMap[task.id] = completedSets;
         }
@@ -206,21 +250,31 @@ export default function SessionRunScreen() {
   const updateTaskLog = (taskId: string, updates: Partial<TaskDataJson>) => {
     setTaskLogs((prev) => {
       const updated = prev.map((log) =>
-        log.taskId === taskId ? { ...log, data: { ...log.data, ...updates } } : log
+        log.taskId === taskId
+          ? { ...log, data: { ...log.data, ...updates } }
+          : log,
       );
       taskLogsRef.current = updated;
       return updated;
     });
   };
 
-  const getTaskLog = (taskId: string) => taskLogsRef.current.find((l) => l.taskId === taskId);
+  const getTaskLog = (taskId: string) =>
+    taskLogsRef.current.find((l) => l.taskId === taskId);
 
-  const handleSetComplete = (taskId: string, setIndex: number, task: TaskTemplate) => {
+  const handleSetComplete = (
+    taskId: string,
+    setIndex: number,
+    task: TaskTemplate,
+  ) => {
     const log = getTaskLog(taskId);
     if (!log?.data.sets) return;
 
     const newSets = [...log.data.sets];
-    newSets[setIndex] = { ...newSets[setIndex], isCompleted: !newSets[setIndex].isCompleted };
+    newSets[setIndex] = {
+      ...newSets[setIndex],
+      isCompleted: !newSets[setIndex].isCompleted,
+    };
     updateTaskLog(taskId, { sets: newSets });
 
     if (newSets[setIndex].isCompleted) {
@@ -230,11 +284,19 @@ export default function SessionRunScreen() {
     }
   };
 
-  const [setInputStrings, setSetInputStrings] = useState<Record<string, string>>({});
+  const [setInputStrings, setSetInputStrings] = useState<
+    Record<string, string>
+  >({});
 
-  const getSetInputKey = (taskId: string, setIndex: number, field: string) => `${taskId}-${setIndex}-${field}`;
+  const getSetInputKey = (taskId: string, setIndex: number, field: string) =>
+    `${taskId}-${setIndex}-${field}`;
 
-  const handleSetInputChange = (taskId: string, setIndex: number, field: "weight" | "reps", value: string) => {
+  const handleSetInputChange = (
+    taskId: string,
+    setIndex: number,
+    field: "weight" | "reps",
+    value: string,
+  ) => {
     const key = getSetInputKey(taskId, setIndex, field);
     const normalized = value.replace(",", ".");
     setSetInputStrings((prev) => ({ ...prev, [key]: normalized }));
@@ -257,7 +319,11 @@ export default function SessionRunScreen() {
     }
   };
 
-  const handleSetInputBlur = (taskId: string, setIndex: number, field: "weight" | "reps") => {
+  const handleSetInputBlur = (
+    taskId: string,
+    setIndex: number,
+    field: "weight" | "reps",
+  ) => {
     const key = getSetInputKey(taskId, setIndex, field);
     setSetInputStrings((prev) => {
       const updated = { ...prev };
@@ -266,7 +332,12 @@ export default function SessionRunScreen() {
     });
   };
 
-  const getSetInputValue = (taskId: string, setIndex: number, field: "weight" | "reps", numericValue?: number) => {
+  const getSetInputValue = (
+    taskId: string,
+    setIndex: number,
+    field: "weight" | "reps",
+    numericValue?: number,
+  ) => {
     const key = getSetInputKey(taskId, setIndex, field);
     if (setInputStrings[key] !== undefined) return setInputStrings[key];
     return numericValue ? String(numericValue) : "0";
@@ -292,20 +363,25 @@ export default function SessionRunScreen() {
     const log = getTaskLog(taskId);
     if (!log?.data.sets || log.data.sets.length <= 1) return;
 
-    const newSets = log.data.sets.filter((_, i) => i !== setIndex).map((set, i) => ({
-      ...set,
-      setNumber: i + 1,
-    }));
+    const newSets = log.data.sets
+      .filter((_, i) => i !== setIndex)
+      .map((set, i) => ({
+        ...set,
+        setNumber: i + 1,
+      }));
     updateTaskLog(taskId, { sets: newSets });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
-  const handleTimerComplete = (taskId: string, data: {
-    durationSeconds: number;
-    splits: SplitTime[];
-    breakSeconds: number;
-    roundsCompleted?: number;
-  }) => {
+  const handleTimerComplete = (
+    taskId: string,
+    data: {
+      durationSeconds: number;
+      splits: SplitTime[];
+      breakSeconds: number;
+      roundsCompleted?: number;
+    },
+  ) => {
     updateTaskLog(taskId, {
       durationSeconds: data.durationSeconds,
       splits: data.splits,
@@ -314,24 +390,39 @@ export default function SessionRunScreen() {
     });
   };
 
-  const isExerciseComplete = useCallback((task: TaskTemplate, log: TaskLogState): boolean => {
-    switch (task.mode) {
-      case "strength":
-        return (log.data.sets || []).some((s) => s.isCompleted);
-      case "distance":
-        return (log.data.distance !== undefined && log.data.distance > 0) ||
-          (log.data.durationSeconds !== undefined && log.data.durationSeconds > 0);
-      case "interval":
-        return (log.data.roundsCompleted !== undefined && log.data.roundsCompleted > 0) ||
-          (log.data.durationSeconds !== undefined && log.data.durationSeconds > 0);
-      case "time":
-        return log.data.durationSeconds !== undefined && log.data.durationSeconds > 0;
-      case "notes":
-        return log.data.notes !== undefined && log.data.notes.trim().length > 0;
-      default:
-        return false;
-    }
-  }, []);
+  const isExerciseComplete = useCallback(
+    (task: TaskTemplate, log: TaskLogState): boolean => {
+      switch (task.mode) {
+        case "strength":
+          return (log.data.sets || []).some((s) => s.isCompleted);
+        case "distance":
+          return (
+            (log.data.distance !== undefined && log.data.distance > 0) ||
+            (log.data.durationSeconds !== undefined &&
+              log.data.durationSeconds > 0)
+          );
+        case "interval":
+          return (
+            (log.data.roundsCompleted !== undefined &&
+              log.data.roundsCompleted > 0) ||
+            (log.data.durationSeconds !== undefined &&
+              log.data.durationSeconds > 0)
+          );
+        case "time":
+          return (
+            log.data.durationSeconds !== undefined &&
+            log.data.durationSeconds > 0
+          );
+        case "notes":
+          return (
+            log.data.notes !== undefined && log.data.notes.trim().length > 0
+          );
+        default:
+          return false;
+      }
+    },
+    [],
+  );
 
   const stopAutoSave = () => {
     exitingRef.current = true;
@@ -399,7 +490,10 @@ export default function SessionRunScreen() {
       });
       navigation.goBack();
     } catch (e) {
-      Alert.alert("Could not save draft", "Something went wrong. Please try again.");
+      Alert.alert(
+        "Could not save draft",
+        "Something went wrong. Please try again.",
+      );
     }
   };
 
@@ -436,7 +530,9 @@ export default function SessionRunScreen() {
     try {
       await activeSessionStorage.clear();
       const endTime = new Date();
-      const durationSeconds = Math.floor((endTime.getTime() - startTimeRef.current.getTime()) / 1000);
+      const durationSeconds = Math.floor(
+        (endTime.getTime() - startTimeRef.current.getTime()) / 1000,
+      );
 
       const currentTaskLogs = taskLogsRef.current;
       const currentTasks = tasksRef.current;
@@ -483,9 +579,15 @@ export default function SessionRunScreen() {
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      navigation.replace("SessionSummary", { completedSessionId: completedSession.id, completionRatio });
+      navigation.replace("SessionSummary", {
+        completedSessionId: completedSession.id,
+        completionRatio,
+      });
     } catch (e) {
-      Alert.alert("Could not save session", "Something went wrong. Please try again.");
+      Alert.alert(
+        "Could not save session",
+        "Something went wrong. Please try again.",
+      );
     }
   };
 
@@ -505,7 +607,8 @@ export default function SessionRunScreen() {
 
   const currentTask = tasks[currentTaskIndex];
   const currentLog = taskLogs.find((l) => l.taskId === currentTask?.id);
-  const progressPercent = tasks.length > 0 ? ((currentTaskIndex + 1) / tasks.length) * 100 : 0;
+  const progressPercent =
+    tasks.length > 0 ? ((currentTaskIndex + 1) / tasks.length) * 100 : 0;
 
   const getTargetText = (task: TaskTemplate) => {
     if (task.mode === "strength") {
@@ -525,8 +628,12 @@ export default function SessionRunScreen() {
 
   if (tasks.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
-        <View style={[styles.content, { paddingTop: headerHeight + Spacing.lg }]}>
+      <View
+        style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
+      >
+        <View
+          style={[styles.content, { paddingTop: headerHeight + Spacing.lg }]}
+        >
           <EmptyState
             icon="clipboard"
             title="No Exercises"
@@ -545,7 +652,10 @@ export default function SessionRunScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.content,
-          { paddingTop: headerHeight + Spacing.lg, paddingBottom: 100 + insets.bottom },
+          {
+            paddingTop: headerHeight + Spacing.lg,
+            paddingBottom: 100 + insets.bottom,
+          },
         ]}
         keyboardShouldPersistTaps="handled"
         bottomOffset={20}
@@ -557,14 +667,24 @@ export default function SessionRunScreen() {
 
         {/* Task Name + Add Exercise */}
         <View style={styles.taskNameRow}>
-          <ThemedText type="h1" style={styles.taskName} numberOfLines={1}>{currentTask.name}</ThemedText>
+          <ThemedText type="h1" style={styles.taskName} numberOfLines={1}>
+            {currentTask.name}
+          </ThemedText>
           <Pressable
             testID="button-add-exercise"
             onPress={() => setShowAddModal(true)}
-            style={[styles.addExerciseButton, { backgroundColor: theme.backgroundSecondary }]}
+            style={[
+              styles.addExerciseButton,
+              { backgroundColor: theme.backgroundSecondary },
+            ]}
           >
             <Feather name="plus" size={16} color={theme.text} />
-            <ThemedText type="body" style={[styles.addSetText, { color: theme.text }]}>Add</ThemedText>
+            <ThemedText
+              type="body"
+              style={[styles.addSetText, { color: theme.text }]}
+            >
+              Add
+            </ThemedText>
           </Pressable>
         </View>
 
@@ -579,32 +699,43 @@ export default function SessionRunScreen() {
                 console.error("Failed to open link:", e);
               }
             }}
-            style={[styles.referenceLinkButton, { backgroundColor: theme.linkBackground }]}
+            style={[
+              styles.referenceLinkButton,
+              { backgroundColor: theme.linkBackground },
+            ]}
           >
             <Feather name="external-link" size={14} color={theme.link} />
-            <ThemedText type="small" style={{ color: theme.link }}>Reference</ThemedText>
+            <ThemedText type="small" style={{ color: theme.link }}>
+              Reference
+            </ThemedText>
           </Pressable>
         ) : null}
 
-        {/* Exercise illustration — collapsible form guide */}
-        <ExerciseIllustration exerciseName={currentTask.name} collapsible />
+        {/* Animated GIF panel — shown only when the exercise has linked frames */}
+        {currentTask.gifFrameUrls && currentTask.gifFrameUrls.length > 0 ? (
+          <ExerciseGifPanel
+            frameUrls={currentTask.gifFrameUrls}
+            expanded={
+              // Default expanded; useRef map preserves state across exercise navigation
+              gifExpandedMapRef.current[currentTask.id] !== undefined
+                ? gifExpandedMapRef.current[currentTask.id]
+                : true
+            }
+            onToggle={() => {
+              const cur =
+                gifExpandedMapRef.current[currentTask.id] !== undefined
+                  ? gifExpandedMapRef.current[currentTask.id]
+                  : true;
+              gifExpandedMapRef.current[currentTask.id] = !cur;
+              setGifExpandedTick((t) => t + 1);
+            }}
+          />
+        ) : null}
 
         {/* Target */}
         <ThemedText type="secondary" style={styles.targetText}>
           {getTargetText(currentTask)}
         </ThemedText>
-
-        {/* Progress Bar */}
-        <View style={styles.progressSection}>
-          <ThemedText type="secondary" style={styles.progressLabel}>
-            Exercise {currentTaskIndex + 1} of {tasks.length}
-          </ThemedText>
-          <View style={[styles.progressBarBg, { backgroundColor: theme.backgroundSecondary }]}>
-            <View
-              style={[styles.progressBarFill, { width: `${progressPercent}%`, backgroundColor: Colors.dark.success }]}
-            />
-          </View>
-        </View>
 
         {/* Strength Mode - Sets */}
         {currentTask.mode === "strength" && currentLog?.data.sets ? (
@@ -613,10 +744,18 @@ export default function SessionRunScreen() {
               <ThemedText type="h3">Sets</ThemedText>
               <Pressable
                 onPress={() => handleAddSet(currentTask.id)}
-                style={[styles.addSetButton, { backgroundColor: theme.backgroundSecondary }]}
+                style={[
+                  styles.addSetButton,
+                  { backgroundColor: theme.backgroundSecondary },
+                ]}
               >
                 <Feather name="plus" size={16} color={theme.text} />
-                <ThemedText type="body" style={[styles.addSetText, { color: theme.text }]}>Add Set</ThemedText>
+                <ThemedText
+                  type="body"
+                  style={[styles.addSetText, { color: theme.text }]}
+                >
+                  Add Set
+                </ThemedText>
               </Pressable>
             </View>
 
@@ -625,41 +764,98 @@ export default function SessionRunScreen() {
               const prevSet = prevSets && prevSets[index];
               const weightUnit = settings?.weightUnit || "kg";
               return (
-                <View key={index} style={[styles.setCard, { backgroundColor: set.isCompleted ? Colors.dark.success + "15" : theme.backgroundSecondary }]}>
+                <View
+                  key={index}
+                  style={[
+                    styles.setCard,
+                    {
+                      backgroundColor: set.isCompleted
+                        ? Colors.dark.success + "15"
+                        : theme.backgroundSecondary,
+                    },
+                  ]}
+                >
                   <View style={styles.setCardInner}>
                     <Pressable
-                      onPress={() => handleSetComplete(currentTask.id, index, currentTask)}
+                      onPress={() =>
+                        handleSetComplete(currentTask.id, index, currentTask)
+                      }
                       style={styles.setCheckbox}
                       testID={`set-complete-${index}`}
                     >
                       <Feather
                         name={set.isCompleted ? "check-circle" : "circle"}
                         size={24}
-                        color={set.isCompleted ? Colors.dark.success : theme.textMuted}
+                        color={
+                          set.isCompleted
+                            ? Colors.dark.success
+                            : theme.textMuted
+                        }
                       />
                     </Pressable>
 
                     <View style={styles.setField}>
-                      <ThemedText type="muted" style={styles.setFieldLabel}>Weight</ThemedText>
+                      <ThemedText type="muted" style={styles.setFieldLabel}>
+                        Weight
+                      </ThemedText>
                       <TextInput
-                        style={[styles.setInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
-                        value={getSetInputValue(currentTask.id, index, "weight", set.weight)}
-                        onChangeText={(v) => handleSetInputChange(currentTask.id, index, "weight", v)}
-                        onBlur={() => handleSetInputBlur(currentTask.id, index, "weight")}
+                        style={[
+                          styles.setInput,
+                          {
+                            backgroundColor: theme.backgroundDefault,
+                            color: theme.text,
+                          },
+                        ]}
+                        value={getSetInputValue(
+                          currentTask.id,
+                          index,
+                          "weight",
+                          set.weight,
+                        )}
+                        onChangeText={(v) =>
+                          handleSetInputChange(
+                            currentTask.id,
+                            index,
+                            "weight",
+                            v,
+                          )
+                        }
+                        onBlur={() =>
+                          handleSetInputBlur(currentTask.id, index, "weight")
+                        }
                         keyboardType="decimal-pad"
                         selectTextOnFocus
                       />
                     </View>
 
-                    <ThemedText type="muted" style={styles.separator}>x</ThemedText>
+                    <ThemedText type="muted" style={styles.separator}>
+                      x
+                    </ThemedText>
 
                     <View style={styles.setField}>
-                      <ThemedText type="muted" style={styles.setFieldLabel}>Reps</ThemedText>
+                      <ThemedText type="muted" style={styles.setFieldLabel}>
+                        Reps
+                      </ThemedText>
                       <TextInput
-                        style={[styles.setInput, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
-                        value={getSetInputValue(currentTask.id, index, "reps", set.reps)}
-                        onChangeText={(v) => handleSetInputChange(currentTask.id, index, "reps", v)}
-                        onBlur={() => handleSetInputBlur(currentTask.id, index, "reps")}
+                        style={[
+                          styles.setInput,
+                          {
+                            backgroundColor: theme.backgroundDefault,
+                            color: theme.text,
+                          },
+                        ]}
+                        value={getSetInputValue(
+                          currentTask.id,
+                          index,
+                          "reps",
+                          set.reps,
+                        )}
+                        onChangeText={(v) =>
+                          handleSetInputChange(currentTask.id, index, "reps", v)
+                        }
+                        onBlur={() =>
+                          handleSetInputBlur(currentTask.id, index, "reps")
+                        }
                         keyboardType="decimal-pad"
                         selectTextOnFocus
                       />
@@ -676,7 +872,10 @@ export default function SessionRunScreen() {
                   </View>
                   {prevSet && (prevSet.weight || prevSet.reps) ? (
                     <ThemedText style={styles.previousHint}>
-                      Last: {prevSet.weight ? `${prevSet.weight} ${weightUnit}` : ""}{prevSet.weight && prevSet.reps ? " x " : ""}{prevSet.reps ? `${prevSet.reps} reps` : ""}
+                      Last:{" "}
+                      {prevSet.weight ? `${prevSet.weight} ${weightUnit}` : ""}
+                      {prevSet.weight && prevSet.reps ? " x " : ""}
+                      {prevSet.reps ? `${prevSet.reps} reps` : ""}
                     </ThemedText>
                   ) : null}
                 </View>
@@ -690,12 +889,29 @@ export default function SessionRunScreen() {
           <View style={styles.modeSection}>
             <View style={styles.distanceRow}>
               <View style={styles.distanceField}>
-                <ThemedText type="muted" style={styles.fieldLabel}>Distance</ThemedText>
+                <ThemedText type="muted" style={styles.fieldLabel}>
+                  Distance
+                </ThemedText>
                 <TextInput
-                  style={[styles.largeInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-                  value={distanceInputStr[currentTask.id] !== undefined ? distanceInputStr[currentTask.id] : (currentLog?.data.distance ? String(currentLog.data.distance) : "")}
+                  style={[
+                    styles.largeInput,
+                    {
+                      backgroundColor: theme.backgroundSecondary,
+                      color: theme.text,
+                    },
+                  ]}
+                  value={
+                    distanceInputStr[currentTask.id] !== undefined
+                      ? distanceInputStr[currentTask.id]
+                      : currentLog?.data.distance
+                        ? String(currentLog.data.distance)
+                        : ""
+                  }
                   onChangeText={(v) => {
-                    setDistanceInputStr((prev) => ({ ...prev, [currentTask.id]: v }));
+                    setDistanceInputStr((prev) => ({
+                      ...prev,
+                      [currentTask.id]: v,
+                    }));
                     const parsed = parseFloat(v);
                     if (!isNaN(parsed)) {
                       updateTaskLog(currentTask.id, { distance: parsed });
@@ -714,17 +930,36 @@ export default function SessionRunScreen() {
                 />
               </View>
               <View style={styles.distanceField}>
-                <ThemedText type="muted" style={styles.fieldLabel}>Duration (mm:ss)</ThemedText>
+                <ThemedText type="muted" style={styles.fieldLabel}>
+                  Duration (mm:ss)
+                </ThemedText>
                 <TextInput
-                  style={[styles.largeInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-                  value={durationInputStr[currentTask.id] !== undefined ? durationInputStr[currentTask.id] : (currentLog?.data.durationSeconds ? `${Math.floor(currentLog.data.durationSeconds / 60)}:${(currentLog.data.durationSeconds % 60).toString().padStart(2, "0")}` : "")}
+                  style={[
+                    styles.largeInput,
+                    {
+                      backgroundColor: theme.backgroundSecondary,
+                      color: theme.text,
+                    },
+                  ]}
+                  value={
+                    durationInputStr[currentTask.id] !== undefined
+                      ? durationInputStr[currentTask.id]
+                      : currentLog?.data.durationSeconds
+                        ? `${Math.floor(currentLog.data.durationSeconds / 60)}:${(currentLog.data.durationSeconds % 60).toString().padStart(2, "0")}`
+                        : ""
+                  }
                   onChangeText={(v) => {
                     let cleaned = v.replace(/[^0-9:]/g, "");
                     const colonIdx = cleaned.indexOf(":");
                     if (colonIdx !== -1) {
-                      cleaned = cleaned.substring(0, colonIdx + 1) + cleaned.substring(colonIdx + 1).replace(/:/g, "");
+                      cleaned =
+                        cleaned.substring(0, colonIdx + 1) +
+                        cleaned.substring(colonIdx + 1).replace(/:/g, "");
                     }
-                    setDurationInputStr((prev) => ({ ...prev, [currentTask.id]: cleaned }));
+                    setDurationInputStr((prev) => ({
+                      ...prev,
+                      [currentTask.id]: cleaned,
+                    }));
                     if (cleaned === "" || cleaned === ":") {
                       updateTaskLog(currentTask.id, { durationSeconds: 0 });
                       return;
@@ -733,10 +968,14 @@ export default function SessionRunScreen() {
                     if (parts.length === 2) {
                       const mins = parseInt(parts[0]) || 0;
                       const secs = Math.min(parseInt(parts[1]) || 0, 59);
-                      updateTaskLog(currentTask.id, { durationSeconds: mins * 60 + secs });
+                      updateTaskLog(currentTask.id, {
+                        durationSeconds: mins * 60 + secs,
+                      });
                     } else if (parts.length === 1 && parts[0]) {
                       const mins = parseInt(parts[0]) || 0;
-                      updateTaskLog(currentTask.id, { durationSeconds: mins * 60 });
+                      updateTaskLog(currentTask.id, {
+                        durationSeconds: mins * 60,
+                      });
                     }
                   }}
                   onBlur={() => {
@@ -759,7 +998,9 @@ export default function SessionRunScreen() {
         {currentTask.mode === "interval" ? (
           <View style={styles.modeSection}>
             <ThemedText type="secondary" style={styles.intervalInfo}>
-              {currentTask.config.rounds} rounds: {currentTask.config.workSeconds}s work / {currentTask.config.restSeconds}s rest
+              {currentTask.config.rounds} rounds:{" "}
+              {currentTask.config.workSeconds}s work /{" "}
+              {currentTask.config.restSeconds}s rest
             </ThemedText>
             <ExerciseTimer
               key={`interval-${currentTask.id}`}
@@ -789,7 +1030,13 @@ export default function SessionRunScreen() {
         {currentTask.mode === "notes" ? (
           <View style={styles.modeSection}>
             <TextInput
-              style={[styles.notesInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+              style={[
+                styles.notesInput,
+                {
+                  backgroundColor: theme.backgroundSecondary,
+                  color: theme.text,
+                },
+              ]}
               value={currentLog?.data.notes || ""}
               onChangeText={(v) => updateTaskLog(currentTask.id, { notes: v })}
               placeholder="Add notes..."
@@ -798,39 +1045,102 @@ export default function SessionRunScreen() {
             />
           </View>
         ) : null}
+
+        {/* In-scroll navigation bar — Previous + exercise progress, sits below sets */}
+        <View style={styles.inScrollNav}>
+          <Pressable
+            onPress={handlePrevious}
+            disabled={currentTaskIndex === 0}
+            style={styles.inScrollPrevBtn}
+            hitSlop={8}
+          >
+            <Feather
+              name="chevron-left"
+              size={18}
+              color={currentTaskIndex === 0 ? theme.textMuted : theme.text}
+            />
+            <ThemedText
+              type="body"
+              style={[
+                styles.inScrollPrevText,
+                {
+                  color: currentTaskIndex === 0 ? theme.textMuted : theme.text,
+                },
+              ]}
+            >
+              Previous
+            </ThemedText>
+          </Pressable>
+
+          <View style={styles.inScrollProgressArea}>
+            <ThemedText type="secondary" style={styles.progressLabel}>
+              Exercise {currentTaskIndex + 1} of {tasks.length}
+            </ThemedText>
+            <View
+              style={[
+                styles.progressBarBg,
+                { backgroundColor: theme.backgroundSecondary },
+              ]}
+            >
+              <View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    width: `${progressPercent}%`,
+                    backgroundColor: Colors.dark.success,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        </View>
       </KeyboardAwareScrollView>
 
-      {/* Bottom Navigation */}
-      <View style={[styles.bottomNav, { paddingBottom: insets.bottom + Spacing.md, backgroundColor: theme.backgroundRoot }]}>
-        <Pressable
-          onPress={handlePrevious}
-          disabled={currentTaskIndex === 0}
-          style={[styles.navButton, styles.prevButton]}
-        >
-          <Feather name="chevron-left" size={20} color={currentTaskIndex === 0 ? theme.textMuted : theme.text} />
-          <ThemedText
-            type="body"
-            style={[styles.navButtonText, currentTaskIndex === 0 && { color: theme.textMuted }]}
-          >
-            Previous
-          </ThemedText>
-        </Pressable>
-
+      {/* Fixed bottom — single Next button */}
+      <View
+        style={[
+          styles.bottomNav,
+          {
+            paddingBottom: insets.bottom + Spacing.md,
+            backgroundColor: theme.backgroundRoot,
+          },
+        ]}
+      >
         <Pressable
           onPress={handleNext}
           disabled={currentTaskIndex === tasks.length - 1}
-          style={[styles.navButton, styles.nextButton, { backgroundColor: theme.backgroundSecondary }]}
+          style={[
+            styles.navButton,
+            {
+              backgroundColor:
+                currentTaskIndex === tasks.length - 1
+                  ? theme.backgroundSecondary
+                  : theme.link,
+            },
+          ]}
         >
           <ThemedText
             type="body"
-            style={[styles.navButtonText, currentTaskIndex === tasks.length - 1 && { color: theme.textMuted }]}
+            style={[
+              styles.navButtonText,
+              {
+                color:
+                  currentTaskIndex === tasks.length - 1
+                    ? theme.textMuted
+                    : theme.buttonText,
+              },
+            ]}
           >
             Next
           </ThemedText>
           <Feather
             name="chevron-right"
             size={20}
-            color={currentTaskIndex === tasks.length - 1 ? theme.textMuted : theme.text}
+            color={
+              currentTaskIndex === tasks.length - 1
+                ? theme.textMuted
+                : theme.buttonText
+            }
           />
         </Pressable>
       </View>
@@ -841,23 +1151,46 @@ export default function SessionRunScreen() {
         animationType="fade"
         onRequestClose={() => setShowFinishModal(false)}
       >
-        <Pressable style={[styles.modalOverlay, { backgroundColor: theme.overlay }]} onPress={() => setShowFinishModal(false)}>
-          <Pressable style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]} onPress={() => {}}>
-            <Feather name="alert-circle" size={40} color={theme.link} style={styles.modalIcon} />
-            <ThemedText type="h2" style={styles.modalTitle}>Some exercises still need your input</ThemedText>
+        <Pressable
+          style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}
+          onPress={() => setShowFinishModal(false)}
+        >
+          <Pressable
+            style={[
+              styles.modalContent,
+              { backgroundColor: theme.backgroundDefault },
+            ]}
+            onPress={() => {}}
+          >
+            <Feather
+              name="alert-circle"
+              size={40}
+              color={theme.link}
+              style={styles.modalIcon}
+            />
+            <ThemedText type="h2" style={styles.modalTitle}>
+              Some exercises still need your input
+            </ThemedText>
             <Pressable
               onPress={() => setShowFinishModal(false)}
               style={[styles.modalPrimaryBtn, { backgroundColor: theme.link }]}
               testID="button-not-done-yet"
             >
-              <ThemedText type="body" style={[styles.modalPrimaryText, { color: theme.buttonText }]}>I'm Not Done Yet</ThemedText>
+              <ThemedText
+                type="body"
+                style={[styles.modalPrimaryText, { color: theme.buttonText }]}
+              >
+                I'm Not Done Yet
+              </ThemedText>
             </Pressable>
             <Pressable
               onPress={saveAndFinish}
               style={styles.modalSecondaryBtn}
               testID="button-finish-anyway"
             >
-              <ThemedText type="secondary" style={{ color: theme.error }}>Finish Session</ThemedText>
+              <ThemedText type="secondary" style={{ color: theme.error }}>
+                Finish Session
+              </ThemedText>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -869,10 +1202,26 @@ export default function SessionRunScreen() {
         animationType="fade"
         onRequestClose={() => setShowPauseModal(false)}
       >
-        <Pressable style={[styles.modalOverlay, { backgroundColor: theme.overlay }]} onPress={() => setShowPauseModal(false)}>
-          <Pressable style={[styles.modalContent, { backgroundColor: theme.backgroundDefault }]} onPress={() => {}}>
-            <Feather name="pause-circle" size={40} color={theme.link} style={styles.modalIcon} />
-            <ThemedText type="h2" style={styles.modalTitle}>Pause Session</ThemedText>
+        <Pressable
+          style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}
+          onPress={() => setShowPauseModal(false)}
+        >
+          <Pressable
+            style={[
+              styles.modalContent,
+              { backgroundColor: theme.backgroundDefault },
+            ]}
+            onPress={() => {}}
+          >
+            <Feather
+              name="pause-circle"
+              size={40}
+              color={theme.link}
+              style={styles.modalIcon}
+            />
+            <ThemedText type="h2" style={styles.modalTitle}>
+              Pause Session
+            </ThemedText>
             <ThemedText type="secondary" style={styles.pauseDescription}>
               Your progress will be saved and you can resume later.
             </ThemedText>
@@ -881,7 +1230,12 @@ export default function SessionRunScreen() {
               style={[styles.modalPrimaryBtn, { backgroundColor: theme.link }]}
               testID="button-pause-resume"
             >
-              <ThemedText type="body" style={[styles.modalPrimaryText, { color: theme.buttonText }]}>Resume</ThemedText>
+              <ThemedText
+                type="body"
+                style={[styles.modalPrimaryText, { color: theme.buttonText }]}
+              >
+                Resume
+              </ThemedText>
             </Pressable>
             <Pressable
               onPress={handleSaveAndExit}
@@ -895,7 +1249,9 @@ export default function SessionRunScreen() {
               style={styles.modalSecondaryBtn}
               testID="button-discard-session"
             >
-              <ThemedText type="secondary" style={{ color: theme.error }}>Discard</ThemedText>
+              <ThemedText type="secondary" style={{ color: theme.error }}>
+                Discard
+              </ThemedText>
             </Pressable>
           </Pressable>
         </Pressable>
@@ -911,82 +1267,160 @@ export default function SessionRunScreen() {
           style={{ flex: 1 }}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-        <Pressable style={[styles.addModalOverlay, { backgroundColor: theme.overlay }]} onPress={() => setShowAddModal(false)}>
-          <Pressable style={[styles.addModalContent, { backgroundColor: theme.backgroundDefault }]} onPress={() => {}}>
-            <View style={[styles.addModalHandle, { backgroundColor: theme.textMuted }]} />
-            <ThemedText type="h2" style={styles.addModalTitle}>Add Exercise</ThemedText>
-
-            <TextInput
-              style={[styles.addModalInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
-              placeholder="Exercise name"
-              placeholderTextColor={theme.textMuted}
-              value={adhocName}
-              onChangeText={setAdhocName}
-              autoFocus
-              returnKeyType="done"
-            />
-
-            <ThemedText type="secondary" style={styles.addModalLabel}>Type</ThemedText>
-            <View style={styles.modePills}>
-              {(["strength", "distance", "interval", "time", "notes"] as ExerciseMode[]).map((m) => (
-                <Pressable
-                  key={m}
-                  onPress={() => setAdhocMode(m)}
-                  style={[styles.modePill, { backgroundColor: adhocMode === m ? theme.link : theme.backgroundSecondary }]}
-                >
-                  <ThemedText
-                    type="secondary"
-                    style={[styles.modePillText, { color: adhocMode === m ? theme.buttonText : theme.textSecondary }]}
-                  >
-                    {m.charAt(0).toUpperCase() + m.slice(1)}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
-
-            {adhocMode === "strength" ? (
-              <>
-                <ThemedText type="secondary" style={styles.addModalLabel}>Sets</ThemedText>
-                <View style={styles.setCountRow}>
-                  <Pressable
-                    onPress={() => setAdhocSets((prev) => Math.max(1, prev - 1))}
-                    style={[styles.setCountBtn, { backgroundColor: theme.backgroundSecondary }]}
-                  >
-                    <Feather name="minus" size={18} color={theme.text} />
-                  </Pressable>
-                  <ThemedText type="h1" style={styles.setCountNum}>{adhocSets}</ThemedText>
-                  <Pressable
-                    onPress={() => setAdhocSets((prev) => Math.min(10, prev + 1))}
-                    style={[styles.setCountBtn, { backgroundColor: theme.backgroundSecondary }]}
-                  >
-                    <Feather name="plus" size={18} color={theme.text} />
-                  </Pressable>
-                </View>
-              </>
-            ) : null}
-
+          <Pressable
+            style={[styles.addModalOverlay, { backgroundColor: theme.overlay }]}
+            onPress={() => setShowAddModal(false)}
+          >
             <Pressable
-              onPress={handleAddAdhocExercise}
-              disabled={adhocName.trim().length === 0}
               style={[
-                styles.addModalBtn,
-                { backgroundColor: adhocName.trim().length > 0 ? theme.link : theme.backgroundSecondary },
+                styles.addModalContent,
+                { backgroundColor: theme.backgroundDefault },
               ]}
-              testID="button-add-adhoc-exercise"
+              onPress={() => {}}
             >
-              <ThemedText
-                type="body"
-                style={[styles.addModalBtnText, { color: adhocName.trim().length > 0 ? theme.buttonText : theme.textMuted }]}
-              >
-                Add to Workout
+              <View
+                style={[
+                  styles.addModalHandle,
+                  { backgroundColor: theme.textMuted },
+                ]}
+              />
+              <ThemedText type="h2" style={styles.addModalTitle}>
+                Add Exercise
               </ThemedText>
-            </Pressable>
 
-            <Pressable onPress={() => setShowAddModal(false)} style={styles.addModalCancel}>
-              <ThemedText type="secondary">Cancel</ThemedText>
+              <TextInput
+                style={[
+                  styles.addModalInput,
+                  {
+                    backgroundColor: theme.backgroundSecondary,
+                    color: theme.text,
+                  },
+                ]}
+                placeholder="Exercise name"
+                placeholderTextColor={theme.textMuted}
+                value={adhocName}
+                onChangeText={setAdhocName}
+                autoFocus
+                returnKeyType="done"
+              />
+
+              <ThemedText type="secondary" style={styles.addModalLabel}>
+                Type
+              </ThemedText>
+              <View style={styles.modePills}>
+                {(
+                  [
+                    "strength",
+                    "distance",
+                    "interval",
+                    "time",
+                    "notes",
+                  ] as ExerciseMode[]
+                ).map((m) => (
+                  <Pressable
+                    key={m}
+                    onPress={() => setAdhocMode(m)}
+                    style={[
+                      styles.modePill,
+                      {
+                        backgroundColor:
+                          adhocMode === m
+                            ? theme.link
+                            : theme.backgroundSecondary,
+                      },
+                    ]}
+                  >
+                    <ThemedText
+                      type="secondary"
+                      style={[
+                        styles.modePillText,
+                        {
+                          color:
+                            adhocMode === m
+                              ? theme.buttonText
+                              : theme.textSecondary,
+                        },
+                      ]}
+                    >
+                      {m.charAt(0).toUpperCase() + m.slice(1)}
+                    </ThemedText>
+                  </Pressable>
+                ))}
+              </View>
+
+              {adhocMode === "strength" ? (
+                <>
+                  <ThemedText type="secondary" style={styles.addModalLabel}>
+                    Sets
+                  </ThemedText>
+                  <View style={styles.setCountRow}>
+                    <Pressable
+                      onPress={() =>
+                        setAdhocSets((prev) => Math.max(1, prev - 1))
+                      }
+                      style={[
+                        styles.setCountBtn,
+                        { backgroundColor: theme.backgroundSecondary },
+                      ]}
+                    >
+                      <Feather name="minus" size={18} color={theme.text} />
+                    </Pressable>
+                    <ThemedText type="h1" style={styles.setCountNum}>
+                      {adhocSets}
+                    </ThemedText>
+                    <Pressable
+                      onPress={() =>
+                        setAdhocSets((prev) => Math.min(10, prev + 1))
+                      }
+                      style={[
+                        styles.setCountBtn,
+                        { backgroundColor: theme.backgroundSecondary },
+                      ]}
+                    >
+                      <Feather name="plus" size={18} color={theme.text} />
+                    </Pressable>
+                  </View>
+                </>
+              ) : null}
+
+              <Pressable
+                onPress={handleAddAdhocExercise}
+                disabled={adhocName.trim().length === 0}
+                style={[
+                  styles.addModalBtn,
+                  {
+                    backgroundColor:
+                      adhocName.trim().length > 0
+                        ? theme.link
+                        : theme.backgroundSecondary,
+                  },
+                ]}
+                testID="button-add-adhoc-exercise"
+              >
+                <ThemedText
+                  type="body"
+                  style={[
+                    styles.addModalBtnText,
+                    {
+                      color:
+                        adhocName.trim().length > 0
+                          ? theme.buttonText
+                          : theme.textMuted,
+                    },
+                  ]}
+                >
+                  Add to Workout
+                </ThemedText>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setShowAddModal(false)}
+                style={styles.addModalCancel}
+              >
+                <ThemedText type="secondary">Cancel</ThemedText>
+              </Pressable>
             </Pressable>
           </Pressable>
-        </Pressable>
         </KeyboardAvoidingView>
       </Modal>
 
@@ -1166,30 +1600,44 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_400Regular",
     textAlignVertical: "top",
   },
+  inScrollNav: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: Spacing.md,
+    marginTop: Spacing.xl,
+    paddingBottom: Spacing.md,
+  },
+  inScrollPrevBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.xs,
+    paddingVertical: Spacing.sm,
+    flexShrink: 0,
+  },
+  inScrollPrevText: {
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  inScrollProgressArea: {
+    flex: 1,
+    gap: Spacing.sm,
+    paddingTop: Spacing.xs,
+  },
   bottomNav: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: "row",
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
-    gap: Spacing.md,
   },
   navButton: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     height: 52,
     borderRadius: BorderRadius.full,
     gap: Spacing.xs,
-  },
-  prevButton: {
-    backgroundColor: "transparent",
-  },
-  nextButton: {
-    flex: 1.5,
   },
   navButtonText: {
     fontWeight: "600",

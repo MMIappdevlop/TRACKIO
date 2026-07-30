@@ -26,6 +26,8 @@ interface SessionCardProps {
   onSaveTask: (sessionId: string) => void;
   onCancelTask: (sessionId: string) => void;
   onDeleteTask: (sessionId: string, taskId: string) => void;
+  /** Called when the user taps the film-strip icon to link / change a GIF. */
+  onLinkGif: (sessionId: string, taskId: string, taskName: string) => void;
   newTaskName: string;
   setNewTaskName: (value: string) => void;
   newTaskSets: string;
@@ -45,7 +47,10 @@ function TaskTypeSelector({
 }) {
   return (
     <View style={styles.taskTypeSelector}>
-      <ThemedText type="body" style={[styles.taskTypeLabel, { color: theme.text }]}>
+      <ThemedText
+        type="body"
+        style={[styles.taskTypeLabel, { color: theme.text }]}
+      >
         Select task type:
       </ThemedText>
       <View style={styles.taskTypeGrid}>
@@ -59,7 +64,10 @@ function TaskTypeSelector({
             onPress={() => onSelectTaskType(sessionId, type.mode)}
           >
             <ModeIcon mode={type.mode} size={18} color={theme.link} />
-            <ThemedText type="body" style={[styles.taskTypeText, { color: theme.text }]}>
+            <ThemedText
+              type="body"
+              style={[styles.taskTypeText, { color: theme.text }]}
+            >
               {type.label}
             </ThemedText>
           </Pressable>
@@ -95,13 +103,22 @@ function TaskForm({
   const isStrength = session.selectedTaskType === "strength";
 
   return (
-    <View style={[styles.taskForm, { backgroundColor: theme.backgroundSecondary }]}>
+    <View
+      style={[styles.taskForm, { backgroundColor: theme.backgroundSecondary }]}
+    >
       <ThemedText type="body" style={[styles.formLabel, { color: theme.text }]}>
-        {session.selectedTaskType ? session.selectedTaskType.charAt(0).toUpperCase() + session.selectedTaskType.slice(1) : ""} Exercise
+        {session.selectedTaskType
+          ? session.selectedTaskType.charAt(0).toUpperCase() +
+            session.selectedTaskType.slice(1)
+          : ""}{" "}
+        Exercise
       </ThemedText>
 
       <TextInput
-        style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
+        style={[
+          styles.input,
+          { backgroundColor: theme.backgroundDefault, color: theme.text },
+        ]}
         value={newTaskName}
         onChangeText={setNewTaskName}
         placeholder="Exercise name (e.g. Bench Press)"
@@ -112,9 +129,17 @@ function TaskForm({
       {isStrength ? (
         <View style={styles.inputRow}>
           <View style={styles.inputHalf}>
-            <ThemedText type="body" style={[styles.inputLabel, { color: theme.textSecondary }]}>Sets</ThemedText>
+            <ThemedText
+              type="body"
+              style={[styles.inputLabel, { color: theme.textSecondary }]}
+            >
+              Sets
+            </ThemedText>
             <TextInput
-              style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
+              style={[
+                styles.input,
+                { backgroundColor: theme.backgroundDefault, color: theme.text },
+              ]}
               value={newTaskSets}
               onChangeText={setNewTaskSets}
               placeholder="3"
@@ -123,9 +148,17 @@ function TaskForm({
             />
           </View>
           <View style={styles.inputHalf}>
-            <ThemedText type="body" style={[styles.inputLabel, { color: theme.textSecondary }]}>Reps</ThemedText>
+            <ThemedText
+              type="body"
+              style={[styles.inputLabel, { color: theme.textSecondary }]}
+            >
+              Reps
+            </ThemedText>
             <TextInput
-              style={[styles.input, { backgroundColor: theme.backgroundDefault, color: theme.text }]}
+              style={[
+                styles.input,
+                { backgroundColor: theme.backgroundDefault, color: theme.text },
+              ]}
               value={newTaskReps}
               onChangeText={setNewTaskReps}
               placeholder="10"
@@ -141,13 +174,18 @@ function TaskForm({
           style={[styles.formButton, styles.cancelButton]}
           onPress={() => onCancelTask(session.id)}
         >
-          <ThemedText type="body" style={{ color: theme.textSecondary }}>Cancel</ThemedText>
+          <ThemedText type="body" style={{ color: theme.textSecondary }}>
+            Cancel
+          </ThemedText>
         </Pressable>
         <Pressable
           style={[
             styles.formButton,
             styles.saveButton,
-            { backgroundColor: theme.link, opacity: newTaskName.trim() ? 1 : 0.5 },
+            {
+              backgroundColor: theme.link,
+              opacity: newTaskName.trim() ? 1 : 0.5,
+            },
           ]}
           onPress={() => onSaveTask(session.id)}
           disabled={!newTaskName.trim()}
@@ -171,6 +209,7 @@ export function SessionCard({
   onSaveTask,
   onCancelTask,
   onDeleteTask,
+  onLinkGif,
   newTaskName,
   setNewTaskName,
   newTaskSets,
@@ -195,9 +234,15 @@ export function SessionCard({
           <ThemedText type="body" style={styles.sessionName}>
             {session.name}
           </ThemedText>
-          <View style={[styles.taskCount, { backgroundColor: theme.backgroundSecondary }]}>
+          <View
+            style={[
+              styles.taskCount,
+              { backgroundColor: theme.backgroundSecondary },
+            ]}
+          >
             <ThemedText type="body" style={{ color: theme.textSecondary }}>
-              {session.tasks.length} {session.tasks.length === 1 ? "exercise" : "exercises"}
+              {session.tasks.length}{" "}
+              {session.tasks.length === 1 ? "exercise" : "exercises"}
             </ThemedText>
           </View>
         </View>
@@ -217,7 +262,10 @@ export function SessionCard({
               {session.tasks.map((task) => (
                 <View
                   key={task.id}
-                  style={[styles.taskItem, { backgroundColor: theme.backgroundSecondary }]}
+                  style={[
+                    styles.taskItem,
+                    { backgroundColor: theme.backgroundSecondary },
+                  ]}
                 >
                   <View style={styles.taskInfo}>
                     <ModeIcon mode={task.mode} size={14} color={theme.link} />
@@ -225,11 +273,35 @@ export function SessionCard({
                       {task.name}
                     </ThemedText>
                     {task.sets || task.reps ? (
-                      <ThemedText type="body" style={[styles.taskDetails, { color: theme.textSecondary }]}>
-                        {task.sets ? `${task.sets} sets` : ""}{task.sets && task.reps ? " x " : ""}{task.reps ? `${task.reps} reps` : ""}
+                      <ThemedText
+                        type="body"
+                        style={[
+                          styles.taskDetails,
+                          { color: theme.textSecondary },
+                        ]}
+                      >
+                        {task.sets ? `${task.sets} sets` : ""}
+                        {task.sets && task.reps ? " x " : ""}
+                        {task.reps ? `${task.reps} reps` : ""}
                       </ThemedText>
                     ) : null}
                   </View>
+                  {/* GIF link icon — filled when a GIF is already linked */}
+                  <Pressable
+                    onPress={() => onLinkGif(session.id, task.id, task.name)}
+                    hitSlop={8}
+                    style={styles.gifButton}
+                  >
+                    <Feather
+                      name="film"
+                      size={15}
+                      color={
+                        task.gifFrameUrls?.length
+                          ? theme.link
+                          : theme.textSecondary
+                      }
+                    />
+                  </Pressable>
                   <Pressable
                     onPress={() => onDeleteTask(session.id, task.id)}
                     hitSlop={8}
@@ -334,6 +406,10 @@ const styles = StyleSheet.create({
   },
   taskDetails: {
     fontSize: 12,
+  },
+  gifButton: {
+    padding: Spacing.xs,
+    marginRight: Spacing.xs,
   },
   addTaskButton: {
     flexDirection: "row",

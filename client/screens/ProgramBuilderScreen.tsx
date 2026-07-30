@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -7,6 +7,9 @@ import {
   LayoutAnimation,
   Platform,
   UIManager,
+  Modal,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation } from "@react-navigation/native";
@@ -16,22 +19,32 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
+import { Image } from "expo-image";
 import { ThemedText } from "@/components/ThemedText";
 import { Button } from "@/components/Button";
 import { useTheme } from "@/hooks/useTheme";
-import { programsStorage, sessionTemplatesStorage, taskTemplatesStorage } from "@/lib/storage";
+import {
+  programsStorage,
+  sessionTemplatesStorage,
+  taskTemplatesStorage,
+} from "@/lib/storage";
+import { getApiUrl } from "@/lib/query-client";
 import { Spacing, BorderRadius } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { TaskMode } from "@/types";
 import { SessionCard } from "./program-builder/SessionCard";
 import type { TaskDraft, SessionDraft } from "./program-builder/types";
 
-if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
 export default function ProgramBuilderScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { theme } = useTheme();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
@@ -45,6 +58,17 @@ export default function ProgramBuilderScreen() {
   const [newTaskName, setNewTaskName] = useState("");
   const [newTaskSets, setNewTaskSets] = useState("");
   const [newTaskReps, setNewTaskReps] = useState("");
+
+  // GIF linking modal state
+  const [gifModal, setGifModal] = useState<{
+    sessionId: string;
+    taskId: string;
+    taskName: string;
+    loading: boolean;
+    frameUrls: string[];
+    notFound: boolean;
+  } | null>(null);
+
   const canFinish =
     programName.trim().length > 0 &&
     sessions.length > 0 &&
@@ -53,7 +77,8 @@ export default function ProgramBuilderScreen() {
   const getHelperText = () => {
     if (!programName.trim()) return "Enter a plan name to continue";
     if (sessions.length === 0) return "Add at least one day to continue";
-    if (!sessions.some((s) => s.tasks.length > 0)) return "Add at least one exercise to continue";
+    if (!sessions.some((s) => s.tasks.length > 0))
+      return "Add at least one exercise to continue";
     return "";
   };
 
@@ -91,8 +116,8 @@ export default function ProgramBuilderScreen() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSessions(
       sessions.map((s) =>
-        s.id === sessionId ? { ...s, isExpanded: !s.isExpanded } : s
-      )
+        s.id === sessionId ? { ...s, isExpanded: !s.isExpanded } : s,
+      ),
     );
   };
 
@@ -102,8 +127,8 @@ export default function ProgramBuilderScreen() {
       sessions.map((s) =>
         s.id === sessionId
           ? { ...s, isAddingTask: true, selectedTaskType: null }
-          : s
-      )
+          : s,
+      ),
     );
     setNewTaskName("");
     setNewTaskSets("");
@@ -114,8 +139,8 @@ export default function ProgramBuilderScreen() {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setSessions(
       sessions.map((s) =>
-        s.id === sessionId ? { ...s, selectedTaskType: mode } : s
-      )
+        s.id === sessionId ? { ...s, selectedTaskType: mode } : s,
+      ),
     );
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
@@ -142,8 +167,8 @@ export default function ProgramBuilderScreen() {
               isAddingTask: false,
               selectedTaskType: null,
             }
-          : s
-      )
+          : s,
+      ),
     );
     setNewTaskName("");
     setNewTaskSets("");
@@ -157,8 +182,8 @@ export default function ProgramBuilderScreen() {
       sessions.map((s) =>
         s.id === sessionId
           ? { ...s, isAddingTask: false, selectedTaskType: null }
-          : s
-      )
+          : s,
+      ),
     );
     setNewTaskName("");
     setNewTaskSets("");
@@ -171,10 +196,90 @@ export default function ProgramBuilderScreen() {
       sessions.map((s) =>
         s.id === sessionId
           ? { ...s, tasks: s.tasks.filter((t) => t.id !== taskId) }
-          : s
-      )
+          : s,
+      ),
     );
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  const handleLinkGif = async (
+    sessionId: string,
+    taskId: string,
+    taskName: string,
+  ) => {
+    setGifModal({
+      sessionId,
+      taskId,
+      taskName,
+      loading: true,
+      frameUrls: [],
+      notFound: false,
+    });
+    try {
+      const res = await fetch(
+        `${getApiUrl()}/api/exercise-lookup?name=${encodeURIComponent(taskName)}`,
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (
+        json.found &&
+        Array.isArray(json.frameUrls) &&
+        json.frameUrls.length > 0
+      ) {
+        setGifModal((prev) =>
+          prev
+            ? { ...prev, loading: false, frameUrls: json.frameUrls as string[] }
+            : prev,
+        );
+      } else {
+        setGifModal((prev) =>
+          prev ? { ...prev, loading: false, notFound: true } : prev,
+        );
+      }
+    } catch {
+      setGifModal((prev) =>
+        prev ? { ...prev, loading: false, notFound: true } : prev,
+      );
+    }
+  };
+
+  const handleConfirmGif = () => {
+    if (!gifModal || gifModal.frameUrls.length === 0) return;
+    setSessions(
+      sessions.map((s) =>
+        s.id === gifModal.sessionId
+          ? {
+              ...s,
+              tasks: s.tasks.map((t) =>
+                t.id === gifModal.taskId
+                  ? { ...t, gifFrameUrls: gifModal.frameUrls }
+                  : t,
+              ),
+            }
+          : s,
+      ),
+    );
+    setGifModal(null);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleRemoveGif = () => {
+    if (!gifModal) return;
+    setSessions(
+      sessions.map((s) =>
+        s.id === gifModal.sessionId
+          ? {
+              ...s,
+              tasks: s.tasks.map((t) =>
+                t.id === gifModal.taskId
+                  ? { ...t, gifFrameUrls: undefined }
+                  : t,
+              ),
+            }
+          : s,
+      ),
+    );
+    setGifModal(null);
   };
 
   const handleDeleteSession = (sessionId: string) => {
@@ -191,13 +296,17 @@ export default function ProgramBuilderScreen() {
       const program = await programsStorage.create(programName.trim());
 
       for (const session of sessions) {
-        const template = await sessionTemplatesStorage.create(program.id, session.name);
+        const template = await sessionTemplatesStorage.create(
+          program.id,
+          session.name,
+        );
 
         for (const task of session.tasks) {
           await taskTemplatesStorage.create(template.id, {
             name: task.name,
             mode: task.mode,
             trackMilestones: false,
+            gifFrameUrls: task.gifFrameUrls,
             config: {
               sets: task.sets,
               reps: task.reps,
@@ -232,19 +341,27 @@ export default function ProgramBuilderScreen() {
         keyboardShouldPersistTaps="handled"
         bottomOffset={20}
       >
-        <View style={[styles.section, { backgroundColor: theme.backgroundDefault }]}>
+        <View
+          style={[styles.section, { backgroundColor: theme.backgroundDefault }]}
+        >
           <ThemedText type="h2" style={styles.sectionTitle}>
             Plan Name
           </ThemedText>
           <TextInput
-            style={[styles.programInput, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+            style={[
+              styles.programInput,
+              { backgroundColor: theme.backgroundSecondary, color: theme.text },
+            ]}
             value={programName}
             onChangeText={setProgramName}
             placeholder="My Training Plan"
             placeholderTextColor={theme.textMuted}
             autoCapitalize="words"
           />
-          <ThemedText type="body" style={[styles.helperText, { color: theme.textSecondary }]}>
+          <ThemedText
+            type="body"
+            style={[styles.helperText, { color: theme.textSecondary }]}
+          >
             You can change this anytime
           </ThemedText>
         </View>
@@ -255,12 +372,23 @@ export default function ProgramBuilderScreen() {
           </View>
 
           {sessions.length === 0 && !isAddingSession ? (
-            <View style={[styles.emptyState, { backgroundColor: theme.backgroundDefault }]}>
+            <View
+              style={[
+                styles.emptyState,
+                { backgroundColor: theme.backgroundDefault },
+              ]}
+            >
               <Feather name="calendar" size={32} color={theme.textMuted} />
-              <ThemedText type="h3" style={[styles.emptyText, { color: theme.textSecondary }]}>
+              <ThemedText
+                type="h3"
+                style={[styles.emptyText, { color: theme.textSecondary }]}
+              >
                 No days yet
               </ThemedText>
-              <ThemedText type="body" style={[styles.emptyHint, { color: theme.textMuted }]}>
+              <ThemedText
+                type="body"
+                style={[styles.emptyHint, { color: theme.textMuted }]}
+              >
                 Add days like "Push Day" or "Cardio"
               </ThemedText>
             </View>
@@ -278,6 +406,7 @@ export default function ProgramBuilderScreen() {
               onSaveTask={handleSaveTask}
               onCancelTask={handleCancelTask}
               onDeleteTask={handleDeleteTask}
+              onLinkGif={handleLinkGif}
               newTaskName={newTaskName}
               setNewTaskName={setNewTaskName}
               newTaskSets={newTaskSets}
@@ -288,12 +417,26 @@ export default function ProgramBuilderScreen() {
           ))}
 
           {isAddingSession ? (
-            <View style={[styles.addSessionCard, { backgroundColor: theme.backgroundDefault }]}>
-              <ThemedText type="body" style={[styles.addSessionLabel, { color: theme.text }]}>
+            <View
+              style={[
+                styles.addSessionCard,
+                { backgroundColor: theme.backgroundDefault },
+              ]}
+            >
+              <ThemedText
+                type="body"
+                style={[styles.addSessionLabel, { color: theme.text }]}
+              >
                 Day Name
               </ThemedText>
               <TextInput
-                style={[styles.input, { backgroundColor: theme.backgroundSecondary, color: theme.text }]}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: theme.backgroundSecondary,
+                    color: theme.text,
+                  },
+                ]}
                 value={newSessionName}
                 onChangeText={setNewSessionName}
                 placeholder="e.g. Push Day, Legs, Cardio"
@@ -306,13 +449,21 @@ export default function ProgramBuilderScreen() {
                   style={[styles.formButton, styles.cancelButton]}
                   onPress={handleCancelSession}
                 >
-                  <ThemedText type="body" style={{ color: theme.textSecondary }}>Cancel</ThemedText>
+                  <ThemedText
+                    type="body"
+                    style={{ color: theme.textSecondary }}
+                  >
+                    Cancel
+                  </ThemedText>
                 </Pressable>
                 <Pressable
                   style={[
                     styles.formButton,
                     styles.saveButton,
-                    { backgroundColor: theme.link, opacity: newSessionName.trim() ? 1 : 0.5 },
+                    {
+                      backgroundColor: theme.link,
+                      opacity: newSessionName.trim() ? 1 : 0.5,
+                    },
                   ]}
                   onPress={handleSaveSession}
                   disabled={!newSessionName.trim()}
@@ -337,9 +488,20 @@ export default function ProgramBuilderScreen() {
         </View>
       </KeyboardAwareScrollView>
 
-      <View style={[styles.bottomBar, { paddingBottom: insets.bottom + Spacing.md, backgroundColor: theme.backgroundRoot }]}>
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            paddingBottom: insets.bottom + Spacing.md,
+            backgroundColor: theme.backgroundRoot,
+          },
+        ]}
+      >
         {!canFinish ? (
-          <ThemedText type="body" style={[styles.bottomHelper, { color: theme.textSecondary }]}>
+          <ThemedText
+            type="body"
+            style={[styles.bottomHelper, { color: theme.textSecondary }]}
+          >
             {getHelperText()}
           </ThemedText>
         ) : null}
@@ -351,6 +513,105 @@ export default function ProgramBuilderScreen() {
           {saving ? "Creating..." : "Finish & Start Training"}
         </Button>
       </View>
+
+      {/* GIF linking modal */}
+      <Modal
+        visible={gifModal !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setGifModal(null)}
+      >
+        <Pressable
+          style={[styles.gifModalOverlay, { backgroundColor: theme.overlay }]}
+          onPress={() => setGifModal(null)}
+        >
+          <Pressable
+            style={[
+              styles.gifModalSheet,
+              { backgroundColor: theme.backgroundDefault },
+            ]}
+            onPress={() => {}}
+          >
+            <View
+              style={[
+                styles.gifModalHandle,
+                { backgroundColor: theme.textMuted },
+              ]}
+            />
+            <ThemedText type="h2" style={styles.gifModalTitle}>
+              {gifModal?.taskName ?? ""}
+            </ThemedText>
+
+            {gifModal?.loading ? (
+              <View style={styles.gifModalLoader}>
+                <ActivityIndicator color={theme.link} />
+                <ThemedText type="secondary" style={styles.gifModalLoaderText}>
+                  Finding exercise GIF…
+                </ThemedText>
+              </View>
+            ) : gifModal?.notFound ? (
+              <View style={styles.gifModalLoader}>
+                <ThemedText type="secondary">
+                  No GIF found for this exercise.
+                </ThemedText>
+              </View>
+            ) : gifModal?.frameUrls.length ? (
+              <Image
+                source={{ uri: gifModal.frameUrls[0] }}
+                style={[
+                  styles.gifModalPreview,
+                  { backgroundColor: theme.backgroundSecondary },
+                ]}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+              />
+            ) : null}
+
+            {!gifModal?.loading && !gifModal?.notFound ? (
+              <Pressable
+                style={[
+                  styles.gifModalPrimaryBtn,
+                  { backgroundColor: theme.link },
+                ]}
+                onPress={handleConfirmGif}
+                disabled={!gifModal?.frameUrls.length}
+              >
+                <ThemedText
+                  type="body"
+                  style={{ color: theme.buttonText, fontWeight: "700" }}
+                >
+                  Use this GIF
+                </ThemedText>
+              </Pressable>
+            ) : null}
+
+            {/* Show "Remove GIF" when the task already has one */}
+            {(() => {
+              const sess = gifModal
+                ? sessions.find((s) => s.id === gifModal.sessionId)
+                : null;
+              const task = sess?.tasks.find((t) => t.id === gifModal?.taskId);
+              return task?.gifFrameUrls?.length ? (
+                <Pressable
+                  style={styles.gifModalSecondaryBtn}
+                  onPress={handleRemoveGif}
+                >
+                  <ThemedText type="secondary" style={{ color: theme.error }}>
+                    Remove GIF
+                  </ThemedText>
+                </Pressable>
+              ) : null;
+            })()}
+
+            <Pressable
+              style={styles.gifModalSecondaryBtn}
+              onPress={() => setGifModal(null)}
+            >
+              <ThemedText type="secondary">Cancel</ThemedText>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -449,5 +710,52 @@ const styles = StyleSheet.create({
   },
   finishButton: {
     width: "100%",
+  },
+  gifModalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  gifModalSheet: {
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    paddingBottom: Spacing["3xl"],
+    gap: Spacing.md,
+  },
+  gifModalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: Spacing.md,
+    opacity: 0.4,
+  },
+  gifModalTitle: {
+    marginBottom: Spacing.sm,
+  },
+  gifModalLoader: {
+    alignItems: "center",
+    paddingVertical: Spacing.xl,
+    gap: Spacing.md,
+  },
+  gifModalLoaderText: {
+    marginTop: Spacing.sm,
+  },
+  gifModalPreview: {
+    width: "100%",
+    height: 200,
+    borderRadius: BorderRadius.lg,
+  },
+  gifModalPrimaryBtn: {
+    height: 52,
+    borderRadius: BorderRadius.full,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: Spacing.sm,
+  },
+  gifModalSecondaryBtn: {
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
