@@ -22,6 +22,7 @@ const STORAGE_KEYS = {
   SETTINGS: "@trakio/settings",
   ACTIVE_SESSION: "@trakio/active_session",
   WEIGHT_LOG: "@trakio/weight_log",
+  REPORT_PROGRAM_FILTER: "@trakio/report_program_filter",
 };
 
 async function getItem<T>(key: string): Promise<T[]> {
@@ -491,6 +492,29 @@ export const weightLogStorage = {
     }
     await setItem(STORAGE_KEYS.WEIGHT_LOG, entries);
     return entry;
+  },
+};
+
+export const reportFilterStorage = {
+  async getProgramId(): Promise<string | null> {
+    try {
+      const value = await AsyncStorage.getItem(STORAGE_KEYS.REPORT_PROGRAM_FILTER);
+      return value ?? null;
+    } catch {
+      return null;
+    }
+  },
+
+  async setProgramId(programId: string | null): Promise<void> {
+    try {
+      if (programId === null) {
+        await AsyncStorage.removeItem(STORAGE_KEYS.REPORT_PROGRAM_FILTER);
+      } else {
+        await AsyncStorage.setItem(STORAGE_KEYS.REPORT_PROGRAM_FILTER, programId);
+      }
+    } catch {
+      // ignore write errors
+    }
   },
 };
 

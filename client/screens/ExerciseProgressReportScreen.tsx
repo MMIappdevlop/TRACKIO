@@ -19,7 +19,7 @@ import * as Clipboard from "expo-clipboard";
 
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
-import { completedSessionsStorage, completedTasksStorage, programsStorage } from "@/lib/storage";
+import { completedSessionsStorage, completedTasksStorage, programsStorage, reportFilterStorage } from "@/lib/storage";
 import { getProgressReport, ReportDayGroup } from "@/lib/chartData";
 import { Spacing, BorderRadius, Typography } from "@/constants/theme";
 import type { ProgressStackParamList } from "@/navigation/ProgressStackNavigator";
@@ -370,20 +370,30 @@ export default function ExerciseProgressReportScreen() {
   // ── Load data ───────────────────────────────────────────────────────────────
   const loadData = useCallback(async () => {
     setLoading(true);
-    const [sessions, tasks, programs] = await Promise.all([
+    const [sessions, tasks, programs, savedProgramId] = await Promise.all([
       completedSessionsStorage.getAll(),
       completedTasksStorage.getAll(),
       programsStorage.getAll(),
+      reportFilterStorage.getProgramId(),
     ]);
     setAllSessions(sessions);
     setAllTasks(tasks);
     setAllPrograms(programs);
+    // Restore saved filter only if the program still exists
+    if (savedProgramId && programs.some((p) => p.id === savedProgramId)) {
+      setSelectedProgramId(savedProgramId);
+    }
     setLoading(false);
   }, []);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // ── Persist plan filter ─────────────────────────────────────────────────────
+  useEffect(() => {
+    reportFilterStorage.setProgramId(selectedProgramId);
+  }, [selectedProgramId]);
 
   // ── Programs that have sessions in the selected range ───────────────────────
   const programsInRange = useMemo(() => {
