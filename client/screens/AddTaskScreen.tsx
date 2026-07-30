@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, TextInput, Pressable } from "react-native";
+import { View, StyleSheet, TextInput, Pressable, Modal, ActivityIndicator } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import * as Haptics from "expo-haptics";
 
 import { ThemedText } from "@/components/ThemedText";
@@ -12,6 +13,7 @@ import { Button } from "@/components/Button";
 import { ModeIcon } from "@/components/icons/ModeIcon";
 import { useTheme } from "@/hooks/useTheme";
 import { taskTemplatesStorage } from "@/lib/storage";
+import { getApiUrl } from "@/lib/query-client";
 import { Spacing, BorderRadius, TaskModes, Typography, Colors } from "@/constants/theme";
 import type { RootStackParamList } from "@/navigation/RootStackNavigator";
 import type { TaskMode, TaskConfig } from "@/types";
@@ -47,6 +49,12 @@ export default function AddTaskScreen() {
     rounds: 5,
   });
   const [targetDistanceStr, setTargetDistanceStr] = useState<string | null>(null);
+  const [gifFrameUrls, setGifFrameUrls] = useState<string[]>([]);
+  const [gifModal, setGifModal] = useState<{
+    loading: boolean;
+    frameUrls: string[];
+    notFound: boolean;
+  } | null>(null);
 
   const isEditing = !!taskId;
 
@@ -65,6 +73,7 @@ export default function AddTaskScreen() {
       setGroupLabel(task.groupLabel || "");
       setReferenceLink(task.referenceLink || "");
       setConfig(task.config);
+      setGifFrameUrls(task.gifFrameUrls ?? []);
     }
   };
 
@@ -78,6 +87,7 @@ export default function AddTaskScreen() {
         groupLabel: groupLabel.trim() || undefined,
         referenceLink: referenceLink.trim() || undefined,
         trackMilestones: false,
+        gifFrameUrls: gifFrameUrls.length ? gifFrameUrls : undefined,
         config,
       });
     } else {
@@ -87,12 +97,31 @@ export default function AddTaskScreen() {
         groupLabel: groupLabel.trim() || undefined,
         referenceLink: referenceLink.trim() || undefined,
         trackMilestones: false,
+        gifFrameUrls: gifFrameUrls.length ? gifFrameUrls : undefined,
         config,
       });
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     navigation.goBack();
+  };
+
+  const handleOpenGifModal = async () => {
+    setGifModal({ loading: true, frameUrls: gifFrameUrls, notFound: false });
+    try {
+      const res = await fetch(
+        `${getApiUrl()}api/exercise-lookup?name=${encodeURIComponent(name.trim())}`,
+      );
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      if (json.found && Array.isArray(json.frameUrls) && json.frameUrls.length > 0) {
+        setGifModal((prev) => prev ? { ...prev, loading: false, frameUrls: json.frameUrls } : prev);
+      } else {
+        setGifModal((prev) => prev ? { ...prev, loading: false, notFound: true } : prev);
+      }
+    } catch {
+      setGifModal((prev) => prev ? { ...prev, loading: false, notFound: true } : prev);
+    }
   };
 
   const updateConfig = (key: keyof TaskConfig, value: any) => {
@@ -242,6 +271,7 @@ export default function AddTaskScreen() {
   };
 
   return (
+    <>
     <KeyboardAwareScrollView
       style={[styles.container, { backgroundColor: theme.backgroundRoot }]}
       contentContainerStyle={[
@@ -261,6 +291,40 @@ export default function AddTaskScreen() {
           placeholderTextColor={theme.textMuted}
           autoFocus={!isEditing}
         />
+        {/* GIF pill button */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.gifButton,
+            gifFrameUrls.length
+              ? { backgroundColor: theme.link + "18", borderColor: theme.link }
+              : { backgroundColor: "transparent", borderColor: theme.textMuted + "55" },
+            pressed && { opacity: 0.7 },
+          ]}
+          onPress={handleOpenGifModal}
+          disabled={!name.trim()}
+        >
+          {gifFrameUrls.length ? (
+            <>
+              <Image
+                source={{ uri: gifFrameUrls[0] }}
+                style={styles.gifThumb}
+                contentFit="cover"
+                cachePolicy="memory-disk"
+              />
+              <ThemedText type="secondary" style={[styles.gifButtonLabel, { color: theme.link }]}>
+                GIF linked
+              </ThemedText>
+              <Feather name="check-circle" size={12} color={theme.link} />
+            </>
+          ) : (
+            <>
+              <Feather name="film" size={12} color={name.trim() ? theme.textMuted : theme.textMuted + "55"} />
+              <ThemedText type="secondary" style={[styles.gifButtonLabel, { color: name.trim() ? theme.textMuted : theme.textMuted + "55" }]}>
+                Link demonstration GIF
+              </ThemedText>
+            </>
+          )}
+        </Pressable>
       </View>
 
       <View style={styles.field}>
@@ -326,6 +390,79 @@ export default function AddTaskScreen() {
         {isEditing ? "Update Exercise" : "Add Exercise"}
       </Button>
     </KeyboardAwareScrollView>
+
+    {/* GIF modal sheet */}
+    <Modal
+      visible={gifModal !== null}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setGifModal(null)}
+    >
+      <Pressable
+        style={[styles.gifModalOverlay, { backgroundColor: "rgba(0,0,0,0.5)" }]}
+        onPress={() => setGifModal(null)}
+      >
+        <Pressable
+          style={[styles.gifModalSheet, { backgroundColor: theme.backgroundDefault }]}
+          onPress={() => {}}
+        >
+          <View style={[styles.gifModalHandle, { backgroundColor: theme.textMuted }]} />
+          <ThemedText type="h2" style={styles.gifModalTitle}>{name}</ThemedText>
+
+          {gifModal?.loading ? (
+            <View style={styles.gifModalLoader}>
+              <ActivityIndicator color={theme.link} />
+              <ThemedText type="secondary" style={{ marginTop: Spacing.sm }}>
+                Finding exercise GIF…
+              </ThemedText>
+            </View>
+          ) : gifModal?.notFound ? (
+            <View style={styles.gifModalLoader}>
+              <ThemedText type="secondary">No GIF found for this exercise.</ThemedText>
+            </View>
+          ) : gifModal?.frameUrls.length ? (
+            <Image
+              source={{ uri: gifModal.frameUrls[0] }}
+              style={[styles.gifModalPreview, { backgroundColor: theme.backgroundSecondary }]}
+              contentFit="contain"
+              cachePolicy="memory-disk"
+            />
+          ) : null}
+
+          {!gifModal?.loading && !gifModal?.notFound ? (
+            <Pressable
+              style={[styles.gifModalPrimaryBtn, { backgroundColor: theme.link }]}
+              onPress={() => {
+                if (gifModal?.frameUrls.length) {
+                  setGifFrameUrls(gifModal.frameUrls);
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                }
+                setGifModal(null);
+              }}
+              disabled={!gifModal?.frameUrls.length}
+            >
+              <ThemedText type="body" style={{ color: theme.buttonText, fontWeight: "700" }}>
+                Use this GIF
+              </ThemedText>
+            </Pressable>
+          ) : null}
+
+          {gifFrameUrls.length > 0 ? (
+            <Pressable
+              style={styles.gifModalSecondaryBtn}
+              onPress={() => { setGifFrameUrls([]); setGifModal(null); }}
+            >
+              <ThemedText type="secondary" style={{ color: theme.error }}>Remove GIF</ThemedText>
+            </Pressable>
+          ) : null}
+
+          <Pressable style={styles.gifModalSecondaryBtn} onPress={() => setGifModal(null)}>
+            <ThemedText type="secondary">Cancel</ThemedText>
+          </Pressable>
+        </Pressable>
+      </Pressable>
+    </Modal>
+    </>
   );
 }
 
@@ -415,5 +552,69 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: Spacing.xl,
+  },
+  gifButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: Spacing.xs,
+    paddingVertical: 5,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    marginTop: Spacing.sm,
+  },
+  gifThumb: {
+    width: 18,
+    height: 18,
+    borderRadius: BorderRadius.xs,
+  },
+  gifButtonLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  gifModalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  gifModalSheet: {
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    paddingBottom: Spacing.xl * 2,
+    gap: Spacing.md,
+    alignItems: "center",
+  },
+  gifModalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: Spacing.sm,
+  },
+  gifModalTitle: {
+    textAlign: "center",
+    marginBottom: Spacing.sm,
+  },
+  gifModalLoader: {
+    alignItems: "center",
+    paddingVertical: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  gifModalPreview: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.sm,
+  },
+  gifModalPrimaryBtn: {
+    width: "100%",
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    alignItems: "center",
+  },
+  gifModalSecondaryBtn: {
+    width: "100%",
+    padding: Spacing.md,
+    alignItems: "center",
   },
 });
