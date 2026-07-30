@@ -34,45 +34,47 @@ const ROW_HEIGHT = 44;
 const HEADER_HEIGHT = 36;
 
 // ─── Date preset helpers ─────────────────────────────────────────────────────
-type DatePreset = "30d" | "this_month" | "last_month" | "3m" | "custom";
+type DatePreset = "1w" | "2w" | "1m" | "3m" | "custom";
 
 const PRESETS: { label: string; value: DatePreset }[] = [
-  { label: "30 days", value: "30d" },
-  { label: "This month", value: "this_month" },
-  { label: "Last month", value: "last_month" },
-  { label: "3 months", value: "3m" },
+  { label: "1W", value: "1w" },
+  { label: "2W", value: "2w" },
+  { label: "1M", value: "1m" },
+  { label: "3M", value: "3m" },
   { label: "Custom", value: "custom" },
 ];
+
+/** Subtract months without overflowing into the next month (e.g. Mar 31 − 1m → Feb 28). */
+function subtractMonths(date: Date, months: number): Date {
+  const day = date.getDate();
+  const result = new Date(date);
+  result.setDate(1);                                    // prevent mid-change overflow
+  result.setMonth(result.getMonth() - months);
+  const lastDay = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
+  result.setDate(Math.min(day, lastDay));               // clamp to target month's last day
+  return result;
+}
 
 function getPresetRange(preset: DatePreset): { from: Date; to: Date } {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   switch (preset) {
-    case "30d": {
+    case "1w": {
       const from = new Date(today);
-      from.setDate(from.getDate() - 29);
+      from.setDate(from.getDate() - 6);
       return { from, to: today };
     }
-    case "this_month":
-      return {
-        from: new Date(now.getFullYear(), now.getMonth(), 1),
-        to: new Date(now.getFullYear(), now.getMonth() + 1, 0),
-      };
-    case "last_month":
-      return {
-        from: new Date(now.getFullYear(), now.getMonth() - 1, 1),
-        to: new Date(now.getFullYear(), now.getMonth(), 0),
-      };
-    case "3m": {
+    case "2w": {
       const from = new Date(today);
-      from.setMonth(from.getMonth() - 3);
+      from.setDate(from.getDate() - 13);
       return { from, to: today };
     }
+    case "1m":
+      return { from: subtractMonths(today, 1), to: today };
+    case "3m":
+      return { from: subtractMonths(today, 3), to: today };
     default:
-      return {
-        from: new Date(now.getFullYear(), now.getMonth(), 1),
-        to: today,
-      };
+      return { from: subtractMonths(today, 1), to: today };
   }
 }
 
@@ -323,7 +325,7 @@ export default function ExerciseProgressReportScreen() {
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
 
-  const [preset, setPreset] = useState<DatePreset>("this_month");
+  const [preset, setPreset] = useState<DatePreset>("1m");
 
   // Custom range stored as month/year pairs
   const [customFrom, setCustomFrom] = useState<MonthYear>(() => {
