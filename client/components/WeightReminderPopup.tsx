@@ -107,11 +107,11 @@ export function WeightReminderPopup({ onShown }: WeightReminderPopupProps) {
         animationType="fade"
         onRequestClose={handleDismiss}
       >
-        <Pressable
-          style={[styles.overlay, { backgroundColor: theme.overlay }]}
-          onPress={handleDismiss}
-        />
-        <View style={styles.centeredContainer}>
+        <View style={styles.modalRoot}>
+          <Pressable
+            style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.overlay }]}
+            onPress={handleDismiss}
+          />
           <View style={[styles.content, { backgroundColor: theme.backgroundSecondary }]}>
             <View style={[styles.iconContainer, { backgroundColor: theme.linkBackground }]}>
               <Feather name="bell" size={28} color={theme.link} />
@@ -143,14 +143,10 @@ export function WeightReminderPopup({ onShown }: WeightReminderPopupProps) {
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  centeredContainer: {
+  modalRoot: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    pointerEvents: "box-none",
   },
   content: {
     width: "85%",

@@ -350,59 +350,48 @@ export function SessionCard({
                     </Pressable>
                   </View>
 
-                  {/* GIF field row */}
-                  <Pressable
-                    style={[
-                      styles.gifRow,
-                      { borderTopColor: theme.backgroundDefault },
-                    ]}
-                    onPress={() => onLinkGif(session.id, task.id, task.name)}
-                  >
-                    {task.gifFrameUrls?.length ? (
-                      <>
-                        <Image
-                          source={{ uri: task.gifFrameUrls[0] }}
-                          style={styles.gifThumb}
-                          contentFit="cover"
-                          cachePolicy="memory-disk"
-                        />
-                        <ThemedText
-                          type="secondary"
-                          style={[styles.gifLabel, { color: theme.link }]}
-                          numberOfLines={1}
-                        >
-                          GIF linked — tap to change
-                        </ThemedText>
-                        <Feather
-                          name="check-circle"
-                          size={13}
-                          color={theme.link}
-                        />
-                      </>
-                    ) : (
-                      <>
-                        <Feather
-                          name="film"
-                          size={13}
-                          color={theme.textMuted}
-                        />
-                        <ThemedText
-                          type="secondary"
-                          style={[
-                            styles.gifLabel,
-                            { color: theme.textMuted },
-                          ]}
-                        >
-                          Link demonstration GIF
-                        </ThemedText>
-                        <Feather
-                          name="chevron-right"
-                          size={13}
-                          color={theme.textMuted}
-                        />
-                      </>
-                    )}
-                  </Pressable>
+                  {/* GIF button row */}
+                  <View style={[styles.gifButtonRow, { borderTopColor: theme.backgroundDefault }]}>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.gifButton,
+                        task.gifFrameUrls?.length
+                          ? { backgroundColor: theme.link + "18", borderColor: theme.link }
+                          : { backgroundColor: "transparent", borderColor: theme.textMuted + "55" },
+                        pressed && { opacity: 0.7 },
+                      ]}
+                      onPress={() => onLinkGif(session.id, task.id, task.name)}
+                    >
+                      {task.gifFrameUrls?.length ? (
+                        <>
+                          <Image
+                            source={{ uri: task.gifFrameUrls[0] }}
+                            style={styles.gifThumb}
+                            contentFit="cover"
+                            cachePolicy="memory-disk"
+                          />
+                          <ThemedText
+                            type="secondary"
+                            style={[styles.gifButtonLabel, { color: theme.link }]}
+                            numberOfLines={1}
+                          >
+                            GIF linked
+                          </ThemedText>
+                          <Feather name="check-circle" size={12} color={theme.link} />
+                        </>
+                      ) : (
+                        <>
+                          <Feather name="film" size={12} color={theme.textMuted} />
+                          <ThemedText
+                            type="secondary"
+                            style={[styles.gifButtonLabel, { color: theme.textMuted }]}
+                          >
+                            Link GIF
+                          </ThemedText>
+                        </>
+                      )}
+                    </Pressable>
+                  </View>
                 </View>
               ))}
             </View>
@@ -505,22 +494,30 @@ const styles = StyleSheet.create({
   taskDetails: {
     fontSize: 12,
   },
-  gifRow: {
+  gifButtonRow: {
+    paddingHorizontal: Spacing.sm,
+    paddingBottom: Spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: Spacing.xs,
+  },
+  gifButton: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.sm,
+    alignSelf: "flex-start",
+    gap: Spacing.xs,
+    paddingVertical: 5,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs + 2,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
   },
   gifThumb: {
-    width: 28,
-    height: 28,
-    borderRadius: BorderRadius.sm,
+    width: 18,
+    height: 18,
+    borderRadius: BorderRadius.xs,
   },
-  gifLabel: {
-    flex: 1,
+  gifButtonLabel: {
     fontSize: 12,
+    fontWeight: "500",
   },
   addTaskButton: {
     flexDirection: "row",

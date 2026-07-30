@@ -28,10 +28,13 @@ export default function MainTabNavigator() {
   const handleNavigateToReminder = useCallback(() => {
     navigation.dispatch(
       CommonActions.navigate({
-        name: "Profile",
+        name: "Main",
         params: {
-          screen: "WeightReminder",
-          params: { prefill: true },
+          screen: "Profile",
+          params: {
+            screen: "WeightReminder",
+            params: { prefill: true },
+          },
         },
       })
     );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -22,8 +22,11 @@ export function WeightUpsellPopup({ onNavigateToReminder }: WeightUpsellPopupPro
   const { theme } = useTheme();
   const { settings, updateSettings } = useSettings();
   const [visible, setVisible] = useState(false);
+  // Prevent re-entry: once we've shown (or decided not to) in this session, skip further checks.
+  const shownRef = useRef(false);
 
   const checkConditions = useCallback(async () => {
+    if (shownRef.current) return;
     if (!settings) return;
 
     if (settings.weightReminderEnabled === true) return;
@@ -34,6 +37,7 @@ export function WeightUpsellPopup({ onNavigateToReminder }: WeightUpsellPopupPro
     const dismissed = settings.weightReminderUpsellDismissedAt;
 
     if (!dismissed) {
+      shownRef.current = true;
       setVisible(true);
       await updateSettings({
         weightReminderUpsellLastShownAt: now.toISOString(),
@@ -53,6 +57,7 @@ export function WeightUpsellPopup({ onNavigateToReminder }: WeightUpsellPopupPro
       if (now < tenDaysAfterShown) return;
     }
 
+    shownRef.current = true;
     setVisible(true);
     await updateSettings({
       weightReminderUpsellLastShownAt: now.toISOString(),
@@ -91,11 +96,11 @@ export function WeightUpsellPopup({ onNavigateToReminder }: WeightUpsellPopupPro
       animationType="fade"
       onRequestClose={handleDismiss}
     >
-      <Pressable
-        style={[styles.overlay, { backgroundColor: theme.overlay }]}
-        onPress={handleDismiss}
-      />
-      <View style={styles.centeredContainer}>
+      <View style={styles.modalRoot}>
+        <Pressable
+          style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.overlay }]}
+          onPress={handleDismiss}
+        />
         <View style={[styles.content, { backgroundColor: theme.backgroundSecondary }]}>
           <View style={[styles.iconContainer, { backgroundColor: theme.linkBackground }]}>
             <Feather name="trending-up" size={28} color={theme.link} />
@@ -121,14 +126,10 @@ export function WeightUpsellPopup({ onNavigateToReminder }: WeightUpsellPopupPro
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  centeredContainer: {
+  modalRoot: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    pointerEvents: "box-none",
   },
   content: {
     width: "85%",
