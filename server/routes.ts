@@ -151,6 +151,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ---------------------------------------------------------------------------
 
+  // ---------------------------------------------------------------------------
+  // Exercise search — returns ranked list of matching exercise names + frames
+  // ---------------------------------------------------------------------------
+  app.get("/api/exercise-search", async (req, res) => {
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    if (!q) {
+      res.json({ results: [] });
+      return;
+    }
+    const limit = Math.min(
+      parseInt(String(req.query.limit || "8"), 10) || 8,
+      20,
+    );
+    try {
+      const db = await loadExerciseDb();
+      if (!db || db.length === 0) {
+        res.json({ results: [] });
+        return;
+      }
+      const queryTokens = tokenize(q);
+      const scored = db
+        .map((ex) => ({
+          ex,
+          score: scoreMatch(queryTokens, tokenize(ex.name)),
+          tokenLen: tokenize(ex.name).length,
+        }))
+        .filter(({ score }) => score >= 0.25)
+        .sort(
+          (a, b) => b.score - a.score || a.tokenLen - b.tokenLen,
+        )
+        .slice(0, limit);
+
+      res.json({
+        results: scored.map(({ ex }) => ({
+          name: ex.name,
+          frameUrls: ex.images.map((f) => IMAGE_BASE + f),
+        })),
+      });
+    } catch {
+      res.json({ results: [] });
+    }
+  });
+
   app.get("/api/exercise-lookup", async (req, res) => {
     const name = typeof req.query.name === "string" ? req.query.name : "";
     if (!name.trim()) {

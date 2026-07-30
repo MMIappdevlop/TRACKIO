@@ -79,6 +79,8 @@ export default function SessionRunScreen() {
   const [adhocName, setAdhocName] = useState("");
   const [adhocMode, setAdhocMode] = useState<ExerciseMode>("strength");
   const [adhocSets, setAdhocSets] = useState(3);
+  const [adhocSuggestions, setAdhocSuggestions] = useState<string[]>([]);
+  const adhocSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [previousData, setPreviousData] = useState<
     Record<string, StrengthSetData[]>
   >({});
@@ -432,6 +434,28 @@ export default function SessionRunScreen() {
     }
   };
 
+  const handleAdhocNameChange = (text: string) => {
+    setAdhocName(text);
+    if (adhocSearchTimer.current) clearTimeout(adhocSearchTimer.current);
+    if (text.trim().length < 2) {
+      setAdhocSuggestions([]);
+      return;
+    }
+    adhocSearchTimer.current = setTimeout(async () => {
+      try {
+        const { getApiUrl } = await import("@/lib/query-client");
+        const res = await fetch(
+          `${getApiUrl()}/api/exercise-search?q=${encodeURIComponent(text)}&limit=6`,
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        setAdhocSuggestions(
+          (json.results as { name: string }[]).map((r) => r.name),
+        );
+      } catch {}
+    }, 300);
+  };
+
   const handleAddAdhocExercise = () => {
     const id = `adhoc-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     const now = new Date().toISOString();
@@ -739,26 +763,33 @@ export default function SessionRunScreen() {
           </Pressable>
         ) : null}
 
-        {/* Animated GIF panel — shown only when the exercise has linked frames */}
-        {currentTask.gifFrameUrls && currentTask.gifFrameUrls.length > 0 ? (
-          <ExerciseGifPanel
-            frameUrls={currentTask.gifFrameUrls}
-            expanded={
-              // Default expanded; useRef map preserves state across exercise navigation
+        {/* Animated GIF panel — auto-fetches by exercise name if no GIF is linked yet */}
+        <ExerciseGifPanel
+          frameUrls={currentTask.gifFrameUrls ?? []}
+          exerciseName={currentTask.name}
+          onAutoFetched={(urls) => {
+            // Persist so re-runs skip the network call
+            taskTemplatesStorage.update(currentTask.id, { gifFrameUrls: urls });
+            setTasks((prev) =>
+              prev.map((t) =>
+                t.id === currentTask.id ? { ...t, gifFrameUrls: urls } : t,
+              ),
+            );
+          }}
+          expanded={
+            gifExpandedMapRef.current[currentTask.id] !== undefined
+              ? gifExpandedMapRef.current[currentTask.id]
+              : true
+          }
+          onToggle={() => {
+            const cur =
               gifExpandedMapRef.current[currentTask.id] !== undefined
                 ? gifExpandedMapRef.current[currentTask.id]
-                : true
-            }
-            onToggle={() => {
-              const cur =
-                gifExpandedMapRef.current[currentTask.id] !== undefined
-                  ? gifExpandedMapRef.current[currentTask.id]
-                  : true;
-              gifExpandedMapRef.current[currentTask.id] = !cur;
-              setGifExpandedTick((t) => t + 1);
-            }}
-          />
-        ) : null}
+                : true;
+            gifExpandedMapRef.current[currentTask.id] = !cur;
+            setGifExpandedTick((t) => t + 1);
+          }}
+        />
 
         {/* Target */}
         <ThemedText type="secondary" style={styles.targetText}>
@@ -1293,10 +1324,43 @@ export default function SessionRunScreen() {
                 placeholder="Exercise name"
                 placeholderTextColor={theme.textMuted}
                 value={adhocName}
-                onChangeText={setAdhocName}
+                onChangeText={handleAdhocNameChange}
                 autoFocus
                 returnKeyType="done"
               />
+
+              {adhocSuggestions.length > 0 ? (
+                <View
+                  style={[
+                    styles.suggestionsBox,
+                    { backgroundColor: theme.backgroundSecondary },
+                  ]}
+                >
+                  {adhocSuggestions.map((name) => (
+                    <Pressable
+                      key={name}
+                      style={styles.suggestionRow}
+                      onPress={() => {
+                        setAdhocName(name);
+                        setAdhocSuggestions([]);
+                      }}
+                    >
+                      <Feather
+                        name="search"
+                        size={12}
+                        color={theme.textMuted}
+                      />
+                      <ThemedText
+                        type="body"
+                        style={[styles.suggestionText, { color: theme.text }]}
+                        numberOfLines={1}
+                      >
+                        {name}
+                      </ThemedText>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
 
               <ThemedText type="secondary" style={styles.addModalLabel}>
                 Type
@@ -1771,5 +1835,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: Spacing.sm,
+  },
+  suggestionsBox: {
+    borderRadius: BorderRadius.md,
+    overflow: "hidden",
+    marginTop: Spacing.xs,
+  },
+  suggestionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  suggestionText: {
+    flex: 1,
+    fontSize: 14,
   },
 });

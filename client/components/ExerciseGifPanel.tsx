@@ -3,10 +3,14 @@
  *
  * Animated exercise demonstration panel for the session run screen.
  * Cycles between frame URLs at 600 ms intervals to simulate a looping GIF.
- * Frames are prefetched via expo-image on first render so the animation is
- * smooth from the very first cycle.
  *
- * - Returns null when frameUrls is empty — no placeholder, no empty space.
+ * Auto-fetch behaviour:
+ * - When frameUrls is empty and exerciseName is provided, the component
+ *   calls /api/exercise-lookup and shows the result automatically.
+ * - Once fetched, onAutoFetched is called so the caller can persist the
+ *   URLs and avoid re-fetching on the next render.
+ *
+ * - Returns null while no frames are available (loading or not found).
  * - Controlled expand/collapse: caller tracks state (use a ref map so state
  *   survives exercise navigation without triggering re-renders).
  * - Height is ~25 % of the screen so it never dominates the sets below.
@@ -20,30 +24,80 @@ import { Feather } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { useTheme } from "@/hooks/useTheme";
 import { Spacing, BorderRadius } from "@/constants/theme";
+import { getApiUrl } from "@/lib/query-client";
 
 const FRAME_MS = 600;
 const GIF_HEIGHT = Math.round(Dimensions.get("window").height * 0.25);
 
 interface Props {
-  /** Ordered frame URLs.  Component renders nothing when this is empty. */
+  /** Explicit frame URLs. When non-empty these take priority over auto-fetch. */
   frameUrls: string[];
   /** Whether the panel body is currently expanded. */
   expanded: boolean;
   /** Called when the user taps the header row to toggle expand/collapse. */
   onToggle: () => void;
+  /**
+   * Exercise name used for automatic GIF lookup when frameUrls is empty.
+   * Triggers a call to /api/exercise-lookup on the first render where
+   * frameUrls is still empty.
+   */
+  exerciseName?: string;
+  /**
+   * Called once when frames are resolved via auto-fetch so the caller can
+   * persist them (e.g. write back to taskTemplatesStorage).
+   */
+  onAutoFetched?: (frameUrls: string[]) => void;
 }
 
-export function ExerciseGifPanel({ frameUrls, expanded, onToggle }: Props) {
+export function ExerciseGifPanel({
+  frameUrls,
+  expanded,
+  onToggle,
+  exerciseName,
+  onAutoFetched,
+}: Props) {
   const { theme } = useTheme();
   const [frameIndex, setFrameIndex] = useState(0);
+  const [autoFrameUrls, setAutoFrameUrls] = useState<string[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Prefetch all frames whenever the URL set changes so the first cycle is smooth
+  const effectiveUrls = frameUrls.length > 0 ? frameUrls : autoFrameUrls;
+  const firstUrl = effectiveUrls[0] ?? "";
+
+  // Auto-fetch when no explicit frameUrls and exerciseName is known
   useEffect(() => {
-    if (!frameUrls || frameUrls.length === 0) return;
-    frameUrls.forEach((url) => Image.prefetch(url));
+    if (frameUrls.length > 0 || !exerciseName) {
+      setAutoFrameUrls([]);
+      return;
+    }
+    let cancelled = false;
+    fetch(
+      `${getApiUrl()}/api/exercise-lookup?name=${encodeURIComponent(exerciseName)}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (
+          !cancelled &&
+          json?.found &&
+          Array.isArray(json.frameUrls) &&
+          json.frameUrls.length > 0
+        ) {
+          setAutoFrameUrls(json.frameUrls);
+          onAutoFetched?.(json.frameUrls);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [exerciseName, frameUrls.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Prefetch all frames and reset index when the URL set changes
+  useEffect(() => {
+    if (!firstUrl) return;
+    effectiveUrls.forEach((url) => Image.prefetch(url));
     setFrameIndex(0);
-  }, [frameUrls]);
+  }, [firstUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Start / stop the frame-cycling interval based on expanded state
   useEffect(() => {
@@ -51,18 +105,18 @@ export function ExerciseGifPanel({ frameUrls, expanded, onToggle }: Props) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    if (!expanded || !frameUrls || frameUrls.length <= 1) return;
+    if (!expanded || effectiveUrls.length <= 1) return;
 
     intervalRef.current = setInterval(() => {
-      setFrameIndex((i) => (i + 1) % frameUrls.length);
+      setFrameIndex((i) => (i + 1) % effectiveUrls.length);
     }, FRAME_MS);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [expanded, frameUrls]);
+  }, [expanded, firstUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!frameUrls || frameUrls.length === 0) return null;
+  if (effectiveUrls.length === 0) return null;
 
   return (
     <View
@@ -83,8 +137,8 @@ export function ExerciseGifPanel({ frameUrls, expanded, onToggle }: Props) {
 
       {expanded ? (
         <Image
-          key={frameUrls[frameIndex]}
-          source={{ uri: frameUrls[frameIndex] }}
+          key={effectiveUrls[frameIndex]}
+          source={{ uri: effectiveUrls[frameIndex] }}
           style={[styles.frame, { height: GIF_HEIGHT }]}
           contentFit="contain"
           cachePolicy="memory-disk"

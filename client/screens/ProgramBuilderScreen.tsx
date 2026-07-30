@@ -150,8 +150,9 @@ export default function ProgramBuilderScreen() {
     if (!session || !session.selectedTaskType || !newTaskName.trim()) return;
 
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    const taskId = Date.now().toString();
     const newTask: TaskDraft = {
-      id: Date.now().toString(),
+      id: taskId,
       name: newTaskName.trim(),
       mode: session.selectedTaskType,
       sets: newTaskSets ? parseInt(newTaskSets) : undefined,
@@ -174,6 +175,36 @@ export default function ProgramBuilderScreen() {
     setNewTaskSets("");
     setNewTaskReps("");
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    // Auto-link GIF in the background — updates state once the lookup resolves
+    const taskName = newTask.name;
+    fetch(
+      `${getApiUrl()}/api/exercise-lookup?name=${encodeURIComponent(taskName)}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        if (
+          json?.found &&
+          Array.isArray(json.frameUrls) &&
+          json.frameUrls.length > 0
+        ) {
+          setSessions((prev) =>
+            prev.map((s) =>
+              s.id === sessionId
+                ? {
+                    ...s,
+                    tasks: s.tasks.map((t) =>
+                      t.id === taskId
+                        ? { ...t, gifFrameUrls: json.frameUrls as string[] }
+                        : t,
+                    ),
+                  }
+                : s,
+            ),
+          );
+        }
+      })
+      .catch(() => {});
   };
 
   const handleCancelTask = (sessionId: string) => {

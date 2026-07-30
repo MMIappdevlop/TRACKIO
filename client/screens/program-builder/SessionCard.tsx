@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useState, useRef } from "react";
 import { View, StyleSheet, TextInput, Pressable } from "react-native";
+import { Image } from "expo-image";
 import { Feather } from "@expo/vector-icons";
 
 import { ThemedText } from "@/components/ThemedText";
 import { ModeIcon } from "@/components/icons/ModeIcon";
 import { Spacing, BorderRadius, Colors } from "@/constants/theme";
+import { getApiUrl } from "@/lib/query-client";
 import type { TaskMode } from "@/types";
 import { SessionDraft, TASK_TYPES } from "./types";
 
@@ -26,7 +28,6 @@ interface SessionCardProps {
   onSaveTask: (sessionId: string) => void;
   onCancelTask: (sessionId: string) => void;
   onDeleteTask: (sessionId: string, taskId: string) => void;
-  /** Called when the user taps the film-strip icon to link / change a GIF. */
   onLinkGif: (sessionId: string, taskId: string, taskName: string) => void;
   newTaskName: string;
   setNewTaskName: (value: string) => void;
@@ -101,6 +102,29 @@ function TaskForm({
   onCancelTask: (sessionId: string) => void;
 }) {
   const isStrength = session.selectedTaskType === "strength";
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleNameChange = (text: string) => {
+    setNewTaskName(text);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (text.trim().length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    searchTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${getApiUrl()}/api/exercise-search?q=${encodeURIComponent(text)}&limit=6`,
+        );
+        if (!res.ok) return;
+        const json = await res.json();
+        setSuggestions(
+          (json.results as { name: string }[]).map((r) => r.name),
+        );
+      } catch {}
+    }, 300);
+  };
 
   return (
     <View
@@ -120,11 +144,41 @@ function TaskForm({
           { backgroundColor: theme.backgroundDefault, color: theme.text },
         ]}
         value={newTaskName}
-        onChangeText={setNewTaskName}
+        onChangeText={handleNameChange}
         placeholder="Exercise name (e.g. Bench Press)"
         placeholderTextColor={theme.textMuted}
         autoCapitalize="words"
       />
+
+      {/* Exercise name autocomplete suggestions */}
+      {suggestions.length > 0 ? (
+        <View
+          style={[
+            styles.suggestionsBox,
+            { backgroundColor: theme.backgroundDefault },
+          ]}
+        >
+          {suggestions.map((name) => (
+            <Pressable
+              key={name}
+              style={styles.suggestionRow}
+              onPress={() => {
+                setNewTaskName(name);
+                setSuggestions([]);
+              }}
+            >
+              <Feather name="search" size={12} color={theme.textMuted} />
+              <ThemedText
+                type="body"
+                style={[styles.suggestionText, { color: theme.text }]}
+                numberOfLines={1}
+              >
+                {name}
+              </ThemedText>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
 
       {isStrength ? (
         <View style={styles.inputRow}>
@@ -267,46 +321,87 @@ export function SessionCard({
                     { backgroundColor: theme.backgroundSecondary },
                   ]}
                 >
-                  <View style={styles.taskInfo}>
-                    <ModeIcon mode={task.mode} size={14} color={theme.link} />
-                    <ThemedText type="body" style={styles.taskName}>
-                      {task.name}
-                    </ThemedText>
-                    {task.sets || task.reps ? (
-                      <ThemedText
-                        type="body"
-                        style={[
-                          styles.taskDetails,
-                          { color: theme.textSecondary },
-                        ]}
-                      >
-                        {task.sets ? `${task.sets} sets` : ""}
-                        {task.sets && task.reps ? " x " : ""}
-                        {task.reps ? `${task.reps} reps` : ""}
+                  {/* Main row: mode icon + name + sets/reps + delete */}
+                  <View style={styles.taskMainRow}>
+                    <View style={styles.taskInfo}>
+                      <ModeIcon mode={task.mode} size={14} color={theme.link} />
+                      <ThemedText type="body" style={styles.taskName}>
+                        {task.name}
                       </ThemedText>
-                    ) : null}
+                      {task.sets || task.reps ? (
+                        <ThemedText
+                          type="body"
+                          style={[
+                            styles.taskDetails,
+                            { color: theme.textSecondary },
+                          ]}
+                        >
+                          {task.sets ? `${task.sets} sets` : ""}
+                          {task.sets && task.reps ? " x " : ""}
+                          {task.reps ? `${task.reps} reps` : ""}
+                        </ThemedText>
+                      ) : null}
+                    </View>
+                    <Pressable
+                      onPress={() => onDeleteTask(session.id, task.id)}
+                      hitSlop={8}
+                    >
+                      <Feather name="x" size={16} color={theme.text} />
+                    </Pressable>
                   </View>
-                  {/* GIF link icon — filled when a GIF is already linked */}
+
+                  {/* GIF field row */}
                   <Pressable
+                    style={[
+                      styles.gifRow,
+                      { borderTopColor: theme.backgroundDefault },
+                    ]}
                     onPress={() => onLinkGif(session.id, task.id, task.name)}
-                    hitSlop={8}
-                    style={styles.gifButton}
                   >
-                    <Feather
-                      name="film"
-                      size={15}
-                      color={
-                        task.gifFrameUrls?.length
-                          ? theme.link
-                          : theme.textSecondary
-                      }
-                    />
-                  </Pressable>
-                  <Pressable
-                    onPress={() => onDeleteTask(session.id, task.id)}
-                    hitSlop={8}
-                  >
-                    <Feather name="x" size={16} color={theme.text} />
+                    {task.gifFrameUrls?.length ? (
+                      <>
+                        <Image
+                          source={{ uri: task.gifFrameUrls[0] }}
+                          style={styles.gifThumb}
+                          contentFit="cover"
+                          cachePolicy="memory-disk"
+                        />
+                        <ThemedText
+                          type="secondary"
+                          style={[styles.gifLabel, { color: theme.link }]}
+                          numberOfLines={1}
+                        >
+                          GIF linked — tap to change
+                        </ThemedText>
+                        <Feather
+                          name="check-circle"
+                          size={13}
+                          color={theme.link}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <Feather
+                          name="film"
+                          size={13}
+                          color={theme.textMuted}
+                        />
+                        <ThemedText
+                          type="secondary"
+                          style={[
+                            styles.gifLabel,
+                            { color: theme.textMuted },
+                          ]}
+                        >
+                          Link demonstration GIF
+                        </ThemedText>
+                        <Feather
+                          name="chevron-right"
+                          size={13}
+                          color={theme.textMuted}
+                        />
+                      </>
+                    )}
                   </Pressable>
                 </View>
               ))}
@@ -389,11 +484,14 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   taskItem: {
+    borderRadius: BorderRadius.md,
+    overflow: "hidden",
+  },
+  taskMainRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     padding: Spacing.sm,
-    borderRadius: BorderRadius.md,
   },
   taskInfo: {
     flexDirection: "row",
@@ -407,9 +505,22 @@ const styles = StyleSheet.create({
   taskDetails: {
     fontSize: 12,
   },
-  gifButton: {
-    padding: Spacing.xs,
-    marginRight: Spacing.xs,
+  gifRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs + 2,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  gifThumb: {
+    width: 28,
+    height: 28,
+    borderRadius: BorderRadius.sm,
+  },
+  gifLabel: {
+    flex: 1,
+    fontSize: 12,
   },
   addTaskButton: {
     flexDirection: "row",
@@ -479,4 +590,20 @@ const styles = StyleSheet.create({
   },
   cancelButton: {},
   saveButton: {},
+  suggestionsBox: {
+    borderRadius: BorderRadius.md,
+    overflow: "hidden",
+    marginTop: -Spacing.xs,
+  },
+  suggestionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  suggestionText: {
+    flex: 1,
+    fontSize: 14,
+  },
 });
