@@ -82,38 +82,38 @@ export default function ProgramDetailScreen() {
   };
 
   const renderTemplate = ({ item }: { item: SessionTemplate }) => (
-    <Pressable
-      onPress={() => navigation.navigate("SessionTemplateDetail", { 
-        templateId: item.id, 
-        templateName: item.name,
-        programId: route.params.programId,
-        programName: route.params.programName,
-      })}
-      onLongPress={() => handleEditTemplate(item)}
-      style={[styles.templateCard, { backgroundColor: theme.backgroundDefault }]}
-    >
-      <View style={styles.templateContent}>
-        <ThemedText type="h4">{item.name}</ThemedText>
-        {item.locationName ? (
-          <View style={styles.locationRow}>
-            <Feather name="map-pin" size={13} color={theme.textSecondary} />
-            <ThemedText type="secondary" style={styles.locationText} numberOfLines={1}>
-              {item.locationName}
-            </ThemedText>
-          </View>
-        ) : null}
-        <ThemedText type="muted">Rest: {item.defaultRestSeconds}s</ThemedText>
-      </View>
-      <View style={styles.templateActions}>
-        <Pressable
-          onPress={() => handleDeleteTemplate(item)}
-          style={styles.actionButton}
-        >
-          <Feather name="trash-2" size={18} color={theme.error} />
-        </Pressable>
+    <View style={[styles.templateCard, { backgroundColor: theme.backgroundDefault }]}>
+      <Pressable
+        onPress={() => navigation.navigate("SessionTemplateDetail", { 
+          templateId: item.id, 
+          templateName: item.name,
+          programId: route.params.programId,
+          programName: route.params.programName,
+        })}
+        onLongPress={() => handleEditTemplate(item)}
+        style={styles.templateCardNav}
+      >
+        <View style={styles.templateContent}>
+          <ThemedText type="h4">{item.name}</ThemedText>
+          {item.locationName ? (
+            <View style={styles.locationRow}>
+              <Feather name="map-pin" size={13} color={theme.textSecondary} />
+              <ThemedText type="secondary" style={styles.locationText} numberOfLines={1}>
+                {item.locationName}
+              </ThemedText>
+            </View>
+          ) : null}
+          <ThemedText type="muted">Rest: {item.defaultRestSeconds}s</ThemedText>
+        </View>
         <Feather name="chevron-right" size={20} color={theme.textMuted} />
-      </View>
-    </Pressable>
+      </Pressable>
+      <Pressable
+        onPress={() => handleDeleteTemplate(item)}
+        style={styles.actionButton}
+      >
+        <Feather name="trash-2" size={18} color={theme.error} />
+      </Pressable>
+    </View>
   );
 
   const renderEmpty = () => (
@@ -269,6 +269,11 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     padding: Spacing.lg,
     marginBottom: Spacing.sm,
+  },
+  templateCardNav: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
   },
   templateContent: {
     flex: 1,

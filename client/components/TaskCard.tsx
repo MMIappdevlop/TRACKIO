@@ -25,7 +25,6 @@ interface TaskCardProps {
   showActions?: boolean;
 }
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function TaskCard({
   task,
@@ -101,45 +100,52 @@ export function TaskCard({
 
   return (
     <View style={styles.cardWrapper}>
-      <AnimatedPressable
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
+      <Animated.View
         style={[
-          styles.card,
+          styles.cardOuter,
           { backgroundColor: theme.backgroundDefault },
           animatedStyle,
         ]}
-        testID={`card-exercise-${task.id}`}
       >
-        {showDragHandle ? (
-          <View style={styles.dragHandle}>
-            <Feather name="menu" size={18} color={theme.textMuted} />
-          </View>
-        ) : null}
-        <View
-          style={[
-            styles.modeIndicator,
-            { backgroundColor: modeConfig.color + "20" },
-          ]}
+        <Pressable
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          style={styles.card}
+          testID={`card-exercise-${task.id}`}
         >
-          <ModeIcon mode={task.mode} size={18} color={modeConfig.color} />
-        </View>
-        <View style={styles.content}>
-          <ThemedText type="h4" numberOfLines={1}>
-            {task.name}
-          </ThemedText>
-          {task.groupLabel ? (
-            <View style={[styles.groupBadge, { backgroundColor: theme.linkBackground }]}>
-              <ThemedText type="small" style={{ color: theme.link }}>
-                {task.groupLabel}
-              </ThemedText>
+          {showDragHandle ? (
+            <View style={styles.dragHandle}>
+              <Feather name="menu" size={18} color={theme.textMuted} />
             </View>
           ) : null}
-          <ThemedText type="muted" numberOfLines={1} style={styles.details}>
-            {getTaskDetails()}
-          </ThemedText>
-        </View>
+          <View
+            style={[
+              styles.modeIndicator,
+              { backgroundColor: modeConfig.color + "20" },
+            ]}
+          >
+            <ModeIcon mode={task.mode} size={18} color={modeConfig.color} />
+          </View>
+          <View style={styles.content}>
+            <ThemedText type="h4" numberOfLines={1}>
+              {task.name}
+            </ThemedText>
+            {task.groupLabel ? (
+              <View style={[styles.groupBadge, { backgroundColor: theme.linkBackground }]}>
+                <ThemedText type="small" style={{ color: theme.link }}>
+                  {task.groupLabel}
+                </ThemedText>
+              </View>
+            ) : null}
+            <ThemedText type="muted" numberOfLines={1} style={styles.details}>
+              {getTaskDetails()}
+            </ThemedText>
+          </View>
+          {!showActions ? (
+            <Feather name="chevron-right" size={18} color={theme.textMuted} />
+          ) : null}
+        </Pressable>
         {showActions ? (
           <Pressable
             onPress={handleToggleExpand}
@@ -153,10 +159,8 @@ export function TaskCard({
               color={theme.textMuted} 
             />
           </Pressable>
-        ) : (
-          <Feather name="chevron-right" size={18} color={theme.textMuted} />
-        )}
-      </AnimatedPressable>
+        ) : null}
+      </Animated.View>
 
       {expanded && showActions ? (
         <View style={[styles.actionsRow, { backgroundColor: theme.backgroundSecondary }]}>
@@ -222,10 +226,16 @@ const styles = StyleSheet.create({
   cardWrapper: {
     marginBottom: Spacing.sm,
   },
-  card: {
+  cardOuter: {
     flexDirection: "row",
     alignItems: "center",
     borderRadius: BorderRadius.md,
+    overflow: "hidden",
+  },
+  card: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
     padding: Spacing.md,
     gap: Spacing.md,
   },

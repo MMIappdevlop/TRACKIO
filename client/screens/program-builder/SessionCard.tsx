@@ -294,31 +294,33 @@ export function SessionCard({
     <View
       style={[styles.sessionCard, { backgroundColor: theme.backgroundDefault }]}
     >
-      <Pressable
-        style={styles.sessionHeader}
-        onPress={() => onToggleExpand(session.id)}
-      >
-        <View style={styles.sessionTitleRow}>
-          <Feather
-            name={session.isExpanded ? "chevron-down" : "chevron-right"}
-            size={20}
-            color={theme.text}
-          />
-          <ThemedText type="body" style={styles.sessionName}>
-            {session.name}
-          </ThemedText>
-          <View
-            style={[
-              styles.taskCount,
-              { backgroundColor: theme.backgroundSecondary },
-            ]}
-          >
-            <ThemedText type="body" style={{ color: theme.textSecondary }}>
-              {session.tasks.length}{" "}
-              {session.tasks.length === 1 ? "exercise" : "exercises"}
+      <View style={styles.sessionHeader}>
+        <Pressable
+          style={styles.sessionHeaderExpand}
+          onPress={() => onToggleExpand(session.id)}
+        >
+          <View style={styles.sessionTitleRow}>
+            <Feather
+              name={session.isExpanded ? "chevron-down" : "chevron-right"}
+              size={20}
+              color={theme.text}
+            />
+            <ThemedText type="body" style={styles.sessionName}>
+              {session.name}
             </ThemedText>
+            <View
+              style={[
+                styles.taskCount,
+                { backgroundColor: theme.backgroundSecondary },
+              ]}
+            >
+              <ThemedText type="body" style={{ color: theme.textSecondary }}>
+                {session.tasks.length}{" "}
+                {session.tasks.length === 1 ? "exercise" : "exercises"}
+              </ThemedText>
+            </View>
           </View>
-        </View>
+        </Pressable>
         <Pressable
           onPress={() => onDeleteSession(session.id)}
           hitSlop={8}
@@ -326,7 +328,7 @@ export function SessionCard({
         >
           <Feather name="trash-2" size={16} color={Colors.dark.error} />
         </Pressable>
-      </Pressable>
+      </View>
 
       {session.isExpanded ? (
         <View style={styles.sessionContent}>
@@ -466,6 +468,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: Spacing.md,
+  },
+  sessionHeaderExpand: {
+    flex: 1,
   },
   sessionTitleRow: {
     flexDirection: "row",
