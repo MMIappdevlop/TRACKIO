@@ -150,115 +150,125 @@ function generateCsv(groups: ReportDayGroup[], from: Date, to: Date): string {
 
 // ─── Month names ─────────────────────────────────────────────────────────────
 const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DOW_SHORT = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-// ─── MonthYearPicker component ────────────────────────────────────────────────
-interface MonthYear { year: number; month: number } // month: 0-indexed
-
-interface MonthYearPickerProps {
-  label: string;
-  value: MonthYear;
-  onChange: (v: MonthYear) => void;
-  /** Months before this value are dimmed (optional) */
-  minValue?: MonthYear;
-  /** Months after this value are dimmed (optional) */
-  maxValue?: MonthYear;
-  /** Highlight range: months between rangeStart and rangeEnd get a tint */
-  rangeStart?: MonthYear;
-  rangeEnd?: MonthYear;
+// ─── DayCalendar component ────────────────────────────────────────────────────
+interface DayCalendarProps {
+  fromDate: Date;
+  toDate: Date;
+  editing: "from" | "to";
+  onSelectDate: (d: Date) => void;
 }
 
-function monthYearToNum(mv: MonthYear): number {
-  return mv.year * 12 + mv.month;
-}
-
-function MonthYearPicker({
-  label,
-  value,
-  onChange,
-  minValue,
-  maxValue,
-  rangeStart,
-  rangeEnd,
-}: MonthYearPickerProps) {
+function DayCalendar({ fromDate, toDate, editing, onSelectDate }: DayCalendarProps) {
   const { theme } = useTheme();
-  const [viewYear, setViewYear] = useState(value.year);
+  const now = new Date();
+  const todayTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
 
-  // Keep view year in sync when value changes externally
+  const initDate = editing === "to" ? toDate : fromDate;
+  const [viewYear, setViewYear] = useState(initDate.getFullYear());
+  const [viewMonth, setViewMonth] = useState(initDate.getMonth());
+
+  // Jump to the relevant date when the user switches from/to
   useEffect(() => {
-    setViewYear(value.year);
-  }, [value.year]);
+    const target = editing === "to" ? toDate : fromDate;
+    setViewYear(target.getFullYear());
+    setViewMonth(target.getMonth());
+  }, [editing]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const rangeStartNum = rangeStart ? monthYearToNum(rangeStart) : null;
-  const rangeEndNum = rangeEnd ? monthYearToNum(rangeEnd) : null;
-  const minNum = minValue ? monthYearToNum(minValue) : null;
-  const maxNum = maxValue ? monthYearToNum(maxValue) : null;
+  // Normalize to midnight for comparisons
+  const fromTime = new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate()).getTime();
+  const toTime   = new Date(toDate.getFullYear(),   toDate.getMonth(),   toDate.getDate()).getTime();
+  const [rangeMin, rangeMax] = fromTime <= toTime ? [fromTime, toTime] : [toTime, fromTime];
+
+  const goToPrevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
+    else { setViewMonth((m) => m - 1); }
+  };
+  const goToNextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
+    else { setViewMonth((m) => m + 1); }
+  };
+
+  const firstDow    = new Date(viewYear, viewMonth, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const totalCells  = Math.ceil((firstDow + daysInMonth) / 7) * 7;
 
   return (
-    <View style={pickerStyles.container}>
-      <ThemedText style={[pickerStyles.label, { color: theme.textMuted }]}>{label}</ThemedText>
-
-      {/* Year navigation */}
-      <View style={pickerStyles.yearRow}>
-        <Pressable
-          onPress={() => setViewYear((y) => y - 1)}
-          hitSlop={8}
-          style={pickerStyles.yearArrow}
-        >
+    <View style={calStyles.container}>
+      {/* Month / year header */}
+      <View style={calStyles.monthNav}>
+        <Pressable onPress={goToPrevMonth} hitSlop={10} style={calStyles.navBtn}>
           <Feather name="chevron-left" size={18} color={theme.textSecondary} />
         </Pressable>
-        <ThemedText style={pickerStyles.yearText}>{viewYear}</ThemedText>
-        <Pressable
-          onPress={() => setViewYear((y) => y + 1)}
-          hitSlop={8}
-          style={pickerStyles.yearArrow}
-        >
+        <ThemedText style={calStyles.monthLabel}>
+          {MONTH_SHORT[viewMonth]} {viewYear}
+        </ThemedText>
+        <Pressable onPress={goToNextMonth} hitSlop={10} style={calStyles.navBtn}>
           <Feather name="chevron-right" size={18} color={theme.textSecondary} />
         </Pressable>
       </View>
 
-      {/* Month grid: 3 columns × 4 rows */}
-      <View style={pickerStyles.monthGrid}>
-        {MONTH_SHORT.map((name, m) => {
-          const thisNum = monthYearToNum({ year: viewYear, month: m });
-          const isSelected = value.year === viewYear && value.month === m;
-          const isDisabledMin = minNum !== null && thisNum < minNum;
-          const isDisabledMax = maxNum !== null && thisNum > maxNum;
-          const isDisabled = isDisabledMin || isDisabledMax;
-          const inRange =
-            rangeStartNum !== null &&
-            rangeEndNum !== null &&
-            thisNum >= rangeStartNum &&
-            thisNum <= rangeEndNum;
+      {/* Day-of-week header */}
+      <View style={calStyles.weekRow}>
+        {DOW_SHORT.map((d) => (
+          <View key={d} style={calStyles.weekCell}>
+            <ThemedText style={[calStyles.weekText, { color: theme.textMuted }]}>{d}</ThemedText>
+          </View>
+        ))}
+      </View>
 
-          let cellBg: string = "transparent";
-          let textColor: string = isDisabled ? theme.textMuted : theme.text;
-          if (isSelected) {
-            cellBg = theme.link;
-            textColor = "#fff";
-          } else if (inRange) {
-            cellBg = theme.linkBackground;
-            textColor = theme.link;
+      {/* Day grid */}
+      <View style={calStyles.grid}>
+        {Array.from({ length: totalCells }, (_, i) => {
+          const day = i - firstDow + 1;
+          if (day < 1 || day > daysInMonth) {
+            return <View key={`pad-${i}`} style={calStyles.dayCell} />;
           }
+          const cellTime    = new Date(viewYear, viewMonth, day).getTime();
+          const isFrom      = cellTime === fromTime;
+          const isTo        = cellTime === toTime;
+          const isSelected  = isFrom || isTo;
+          const inRange     = cellTime > rangeMin && cellTime < rangeMax;
+          const isRangeEdge = (cellTime === rangeMin || cellTime === rangeMax) && fromTime !== toTime;
+          const isToday     = cellTime === todayTime;
+          const col         = i % 7; // 0=Sun … 6=Sat
+          const isFirstCol  = col === 0;
+          const isLastCol   = col === 6;
 
           return (
             <Pressable
-              key={m}
-              onPress={() => {
-                if (!isDisabled) onChange({ year: viewYear, month: m });
-              }}
-              style={[
-                pickerStyles.monthCell,
-                { backgroundColor: cellBg },
-                isSelected && pickerStyles.monthCellSelected,
-              ]}
+              key={day}
+              style={calStyles.dayCell}
+              onPress={() => onSelectDate(new Date(viewYear, viewMonth, day))}
             >
+              {/* Range highlight strip */}
+              {(inRange || isRangeEdge) ? (
+                <View
+                  style={[
+                    calStyles.rangeBg,
+                    { backgroundColor: theme.linkBackground },
+                    (isFrom && fromTime < toTime) || (isTo && toTime < fromTime) || isFirstCol
+                      ? calStyles.rangeEdgeLeft : null,
+                    (isTo && toTime > fromTime) || (isFrom && fromTime > toTime) || isLastCol
+                      ? calStyles.rangeEdgeRight : null,
+                  ]}
+                />
+              ) : null}
+              {/* Selected circle */}
+              {isSelected ? (
+                <View style={[calStyles.selectedCircle, { backgroundColor: theme.link }]} />
+              ) : null}
               <ThemedText
                 style={[
-                  pickerStyles.monthText,
-                  { color: textColor, fontWeight: isSelected ? "700" : "500" },
+                  calStyles.dayText,
+                  {
+                    color: isSelected ? "#fff" : isToday ? theme.link : theme.text,
+                    fontWeight: isSelected || isToday ? "700" : "400",
+                  },
                 ]}
               >
-                {name}
+                {day}
               </ThemedText>
             </Pressable>
           );
@@ -268,51 +278,51 @@ function MonthYearPicker({
   );
 }
 
-const pickerStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    gap: Spacing.xs,
-  },
-  label: {
-    fontSize: 11,
-    fontWeight: "600",
-    textAlign: "center",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    fontFamily: Typography.body.fontFamily,
-  },
-  yearRow: {
+const calStyles = StyleSheet.create({
+  container: { gap: 4 },
+  monthNav: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 2,
+    marginBottom: 2,
   },
-  yearArrow: {
-    padding: 4,
-  },
-  yearText: {
-    fontSize: 15,
+  navBtn: { padding: 4 },
+  monthLabel: {
+    fontSize: 14,
     fontWeight: "600",
     fontFamily: Typography.body.fontFamily,
   },
-  monthGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
+  weekRow: { flexDirection: "row" },
+  weekCell: { flex: 1, alignItems: "center", paddingVertical: 3 },
+  weekText: {
+    fontSize: 11,
+    fontWeight: "600",
+    fontFamily: Typography.body.fontFamily,
   },
-  monthCell: {
-    // 3 columns with gap=4: (flex basis roughly 1/3 minus gap)
-    width: "30%",
-    flexGrow: 1,
+  grid: { flexDirection: "row", flexWrap: "wrap" },
+  dayCell: {
+    width: "14.285714%",
+    aspectRatio: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 7,
-    borderRadius: BorderRadius.sm,
   },
-  monthCellSelected: {
-    borderRadius: BorderRadius.md,
+  rangeBg: {
+    position: "absolute",
+    top: "15%",
+    bottom: "15%",
+    left: 0,
+    right: 0,
   },
-  monthText: {
+  rangeEdgeLeft:  { left: "50%", borderTopLeftRadius: 99, borderBottomLeftRadius: 99 },
+  rangeEdgeRight: { right: "50%", borderTopRightRadius: 99, borderBottomRightRadius: 99 },
+  selectedCircle: {
+    position: "absolute",
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  dayText: {
     fontSize: 13,
     fontFamily: Typography.body.fontFamily,
   },
@@ -327,15 +337,16 @@ export default function ExerciseProgressReportScreen() {
 
   const [preset, setPreset] = useState<DatePreset>("1m");
 
-  // Custom range stored as month/year pairs
-  const [customFrom, setCustomFrom] = useState<MonthYear>(() => {
+  // Custom range stored as specific days
+  const [customFrom, setCustomFrom] = useState<Date>(() => {
     const d = new Date();
-    return { year: d.getFullYear(), month: d.getMonth() };
+    return new Date(d.getFullYear(), d.getMonth(), 1); // first of this month
   });
-  const [customTo, setCustomTo] = useState<MonthYear>(() => {
+  const [customTo, setCustomTo] = useState<Date>(() => {
     const d = new Date();
-    return { year: d.getFullYear(), month: d.getMonth() };
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()); // today
   });
+  const [editing, setEditing] = useState<"from" | "to">("from");
 
   const [loading, setLoading] = useState(true);
   const [allSessions, setAllSessions] = useState<CompletedSession[]>([]);
@@ -348,15 +359,10 @@ export default function ExerciseProgressReportScreen() {
   // ── Date range ──────────────────────────────────────────────────────────────
   const { from, to } = useMemo(() => {
     if (preset === "custom") {
-      const fromNum = monthYearToNum(customFrom);
-      const toNum = monthYearToNum(customTo);
-      // Ensure from <= to (swap silently if user picks end before start)
-      const [earlier, later] =
-        fromNum <= toNum ? [customFrom, customTo] : [customTo, customFrom];
-      return {
-        from: new Date(earlier.year, earlier.month, 1),
-        to: new Date(later.year, later.month + 1, 0), // last day of month
-      };
+      // Normalise to midnight and swap if user picked end before start
+      const f = new Date(customFrom.getFullYear(), customFrom.getMonth(), customFrom.getDate());
+      const t = new Date(customTo.getFullYear(),   customTo.getMonth(),   customTo.getDate());
+      return f <= t ? { from: f, to: t } : { from: t, to: f };
     }
     return getPresetRange(preset);
   }, [preset, customFrom, customTo]);
@@ -475,12 +481,6 @@ export default function ExerciseProgressReportScreen() {
       return next;
     });
   };
-
-  // For range highlight in the pickers
-  const fromNum = monthYearToNum(customFrom);
-  const toNum = monthYearToNum(customTo);
-  const rangeStart = fromNum <= toNum ? customFrom : customTo;
-  const rangeEnd = fromNum <= toNum ? customTo : customFrom;
 
   const renderDayGroup = (group: ReportDayGroup) => {
     const expanded = expandedDays.has(group.sessionTemplateId);
@@ -727,28 +727,55 @@ export default function ExerciseProgressReportScreen() {
           </ScrollView>
         ) : null}
 
-        {/* Custom month/year pickers */}
+        {/* Custom day-level picker */}
         {preset === "custom" ? (
-          <View
-            style={[
-              styles.customPickerRow,
-              { borderTopColor: theme.border },
-            ]}
-          >
-            <MonthYearPicker
-              label="From"
-              value={customFrom}
-              onChange={setCustomFrom}
-              rangeStart={rangeStart}
-              rangeEnd={rangeEnd}
-            />
-            <View style={[styles.customPickerDivider, { backgroundColor: theme.border }]} />
-            <MonthYearPicker
-              label="To"
-              value={customTo}
-              onChange={setCustomTo}
-              rangeStart={rangeStart}
-              rangeEnd={rangeEnd}
+          <View style={[styles.customSection, { borderTopColor: theme.border }]}>
+            {/* From / To selector buttons */}
+            <View style={styles.customDateRow}>
+              <Pressable
+                onPress={() => setEditing("from")}
+                style={[
+                  styles.customDateBtn,
+                  { backgroundColor: editing === "from" ? theme.link : theme.backgroundSecondary },
+                ]}
+              >
+                <ThemedText style={[styles.customDateLabel, { color: editing === "from" ? "#fff" : theme.textMuted }]}>
+                  FROM
+                </ThemedText>
+                <ThemedText style={[styles.customDateValue, { color: editing === "from" ? "#fff" : theme.text }]}>
+                  {customFrom.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                </ThemedText>
+              </Pressable>
+              <Feather name="arrow-right" size={14} color={theme.textMuted} />
+              <Pressable
+                onPress={() => setEditing("to")}
+                style={[
+                  styles.customDateBtn,
+                  { backgroundColor: editing === "to" ? theme.link : theme.backgroundSecondary },
+                ]}
+              >
+                <ThemedText style={[styles.customDateLabel, { color: editing === "to" ? "#fff" : theme.textMuted }]}>
+                  TO
+                </ThemedText>
+                <ThemedText style={[styles.customDateValue, { color: editing === "to" ? "#fff" : theme.text }]}>
+                  {customTo.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                </ThemedText>
+              </Pressable>
+            </View>
+
+            {/* Calendar */}
+            <DayCalendar
+              fromDate={customFrom}
+              toDate={customTo}
+              editing={editing}
+              onSelectDate={(d) => {
+                if (editing === "from") {
+                  setCustomFrom(d);
+                  setEditing("to"); // auto-advance to picking the end date
+                } else {
+                  setCustomTo(d);
+                }
+              }}
             />
           </View>
         ) : null}
@@ -805,16 +832,34 @@ const styles = StyleSheet.create({
     fontFamily: Typography.body.fontFamily,
   },
 
-  // Custom month/year picker layout
-  customPickerRow: {
-    flexDirection: "row",
-    gap: Spacing.md,
-    paddingTop: Spacing.sm,
+  // Custom day picker layout
+  customSection: {
+    paddingTop: Spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
+    gap: Spacing.md,
   },
-  customPickerDivider: {
-    width: StyleSheet.hairlineWidth,
-    alignSelf: "stretch",
+  customDateRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.sm,
+  },
+  customDateBtn: {
+    flex: 1,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    gap: 2,
+  },
+  customDateLabel: {
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    fontFamily: Typography.body.fontFamily,
+  },
+  customDateValue: {
+    fontSize: 13,
+    fontWeight: "600",
+    fontFamily: Typography.body.fontFamily,
   },
 
   rangeLabel: {
