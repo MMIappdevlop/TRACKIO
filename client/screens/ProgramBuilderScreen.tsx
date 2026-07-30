@@ -179,7 +179,7 @@ export default function ProgramBuilderScreen() {
     // Auto-link GIF in the background — updates state once the lookup resolves
     const taskName = newTask.name;
     fetch(
-      `${getApiUrl()}/api/exercise-lookup?name=${encodeURIComponent(taskName)}`,
+      `${getApiUrl()}api/exercise-lookup?name=${encodeURIComponent(taskName)}`,
     )
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
@@ -248,7 +248,7 @@ export default function ProgramBuilderScreen() {
     });
     try {
       const res = await fetch(
-        `${getApiUrl()}/api/exercise-lookup?name=${encodeURIComponent(taskName)}`,
+        `${getApiUrl()}api/exercise-lookup?name=${encodeURIComponent(taskName)}`,
       );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();

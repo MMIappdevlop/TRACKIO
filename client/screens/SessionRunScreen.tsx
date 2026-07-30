@@ -22,6 +22,7 @@ import { useKeepAwake } from "expo-keep-awake";
 
 import { ThemedText } from "@/components/ThemedText";
 import { ExerciseGifPanel } from "@/components/ExerciseGifPanel";
+import { getApiUrl } from "@/lib/query-client";
 import { RestTimerSheet } from "@/components/RestTimerSheet";
 import { EmptyState } from "@/components/EmptyState";
 import { ExerciseTimer } from "@/components/ExerciseTimer";
@@ -443,9 +444,8 @@ export default function SessionRunScreen() {
     }
     adhocSearchTimer.current = setTimeout(async () => {
       try {
-        const { getApiUrl } = await import("@/lib/query-client");
         const res = await fetch(
-          `${getApiUrl()}/api/exercise-search?q=${encodeURIComponent(text)}&limit=6`,
+          `${getApiUrl()}api/exercise-search?q=${encodeURIComponent(text)}&limit=6`,
         );
         if (!res.ok) return;
         const json = await res.json();

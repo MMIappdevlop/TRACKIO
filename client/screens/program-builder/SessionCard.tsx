@@ -115,7 +115,7 @@ function TaskForm({
     searchTimerRef.current = setTimeout(async () => {
       try {
         const res = await fetch(
-          `${getApiUrl()}/api/exercise-search?q=${encodeURIComponent(text)}&limit=6`,
+          `${getApiUrl()}api/exercise-search?q=${encodeURIComponent(text)}&limit=6`,
         );
         if (!res.ok) return;
         const json = await res.json();

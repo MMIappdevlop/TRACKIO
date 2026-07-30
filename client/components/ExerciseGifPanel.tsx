@@ -67,12 +67,12 @@ export function ExerciseGifPanel({
   // Auto-fetch when no explicit frameUrls and exerciseName is known
   useEffect(() => {
     if (frameUrls.length > 0 || !exerciseName) {
-      setAutoFrameUrls([]);
+      // No reset needed — effectiveUrls ignores autoFrameUrls when frameUrls is populated
       return;
     }
     let cancelled = false;
     fetch(
-      `${getApiUrl()}/api/exercise-lookup?name=${encodeURIComponent(exerciseName)}`,
+      `${getApiUrl()}api/exercise-lookup?name=${encodeURIComponent(exerciseName)}`,
     )
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
