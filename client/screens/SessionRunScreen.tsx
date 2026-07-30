@@ -648,12 +648,40 @@ export default function SessionRunScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.backgroundRoot }]}>
+      {/* Progress bar — fixed just below the navigation header */}
+      <View
+        style={[
+          styles.progressBarFixed,
+          {
+            top: headerHeight,
+            backgroundColor: theme.backgroundRoot,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.progressBarBg,
+            { backgroundColor: theme.backgroundSecondary },
+          ]}
+        >
+          <View
+            style={[
+              styles.progressBarFill,
+              {
+                width: `${progressPercent}%`,
+                backgroundColor: Colors.dark.success,
+              },
+            ]}
+          />
+        </View>
+      </View>
+
       <KeyboardAwareScrollView
         style={styles.scrollView}
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: headerHeight + Spacing.lg,
+            paddingTop: headerHeight + 16 + Spacing.lg,
             paddingBottom: 100 + insets.bottom,
           },
         ]}
@@ -1046,57 +1074,9 @@ export default function SessionRunScreen() {
           </View>
         ) : null}
 
-        {/* In-scroll navigation bar — Previous + exercise progress, sits below sets */}
-        <View style={styles.inScrollNav}>
-          <Pressable
-            onPress={handlePrevious}
-            disabled={currentTaskIndex === 0}
-            style={styles.inScrollPrevBtn}
-            hitSlop={8}
-          >
-            <Feather
-              name="chevron-left"
-              size={18}
-              color={currentTaskIndex === 0 ? theme.textMuted : theme.text}
-            />
-            <ThemedText
-              type="body"
-              style={[
-                styles.inScrollPrevText,
-                {
-                  color: currentTaskIndex === 0 ? theme.textMuted : theme.text,
-                },
-              ]}
-            >
-              Previous
-            </ThemedText>
-          </Pressable>
-
-          <View style={styles.inScrollProgressArea}>
-            <ThemedText type="secondary" style={styles.progressLabel}>
-              Exercise {currentTaskIndex + 1} of {tasks.length}
-            </ThemedText>
-            <View
-              style={[
-                styles.progressBarBg,
-                { backgroundColor: theme.backgroundSecondary },
-              ]}
-            >
-              <View
-                style={[
-                  styles.progressBarFill,
-                  {
-                    width: `${progressPercent}%`,
-                    backgroundColor: Colors.dark.success,
-                  },
-                ]}
-              />
-            </View>
-          </View>
-        </View>
       </KeyboardAwareScrollView>
 
-      {/* Fixed bottom — single Next button */}
+      {/* Bottom Navigation — Previous + Next */}
       <View
         style={[
           styles.bottomNav,
@@ -1107,27 +1087,41 @@ export default function SessionRunScreen() {
         ]}
       >
         <Pressable
+          onPress={handlePrevious}
+          disabled={currentTaskIndex === 0}
+          style={[styles.navButton, styles.prevButton]}
+        >
+          <Feather
+            name="chevron-left"
+            size={20}
+            color={currentTaskIndex === 0 ? theme.textMuted : theme.text}
+          />
+          <ThemedText
+            type="body"
+            style={[
+              styles.navButtonText,
+              currentTaskIndex === 0 && { color: theme.textMuted },
+            ]}
+          >
+            Previous
+          </ThemedText>
+        </Pressable>
+
+        <Pressable
           onPress={handleNext}
           disabled={currentTaskIndex === tasks.length - 1}
           style={[
             styles.navButton,
-            {
-              backgroundColor:
-                currentTaskIndex === tasks.length - 1
-                  ? theme.backgroundSecondary
-                  : theme.link,
-            },
+            styles.nextButton,
+            { backgroundColor: theme.backgroundSecondary },
           ]}
         >
           <ThemedText
             type="body"
             style={[
               styles.navButtonText,
-              {
-                color:
-                  currentTaskIndex === tasks.length - 1
-                    ? theme.textMuted
-                    : theme.buttonText,
+              currentTaskIndex === tasks.length - 1 && {
+                color: theme.textMuted,
               },
             ]}
           >
@@ -1139,7 +1133,7 @@ export default function SessionRunScreen() {
             color={
               currentTaskIndex === tasks.length - 1
                 ? theme.textMuted
-                : theme.buttonText
+                : theme.text
             }
           />
         </Pressable>
@@ -1480,11 +1474,13 @@ const styles = StyleSheet.create({
   targetText: {
     marginBottom: Spacing.lg,
   },
-  progressSection: {
-    marginBottom: Spacing.xl,
-  },
-  progressLabel: {
-    marginBottom: Spacing.sm,
+  progressBarFixed: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
   },
   progressBarBg: {
     height: 8,
@@ -1628,16 +1624,25 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+    flexDirection: "row",
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
+    gap: Spacing.md,
   },
   navButton: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     height: 52,
     borderRadius: BorderRadius.full,
     gap: Spacing.xs,
+  },
+  prevButton: {
+    backgroundColor: "transparent",
+  },
+  nextButton: {
+    flex: 1.5,
   },
   navButtonText: {
     fontWeight: "600",
