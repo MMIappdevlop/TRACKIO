@@ -15,6 +15,7 @@
       }
     },
     "production": {
+      "config": ".eas/build/production.yml",
       "autoIncrement": true,
       "ios": {
         "distribution": "store"

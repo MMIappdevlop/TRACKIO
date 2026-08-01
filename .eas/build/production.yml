@@ -1,0 +1,19 @@
+build:
+  name: iOS Production
+  steps:
+    - eas/checkout
+
+    - run:
+        name: Install dependencies
+        command: |
+          echo "Node: $(node --version)"
+          echo "npm:  $(npm --version)"
+          npm install --no-audit --prefer-offline
+          echo "--- Verifying expo binary ---"
+          ./node_modules/.bin/expo --version
+
+    - eas/prebuild:
+        inputs:
+          clean: false
+
+    - eas/ios_build
