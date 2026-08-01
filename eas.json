@@ -17,16 +17,14 @@
     "production": {
       "autoIncrement": true,
       "ios": {
-        "bundleIdentifier": "com.trakio.app"
+        "distribution": "store"
       }
     }
   },
   "submit": {
     "production": {
       "ios": {
-        "appleId": "",
-        "ascAppId": "",
-        "appleTeamId": ""
+        "ascAppId": "MY_NUMERIC_APP_STORE_CONNECT_ID"
       }
     }
   }
