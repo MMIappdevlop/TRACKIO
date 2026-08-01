@@ -8,12 +8,12 @@ build:
         command: |
           echo "Node: $(node --version)"
           echo "npm:  $(npm --version)"
-          npm install --no-audit --prefer-offline
-          echo "--- Verifying expo binary ---"
-          ./node_modules/.bin/expo --version
+          npm install --no-audit
+          echo "expo binary: $(./node_modules/.bin/expo --version)"
 
-    - eas/prebuild:
-        inputs:
-          clean: false
+    - run:
+        name: Prebuild (using local Expo binary)
+        command: |
+          ./node_modules/.bin/expo prebuild --clean --platform ios --non-interactive
 
     - eas/ios_build
